@@ -42,22 +42,36 @@ static void match(TokenType expected)
 	}
 }
 
+bool match_possible_lbracket()
+{
+	if (token == LBRACKET) {
+		match(LBRACKET);
+		return true;
+	}
+	return false;
+}
+
+void match_possible_rbracket(bool in_block)
+{
+	if (in_block){
+		if (token == RBRACKET) match(RBRACKET);
+		else syntaxError("缺少 右大括号 : }");
+	}
+}
+
+
 TreeNode * stmt_sequence(void)
 {
 	TreeNode * t = statement();
-	match(SEMI);
 	TreeNode * p = t;
 	/*
 		每一个语句节点都有一个SIBLING结点,指向下一条要执行的语句
-	
-	
 	*/
 	while ((token != ENDFILE) && (token != END) &&
-		(token != ELSE) && (token != UNTIL))
+		   (token != RBRACKET))
 	{
 		TreeNode * q;
 		q = statement();
-		match(SEMI);
 		if (q != NULL) {
 			if (t == NULL) t = p = q;
 			else /* now p cannot be NULL either */
@@ -75,40 +89,55 @@ TreeNode * statement(void)
 	TreeNode * t = NULL;
 	switch (token) {
 	case IF: t = if_stmt(); break;
-	case REPEAT: t = repeat_stmt(); break;
+	case WHILE: t = while_stmt(); break;
 	case ID: t = assign_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
+	case Int:
+	case Float:
+	case String:
+		t = declare_stmt();
+		break;
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
 		token = getToken();
 		break;
 	} /* end case */
+	match(SEMI);
 	return t;
 }
+
 
 TreeNode * if_stmt(void)
 {
 	TreeNode * t = newStmtNode(IfK);
 	match(IF);
 	if (t != NULL) t->child[0] = exp();
-	match(THEN);
-	if (t != NULL) t->child[1] = stmt_sequence();
+	
+	/*下面的语句是一个{序列}*/
+	bool in_block = match_possible_lbracket();
+	t->child[1] = in_block ? stmt_sequence() : statement();/*如果在{}里面就是序列，否则就只有一个语句*/
+	match_possible_rbracket(in_block);
+
 	if (token == ELSE) {
 		match(ELSE);
-		if (t != NULL) t->child[2] = stmt_sequence();
+		bool in_block = match_possible_lbracket();
+		t->child[2] = in_block ? stmt_sequence() : statement();/*如果在{}里面就是序列，否则就只有一个语句*/
+		match_possible_rbracket(in_block);
 	}
-	match(END);
 	return t;
 }
 
-TreeNode * repeat_stmt(void)
+
+
+TreeNode * while_stmt(void)
 {
 	TreeNode * t = newStmtNode(RepeatK);
-	match(REPEAT);
-	if (t != NULL) t->child[0] = stmt_sequence();
-	match(UNTIL);
-	if (t != NULL) t->child[1] = exp();
+	match(WHILE);
+	if (t != NULL) t->child[0] = exp();
+	bool in_block = match_possible_lbracket();
+	t->child[1] = in_block ? stmt_sequence() : statement();/*如果在{}里面就是序列，否则就只有一个语句*/
+	match_possible_rbracket(in_block);
 	return t;
 }
 
@@ -141,10 +170,22 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
+/*对变量进行声明*/
+TreeNode* declare_stmt(TokenType token)
+{
+	/*token一定是Int，String，Float里面的一种*/
+	TreeNode* t = newStmtNode();
+	match(token);
+	/*
+	current_id.vartype = token;
+	current_id.name = copyString(tokenString);	
+	*/
+}
+
 TreeNode * exp(void)
 {
 	TreeNode * t = simple_exp();
-	if ((token == LT) || (token == EQ)) {
+	if ((token == LT) || (token == EQ) || (token == GT)) {
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) {
 			p->child[0] = t;
@@ -158,6 +199,7 @@ TreeNode * exp(void)
 	return t;
 }
 
+/*这里采取了ENBF的循环表示法来表示 + - 组成的表达式*/
 TreeNode * simple_exp(void)
 {
 	TreeNode * t = term();
@@ -169,7 +211,7 @@ TreeNode * simple_exp(void)
 			p->attr.op = token;
 			t = p;
 			match(token);
-			t->child[1] = term();
+			t->child[1] = term();//获取第二个term表达式
 		}
 	}
 	return t;
@@ -199,13 +241,21 @@ TreeNode * factor(void)
 	case NUM:
 		t = newExpNode(ConstK);
 		if ((t != NULL) && (token == NUM))
-			t->attr.val = atoi(tokenString);
+			t->val.num = atoi(tokenString);
 		match(NUM);
 		break;
 	case ID:
 		t = newExpNode(IdK);
-		if ((t != NULL) && (token == ID))
+		if ((t != NULL) && (token == ID)){
 			t->attr.name = copyString(tokenString);
+			/*
+			  需要检查类型对不对
+			    id_record = get_id_record(t->attr.name)
+				if ( id_record->token_type != Int && id_record->token_type != Float){
+					syntaxerror("unexpected variable type :");
+				}
+			*/
+		}
 		match(ID);
 		break;
 	case LPAREN:
@@ -216,7 +266,7 @@ TreeNode * factor(void)
 	default:
 		syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
-		token = getToken();
+		token = getToken( );
 		break;
 	}
 	return t;
