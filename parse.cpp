@@ -55,7 +55,7 @@ void match_possible_rbracket(bool in_block)
 {
 	if (in_block){
 		if (token == RBRACKET) match(RBRACKET);
-		else syntaxError("È±ÉÙ ÓÒ´óÀ¨ºÅ : }");
+		else syntaxError("ç¼ºå°‘ å³å¤§æ‹¬å· : }");
 	}
 }
 
@@ -65,7 +65,7 @@ TreeNode * stmt_sequence(void)
 	TreeNode * t = statement();
 	TreeNode * p = t;
 	/*
-		Ã¿Ò»¸öÓï¾ä½Úµã¶¼ÓÐÒ»¸öSIBLING½áµã,Ö¸ÏòÏÂÒ»ÌõÒªÖ´ÐÐµÄÓï¾ä
+		æ¯ä¸€ä¸ªè¯­å¥èŠ‚ç‚¹éƒ½æœ‰ä¸€ä¸ªSIBLINGç»“ç‚¹,æŒ‡å‘ä¸‹ä¸€æ¡è¦æ‰§è¡Œçš„è¯­å¥
 	*/
 	while ((token != ENDFILE) && (token != END) &&
 		   (token != RBRACKET))
@@ -87,7 +87,8 @@ TreeNode * stmt_sequence(void)
 TreeNode * statement(void)
 {
 	TreeNode * t = NULL;
-	switch (token) {
+	switch (token) 
+  {
 	case IF: t = if_stmt(); break;
 	case WHILE: t = while_stmt(); break;
 	case ID: t = assign_stmt(); break;
@@ -102,7 +103,7 @@ TreeNode * statement(void)
 		printToken(token, tokenString);
 		token = getToken();
 		break;
-	} /* end case */
+  } /* end case */
 	match(SEMI);
 	return t;
 }
@@ -114,15 +115,15 @@ TreeNode * if_stmt(void)
 	match(IF);
 	if (t != NULL) t->child[0] = exp();
 	
-	/*ÏÂÃæµÄÓï¾äÊÇÒ»¸ö{ÐòÁÐ}*/
+	/*ä¸‹é¢çš„è¯­å¥æ˜¯ä¸€ä¸ª{åºåˆ—}*/
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();/*Èç¹ûÔÚ{}ÀïÃæ¾ÍÊÇÐòÁÐ£¬·ñÔò¾ÍÖ»ÓÐÒ»¸öÓï¾ä*/
+	t->child[1] = in_block ? stmt_sequence() : statement();/*å¦‚æžœåœ¨{}é‡Œé¢å°±æ˜¯åºåˆ—ï¼Œå¦åˆ™å°±åªæœ‰ä¸€ä¸ªè¯­å¥*/
 	match_possible_rbracket(in_block);
 
 	if (token == ELSE) {
 		match(ELSE);
 		bool in_block = match_possible_lbracket();
-		t->child[2] = in_block ? stmt_sequence() : statement();/*Èç¹ûÔÚ{}ÀïÃæ¾ÍÊÇÐòÁÐ£¬·ñÔò¾ÍÖ»ÓÐÒ»¸öÓï¾ä*/
+		t->child[2] = in_block ? stmt_sequence() : statement();/*å¦‚æžœåœ¨{}é‡Œé¢å°±æ˜¯åºåˆ—ï¼Œå¦åˆ™å°±åªæœ‰ä¸€ä¸ªè¯­å¥*/
 		match_possible_rbracket(in_block);
 	}
 	return t;
@@ -136,7 +137,7 @@ TreeNode * while_stmt(void)
 	match(WHILE);
 	if (t != NULL) t->child[0] = exp();
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();/*Èç¹ûÔÚ{}ÀïÃæ¾ÍÊÇÐòÁÐ£¬·ñÔò¾ÍÖ»ÓÐÒ»¸öÓï¾ä*/
+	t->child[1] = in_block ? stmt_sequence() : statement();/*å¦‚æžœåœ¨{}é‡Œé¢å°±æ˜¯åºåˆ—ï¼Œå¦åˆ™å°±åªæœ‰ä¸€ä¸ªè¯­å¥*/
 	match_possible_rbracket(in_block);
 	return t;
 }
@@ -170,10 +171,10 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
-/*¶Ô±äÁ¿½øÐÐÉùÃ÷*/
+/*å¯¹å˜é‡è¿›è¡Œå£°æ˜Ž*/
 TreeNode* declare_stmt(TokenType token)
 {
-	/*tokenÒ»¶¨ÊÇInt£¬String£¬FloatÀïÃæµÄÒ»ÖÖ*/
+	/*tokenä¸€å®šæ˜¯Intï¼ŒStringï¼ŒFloaté‡Œé¢çš„ä¸€ç§*/
 	TreeNode* t = newStmtNode();
 	match(token);
 	/*
@@ -199,7 +200,7 @@ TreeNode * exp(void)
 	return t;
 }
 
-/*ÕâÀï²ÉÈ¡ÁËENBFµÄÑ­»·±íÊ¾·¨À´±íÊ¾ + - ×é³ÉµÄ±í´ïÊ½*/
+/*è¿™é‡Œé‡‡å–äº†ENBFçš„å¾ªçŽ¯è¡¨ç¤ºæ³•æ¥è¡¨ç¤º + - ç»„æˆçš„è¡¨è¾¾å¼*/
 TreeNode * simple_exp(void)
 {
 	TreeNode * t = term();
@@ -211,7 +212,7 @@ TreeNode * simple_exp(void)
 			p->attr.op = token;
 			t = p;
 			match(token);
-			t->child[1] = term();//»ñÈ¡µÚ¶þ¸öterm±í´ïÊ½
+			t->child[1] = term();//èŽ·å–ç¬¬äºŒä¸ªtermè¡¨è¾¾å¼
 		}
 	}
 	return t;
@@ -249,7 +250,7 @@ TreeNode * factor(void)
 		if ((t != NULL) && (token == ID)){
 			t->attr.name = copyString(tokenString);
 			/*
-			  ÐèÒª¼ì²éÀàÐÍ¶Ô²»¶Ô
+			  éœ€è¦æ£€æŸ¥ç±»åž‹å¯¹ä¸å¯¹
 			    id_record = get_id_record(t->attr.name)
 				if ( id_record->token_type != Int && id_record->token_type != Float){
 					syntaxerror("unexpected variable type :");
