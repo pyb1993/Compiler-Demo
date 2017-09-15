@@ -1,270 +1,186 @@
+/****************************************************/
+/* File: util.c                                     */
+/* Utility function implementation                  */
+/* for the TINY compiler                            */
+/* Compiler Construction: Principles and Practice   */
+/* Kenneth C. Louden                                */
+/****************************************************/
+
 #include "globals.h"
 #include "util.h"
-#include "scan.h"
 
-/* states in scanner DFA */
-typedef enum
+/* Procedure printToken prints a token
+* and its lexeme to the listing file
+*/
+void printToken(TokenType token, const char* tokenString)
 {
-	START, INASSIGN, INCOMMENT, INNUM, INID, OVER_OR_COMMENT, 
-	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,
-	DONE
-}
-StateType;
-
-/* lexeme of identifier or reserved word */
-char tokenString[MAXTOKENLEN + 1];
-
-/* BUFLEN = length of the input buffer for
-source code lines */
-#define BUFLEN 256
-
-static char lineBuf[BUFLEN]; /* holds the current line */
-static int linepos = 0; /* current position in LineBuf */
-static int bufsize = 0; /* current size of buffer string */
-static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
-
-/* getNextChar fetches the next non-blank character
-from lineBuf, reading in a new line if lineBuf is
-exhausted */
-static int getNextChar(void)
-{
-	if (!(linepos < bufsize))
+	switch (token)
 	{
-		lineno++;
-		if (fgets(lineBuf, BUFLEN - 1, source))
-		{
-			if (EchoSource) fprintf(listing, "%4d: %s", lineno, lineBuf);
-			bufsize = strlen(lineBuf);
-			linepos = 0;
-			return lineBuf[linepos++];
-		}
-		else
-		{
-			EOF_flag = TRUE;
-			return EOF;
-		}
+	case IF:
+	case THEN:
+	case ELSE:
+	case END:
+	case WHILE:
+	case UNTIL:
+	case READ:
+	case WRITE:
+		fprintf(listing,
+			"reserved word: %s\n", tokenString);
+		break;
+	case ASSIGN: fprintf(listing, ":=\n"); break;
+	case LT: fprintf(listing, "<\n"); break;
+	case EQ: fprintf(listing, "=\n"); break;
+	case LPAREN: fprintf(listing, "(\n"); break;
+	case RPAREN: fprintf(listing, ")\n"); break;
+	case SEMI: fprintf(listing, ";\n"); break;
+	case PLUS: fprintf(listing, "+\n"); break;
+	case MINUS: fprintf(listing, "-\n"); break;
+	case TIMES: fprintf(listing, "*\n"); break;
+	case OVER: fprintf(listing, "/\n"); break;
+	case ENDFILE: fprintf(listing, "EOF\n"); break;
+	case NUM:
+		fprintf(listing,
+			"NUM, val= %s\n", tokenString);
+		break;
+	case ID:
+		fprintf(listing,
+			"ID, name= %s\n", tokenString);
+		break;
+	case ERROR:
+		fprintf(listing,
+			"ERROR: %s\n", tokenString);
+		break;
+	default: /* should never happen */
+		fprintf(listing, "Unknown token: %d\n", token);
 	}
-	else return lineBuf[linepos++];
 }
 
-/* ungetNextChar backtracks one character
-in lineBuf */
-static void ungetNextChar(void)
+/* Function newStmtNode creates a new statement
+* node for syntax tree construction
+*/
+TreeNode * newStmtNode(StmtKind kind)
 {
-	if (!EOF_flag) linepos--;
+	TreeNode * t = (TreeNode *)malloc(sizeof(TreeNode));
+	int i;
+	if (t == NULL)
+		fprintf(listing, "Out of memory error at line %d\n", lineno);
+	else {
+		for (i = 0; i<MAXCHILDREN; i++) t->child[i] = NULL;
+		t->sibling = NULL;
+		t->nodekind = StmtK;
+		t->kind.stmt = kind;
+		t->lineno = lineno;
+	}
+	return t;
 }
 
-//将读入的tokenstring退出一格,比如说用在退出//的第一个/上面
-static void ungetTokenstring(int *tokenstringindex)
+/* Function newExpNode creates a new expression
+* node for syntax tree construction
+*/
+TreeNode * newExpNode(ExpKind kind)
 {
-	if (!EOF_flag) (*tokenstringindex)--;
+	TreeNode * t = (TreeNode *)malloc(sizeof(TreeNode));
+	int i;
+	if (t == NULL)
+		fprintf(listing, "Out of memory error at line %d\n", lineno);
+	else {
+		for (i = 0; i<MAXCHILDREN; i++) t->child[i] = NULL;
+		t->sibling = NULL;
+		t->nodekind = ExpK;
+		t->kind.exp = kind;
+		t->lineno = lineno;
+		t->type = Void;
+	}
+	return t;
 }
 
-/* lookup table of reserved words */
-static struct
+/* Function copyString allocates and makes a new
+* copy of an existing string
+*/
+char * copyString(char * s)
 {
-	char* str;
-	TokenType tok;
-} reservedWords[MAXRESERVED]
-= { { "if", IF }, { "then", THEN }, { "else", ELSE }, { "end", END },
-{ "repeat", WHILE }, { "until", UNTIL }, { "read", READ },
-{ "write", WRITE } };
+	int n;
+	char * t;
+	if (s == NULL) return NULL;
+	n = strlen(s) + 1;
+	t = (char *)malloc(n);
+	if (t == NULL)
+		fprintf(listing, "Out of memory error at line %d\n", lineno);
+	else strcpy_s(t,strlen(s),s);
+	return t;
+}
 
-/* lookup an identifier to see if it is a reserved word */
-/* uses linear search */
-static TokenType reservedLookup(char * s)
+/* Variable indentno is used by printTree to
+* store current number of spaces to indent
+*/
+static int indentno = 0;
+
+/* macros to increase/decrease indentation */
+#define INDENT indentno+=2
+#define UNINDENT indentno-=2
+
+/* printSpaces indents by printing spaces */
+static void printSpaces(void)
 {
 	int i;
-	for (i = 0; i<MAXRESERVED; i++)
-	if (!strcmp(s, reservedWords[i].str))
-		return reservedWords[i].tok;
-	return ID;
+	for (i = 0; i<indentno; i++)
+		fprintf(listing, " ");
 }
 
-/****************************************/
-/* the primary function of the scanner  */
-/****************************************/
-/* function getToken returns the
-* next token in source file
+/* procedure printTree prints a syntax tree to the
+* listing file using indentation to indicate subtrees
 */
-TokenType getToken(void)
-{  /* index for storing into tokenString */
-	int tokenStringIndex = 0;
-	/* holds current token to be returned */
-	TokenType currentToken;
-	/* current state - always begins at START */
-	StateType state = START;
-	/* flag to indicate save to tokenString */
-	int save;
-	while (state != DONE)
-	{
-		int c = getNextChar();
-		save = TRUE;
-		switch (state)
+void printTree(TreeNode * tree)
+{
+	int i;
+	INDENT;
+	while (tree != NULL) {
+		printSpaces();
+		if (tree->nodekind == StmtK)
 		{
-		case START:
-			if (isdigit(c))
-				state = INNUM;
-			else if (isalpha(c))
-				state = INID;
-			else if (c == '=')
-				state = INASSIGN_OR_EQ;
-			else if ((c == ' ') || (c == '\t') || (c == '\n'))
-				save = FALSE;
-			else if (c == '-')
-			{
-				state = MINUS_OR_NEG;
+			switch (tree->kind.stmt) {
+			case IfK:
+				fprintf(listing, "If\n");
+				break;
+			case RepeatK:
+				fprintf(listing, "Repeat\n");
+				break;
+			case AssignK:
+				fprintf(listing, "Assign to: %s\n", tree->attr.name);
+				break;
+			case ReadK:
+				fprintf(listing, "Read: %s\n", tree->attr.name);
+				break;
+			case WriteK:
+				fprintf(listing, "Write\n");
+				break;
+			default:
+				fprintf(listing, "Unknown ExpNode kind\n");
+				break;
 			}
-			else if (c == '/')
-			{
-				state = OVER_OR_COMMENT;
-			}
-			else if (c == '<')
-			{
-				state = LT_OR_LE;
-			}
-			else if (c == '>')
-			{
-				state = GT_OR_GE;
-			}
-			//consider specific case
-			else
-			{
-				state = DONE;
-				switch (c)
-				{
-				case EOF:
-					save = FALSE;
-					currentToken = ENDFILE;
-					break;
-				case '+':
-					currentToken = PLUS;
-					break;
-				case '*':
-					currentToken = TIMES;
-					break;
-				case '(':
-					currentToken = LPAREN;
-					break;
-				case ')':
-					currentToken = RPAREN;
-				case '{':
-					currentToken = LBRACKET;
-					break;
-				case '}':
-					currentToken = RBRACKET;
-					break;
-				case ';':
-					currentToken = SEMI;
-					break;
-
-				default:
-					currentToken = ERROR;
-					break;
-				}
-			}
-			break;
-		case INCOMMENT:
-			save = FALSE;
-			if (c == EOF)
-			{
-				state = DONE;
-				currentToken = ENDFILE;
-			}
-			else if (c == '\n') state = START;
-			break;
-			// == or =
-		case INASSIGN_OR_EQ:
-			state = DONE;
-			if (c == '=')
-				currentToken = EQ;
-			else
-			{ /* backup in the input */
-				ungetNextChar();
-				save = FALSE;
-				currentToken = ASSIGN;
-			}
-			break;
-		case INNUM:
-			if (!isdigit(c))
-			{ /* backup in the input */
-				ungetNextChar();
-				save = FALSE;
-				state = DONE;
-				currentToken = NUM;
-			}
-			break;
-		case INID:
-			if (!isalpha(c)){ /* backup in the input */
-				ungetNextChar();
-				save = FALSE;
-				state = DONE;
-				currentToken = ID;
-			}
-			break;
-			// - or -100
-		case MINUS_OR_NEG:
-			if (isdigit(c)){
-				state = INNUM;
-			}
-			else{
-				ungetNextChar();
-				currentToken = MINUS;
-				state = DONE;
-			}
-
-			break;
-		case OVER_OR_COMMENT:
-			if (c == '/'){
-				state = INCOMMENT;
-				ungetTokenstring(&tokenStringIndex);
-				save = FALSE;
-			}
-			else {//over
-				state = DONE;
-				ungetNextChar();
-				currentToken = OVER;
-			}
-			break;
-		case LT_OR_LE:
-			if (c == '=')
-				currentToken = LE;
-			else{
-				save = FALSE;
-				state = DONE;
-				ungetNextChar();
-				currentToken = LT;
-			}
-			break;
-		case GT_OR_GE:
-			if (c == '=')
-				currentToken = GE;
-			else
-			{
-				save = FALSE;
-				state = DONE;
-				ungetNextChar();
-			}
-			break;
-		case DONE:
-		default: /* should never happen */
-			fprintf(listing, "Scanner Bug: state= %d\n", state);
-			state = DONE;
-			currentToken = ERROR;
-			break;
 		}
-		if ((save) && (tokenStringIndex <= MAXTOKENLEN))
-			tokenString[tokenStringIndex++] = (char)c;
-		if (state == DONE)
+		else if (tree->nodekind == ExpK)
 		{
-			tokenString[tokenStringIndex] = '\0';
-			if (currentToken == ID)
-				currentToken = reservedLookup(tokenString);
+			switch (tree->kind.exp) {
+			case OpK:
+				fprintf(listing, "Op: ");
+				printToken(tree->attr.op, "\0");
+				break;
+			case ConstK:
+				fprintf(listing, "Const: %d\n", tree->attr.val);
+				break;
+			case IdK:
+				fprintf(listing, "Id: %s\n", tree->attr.name);
+				break;
+			default:
+				fprintf(listing, "Unknown ExpNode kind\n");
+				break;
+			}
 		}
+		else fprintf(listing, "Unknown node kind\n");
+		for (i = 0; i<MAXCHILDREN; i++)
+			printTree(tree->child[i]);
+		tree = tree->sibling;
 	}
-	if (TraceScan) {
-		fprintf(listing, "\t%d: ", lineno);
-		printToken(currentToken, tokenString);
-	}
-	return currentToken;
-} /* end getToken */
+	UNINDENT;
+}
