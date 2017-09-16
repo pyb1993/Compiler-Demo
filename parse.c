@@ -55,17 +55,18 @@ void match_possible_rbracket(bool in_block)
 {
 	if (in_block){
 		if (token == RBRACKET) match(RBRACKET);
-		else syntaxError("È±ÉÙ ÓÒ´óÀ¨ºÅ : }");
+		else syntaxError("Â»Â±â€¦Å¸ â€â€œÂ¥Ã›Â¿Â®âˆ«â‰ˆ : }");
 	}
 }
 
+/*è·¨å¹³å°å¤ªè›‹ç–¼*/
 
 TreeNode * stmt_sequence(void)
 {
 	TreeNode * t = statement();
 	TreeNode * p = t;
 	/*
-		Ã¿Ò»¸öÓï¾ä½Úµã¶¼ÓÐÒ»¸öSIBLING½áµã,Ö¸ÏòÏÂÒ»ÌõÒªÖ´ÐÐµÄÓï¾ä
+		âˆšÃ¸â€œÂªâˆË†â€Ã”Ã¦â€°Î©â„Âµâ€žâˆ‚Âºâ€â€“â€œÂªâˆË†SIBLINGÎ©Â·Âµâ€ž,Ã·âˆÅ“ÃšÅ“Â¬â€œÂªÃƒÄ±â€œâ„¢Ã·Â¥â€“â€“ÂµÆ’â€Ã”Ã¦â€°
 	*/
 	while ((token != ENDFILE) && (token != END) &&
 		   (token != RBRACKET))
@@ -94,7 +95,7 @@ TreeNode * statement(void)
 	case ID: t = assign_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
-	case Int:  //ÔÝÊ±Ã»ÓÐÊµÏÖ
+	case Int:  //â€˜â€ºÂ Â±âˆšÂªâ€â€“Â ÂµÅ“Ã·
 	case Float:
 	case String:
 		break;
@@ -114,15 +115,15 @@ TreeNode * if_stmt(void)
 	match(IF);
 	if (t != NULL) t->child[0] = exp();
 	
-	/*ÏÂÃæµÄÓï¾äÊÇÒ»¸ö{ÐòÁÐ}*/
+	/*Å“Â¬âˆšÃŠÂµÆ’â€Ã”Ã¦â€°Â Â«â€œÂªâˆË†{â€“ÃšÂ¡â€“}*/
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();/*Èç¹ûÔÚ{}ÀïÃæ¾ÍÊÇÐòÁÐ£¬·ñÔò¾ÍÖ»ÓÐÒ»¸öÓï¾ä*/
+	t->child[1] = in_block ? stmt_sequence() : statement();/*Â»ÃÏ€Ëšâ€˜â„{}Â¿Ã”âˆšÃŠÃ¦Ã•Â Â«â€“ÃšÂ¡â€“Â£Â¨âˆ‘Ã’â€˜ÃšÃ¦Ã•Ã·Âªâ€â€“â€œÂªâˆË†â€Ã”Ã¦â€°*/
 	match_possible_rbracket(in_block);
 
 	if (token == ELSE) {
 		match(ELSE);
 		bool in_block = match_possible_lbracket();
-		t->child[2] = in_block ? stmt_sequence() : statement();/*Èç¹ûÔÚ{}ÀïÃæ¾ÍÊÇÐòÁÐ£¬·ñÔò¾ÍÖ»ÓÐÒ»¸öÓï¾ä*/
+		t->child[2] = in_block ? stmt_sequence() : statement();/*Â»ÃÏ€Ëšâ€˜â„{}Â¿Ã”âˆšÃŠÃ¦Ã•Â Â«â€“ÃšÂ¡â€“Â£Â¨âˆ‘Ã’â€˜ÃšÃ¦Ã•Ã·Âªâ€â€“â€œÂªâˆË†â€Ã”Ã¦â€°*/
 		match_possible_rbracket(in_block);
 	}
 	return t;
@@ -136,7 +137,7 @@ TreeNode * while_stmt(void)
 	match(WHILE);
 	if (t != NULL) t->child[0] = exp();
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();/*Èç¹ûÔÚ{}ÀïÃæ¾ÍÊÇÐòÁÐ£¬·ñÔò¾ÍÖ»ÓÐÒ»¸öÓï¾ä*/
+	t->child[1] = in_block ? stmt_sequence() : statement();/*Â»ÃÏ€Ëšâ€˜â„{}Â¿Ã”âˆšÃŠÃ¦Ã•Â Â«â€“ÃšÂ¡â€“Â£Â¨âˆ‘Ã’â€˜ÃšÃ¦Ã•Ã·Âªâ€â€“â€œÂªâˆË†â€Ã”Ã¦â€°*/
 	match_possible_rbracket(in_block);
 	return t;
 }
@@ -170,10 +171,10 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
-/*¶Ô±äÁ¿½øÐÐÉùÃ÷*/
+/*âˆ‚â€˜Â±â€°Â¡Ã¸Î©Â¯â€“â€“â€¦Ë˜âˆšËœ*/
 TreeNode* declare_stmt(TokenType token)
 {
-	/*tokenÒ»¶¨ÊÇInt£¬String£¬FloatÀïÃæµÄÒ»ÖÖ*/
+	/*tokenâ€œÂªâˆ‚Â®Â Â«IntÂ£Â¨StringÂ£Â¨FloatÂ¿Ã”âˆšÃŠÂµÆ’â€œÂªÃ·Ã·*/
 
 
 	/*switch case token type */
@@ -204,7 +205,7 @@ TreeNode * exp(void)
 	return t;
 }
 
-/*ÕâÀï²ÉÈ¡ÁËENBFµÄÑ­»·±íÊ¾·¨À´±íÊ¾ + - ×é³ÉµÄ±í´ïÊ½*/
+/*â€™â€šÂ¿Ã”â‰¤â€¦Â»Â°Â¡Ã€ENBFÂµÆ’â€”â‰ Âªâˆ‘Â±ÃŒÂ Ã¦âˆ‘Â®Â¿Â¥Â±ÃŒÂ Ã¦ + - â—ŠÃˆâ‰¥â€¦ÂµÆ’Â±ÃŒÂ¥Ã”Â Î©*/
 TreeNode * simple_exp(void)
 {
 	TreeNode * t = term();
@@ -216,7 +217,7 @@ TreeNode * simple_exp(void)
 			p->attr.op = token;
 			t = p;
 			match(token);
-			t->child[1] = term();//»ñÈ¡µÚ¶þ¸öterm±í´ïÊ½
+			t->child[1] = term();//ÂªÃ’Â»Â°Âµâ„âˆ‚Ë›âˆË†termÂ±ÃŒÂ¥Ã”Â Î©
 		}
 	}
 	return t;
@@ -254,7 +255,7 @@ TreeNode * factor(void)
 		if ((t != NULL) && (token == ID)){
 			t->attr.name = copyString(tokenString);
 			/*
-			  ÐèÒª¼ì²éÀàÐÍ¶Ô²»¶Ô
+			  â€“Ã‹â€œâ„¢ÂºÃâ‰¤ÃˆÂ¿â€¡â€“Ã•âˆ‚â€˜â‰¤Âªâˆ‚â€˜
 			    id_record = get_id_record(t->attr.name)
 				if ( id_record->token_type != Int && id_record->token_type != Float){
 					syntaxerror("unexpected variable type :");
