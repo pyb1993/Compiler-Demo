@@ -65,13 +65,13 @@ typedef struct treeNode
 	NodeKind nodekind;
 	union { StmtKind stmt; ExpKind exp; } kind;
 	union {
-		TokenType op;//操作的类型 < > == + - * / 
-		char * name;// 如果是普通的ID,就应该有一个名字
-		union {
+		TokenType op;//eg < > == + - * /
+		char * name;// the id name
+        union {
 			int num;
 			float flt;
 			char *str;
-		} val;//如果是constk的类型,就应该具有字符串或者整数,浮点数三种类型
+		} val;// constk should contain one of three values
 	} attr;
 	ExpType type; /* for type checking of exps */
 } TreeNode;

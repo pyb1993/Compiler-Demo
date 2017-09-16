@@ -55,19 +55,17 @@ void match_possible_rbracket(bool in_block)
 {
 	if (in_block){
 		if (token == RBRACKET) match(RBRACKET);
-		else syntaxError("»±…Ÿ ”“¥Û¿®∫≈ : }");
+		else syntaxError("rbracket missing");
 	}
 }
 
-/*跨平台太蛋疼*/
+/*fucking multi platform!!!*/
 
 TreeNode * stmt_sequence(void)
 {
 	TreeNode * t = statement();
 	TreeNode * p = t;
-	/*
-		√ø“ª∏ˆ”Ôæ‰Ω⁄µ„∂º”–“ª∏ˆSIBLINGΩ·µ„,÷∏œÚœ¬“ªÃı“™÷¥––µƒ”Ôæ‰
-	*/
+
 	while ((token != ENDFILE) && (token != END) &&
 		   (token != RBRACKET))
 	{
@@ -137,8 +135,8 @@ TreeNode * while_stmt(void)
 	match(WHILE);
 	if (t != NULL) t->child[0] = exp();
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();/*»Áπ˚‘⁄{}¿Ô√ÊæÕ «–Ú¡–£¨∑Ò‘ÚæÕ÷ª”–“ª∏ˆ”Ôæ‰*/
-	match_possible_rbracket(in_block);
+	t->child[1] = in_block ? stmt_sequence() : statement();
+    match_possible_rbracket(in_block);
 	return t;
 }
 
@@ -205,7 +203,6 @@ TreeNode * exp(void)
 	return t;
 }
 
-/*’‚¿Ô≤…»°¡ÀENBFµƒ—≠ª∑±Ì æ∑®¿¥±Ì æ + - ◊È≥…µƒ±Ì¥Ô Ω*/
 TreeNode * simple_exp(void)
 {
 	TreeNode * t = term();
@@ -254,13 +251,7 @@ TreeNode * factor(void)
 		t = newExpNode(IdK);
 		if ((t != NULL) && (token == ID)){
 			t->attr.name = copyString(tokenString);
-			/*
-			  –Ë“™ºÏ≤È¿‡–Õ∂‘≤ª∂‘
-			    id_record = get_id_record(t->attr.name)
-				if ( id_record->token_type != Int && id_record->token_type != Float){
-					syntaxerror("unexpected variable type :");
-				}
-			*/
+			
 		}
 		match(ID);
 		break;
