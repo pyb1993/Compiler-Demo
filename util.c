@@ -27,9 +27,12 @@ void printToken(TokenType token, const char* tokenString)
 		fprintf(listing,
 			"reserved word: %s\n", tokenString);
 		break;
-	case ASSIGN: fprintf(listing, ":=\n"); break;
+	case ASSIGN: fprintf(listing, "=\n"); break;
 	case LT: fprintf(listing, "<\n"); break;
-	case EQ: fprintf(listing, "=\n"); break;
+	case LE: fprintf(listing, "<=\n"); break;
+	case GT: fprintf(listing, ">\n"); break;
+	case GE: fprintf(listing, ">=\n"); break;
+	case EQ: fprintf(listing, "==\n"); break;
 	case LPAREN: fprintf(listing, "(\n"); break;
 	case RPAREN: fprintf(listing, ")\n"); break;
 	case SEMI: fprintf(listing, ";\n"); break;
@@ -37,6 +40,11 @@ void printToken(TokenType token, const char* tokenString)
 	case MINUS: fprintf(listing, "-\n"); break;
 	case TIMES: fprintf(listing, "*\n"); break;
 	case OVER: fprintf(listing, "/\n"); break;
+	case LBRACKET:fprintf(listing, "{"); break;
+	case RBRACKET:fprintf(listing, "}"); break;
+	case INT:fprintf(listing, "int "); break;
+	case FLOAT:fprintf(listing, "float "); break;
+	case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
 	case ENDFILE: fprintf(listing, "EOF\n"); break;
 	case NUM:
 		fprintf(listing,

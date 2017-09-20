@@ -5,14 +5,12 @@
 /* states in scanner DFA */
 typedef enum
 {
-	START, INASSIGN, INCOMMENT, INNUM, INID, OVER_OR_COMMENT, 
-	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,
+	START, INASSIGN, INCOMMENT, INMULCOMMENT,INNUM, INID, OVER_OR_COMMENT,
+	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,IN_STR,
 	DONE
 }
 StateType;
 
-/* lexeme of identifier or reserved word */
-char tokenString[MAXTOKENLEN + 1];
 
 /* BUFLEN = length of the input buffer for
 source code lines */
@@ -28,7 +26,7 @@ from lineBuf, reading in a new line if lineBuf is
 exhausted */
 static int getNextChar(void)
 {
-	if (!(linepos < bufsize))
+	if ( bufsize <= linepos)
 	{
 		lineno++;
 		if (fgets(lineBuf, BUFLEN - 1, source))
@@ -68,7 +66,7 @@ static struct
 } reservedWords[MAXRESERVED]
 = { { "if", IF }, { "then", THEN }, { "else", ELSE }, { "end", END },
 { "repeat", WHILE }, { "until", UNTIL }, { "read", READ },
-{ "write", WRITE } };
+{ "write", WRITE }, { "int", INT }, {"def",FUN} };
 
 /* lookup an identifier to see if it is a reserved word */
 /* uses linear search */
@@ -76,7 +74,7 @@ static TokenType reservedLookup(char * s)
 {
 	int i;
 	for (i = 0; i<MAXRESERVED; i++)
-	if (!strcmp(s, reservedWords[i].str))
+	if (reservedWords[i].str!=NULL && !strcmp(s, reservedWords[i].str))
 		return reservedWords[i].tok;
 	return ID;
 }
@@ -127,6 +125,9 @@ TokenType getToken(void)
 			{
 				state = GT_OR_GE;
 			}
+			else if (c == '"'){
+				state = IN_STR;
+			}
 			//consider specific case
 			else
 			{
@@ -148,6 +149,7 @@ TokenType getToken(void)
 					break;
 				case ')':
 					currentToken = RPAREN;
+					break;
 				case '{':
 					currentToken = LBRACKET;
 					break;
@@ -157,7 +159,9 @@ TokenType getToken(void)
 				case ';':
 					currentToken = SEMI;
 					break;
-
+				case ',':
+					currentToken = COMMA;
+					break;
 				default:
 					currentToken = ERROR;
 					break;
@@ -176,8 +180,9 @@ TokenType getToken(void)
 			// == or =
 		case INASSIGN_OR_EQ:
 			state = DONE;
-			if (c == '=')
+			if (c == '='){
 				currentToken = EQ;
+			}
 			else
 			{ /* backup in the input */
 				ungetNextChar();
@@ -220,21 +225,42 @@ TokenType getToken(void)
 				ungetTokenstring(&tokenStringIndex);
 				save = FALSE;
 			}
+			else if (c == '*'){
+				state = INMULCOMMENT;
+				ungetTokenstring(&tokenStringIndex);
+				save = FALSE;
+			}
 			else {//over
 				state = DONE;
 				ungetNextChar();
 				currentToken = OVER;
 			}
 			break;
+		case INMULCOMMENT:
+			save = FALSE;
+			if (c == EOF)
+			{
+				state = DONE;
+				currentToken = ENDFILE;
+			}
+			if (c == '*' ){
+				if (getNextChar() == '/'){
+					state = START;
+				}
+				else
+					ungetNextChar();
+			}
+		break;
 		case LT_OR_LE:
-			if (c == '=')
+			if (c == '='){
 				currentToken = LE;
+			}
 			else{
 				save = FALSE;
-				state = DONE;
 				ungetNextChar();
 				currentToken = LT;
 			}
+			state = DONE;
 			break;
 		case GT_OR_GE:
 			if (c == '=')
@@ -242,8 +268,19 @@ TokenType getToken(void)
 			else
 			{
 				save = FALSE;
-				state = DONE;
 				ungetNextChar();
+				currentToken = GT;
+			}
+			state = DONE;
+			break;
+		case IN_STR:
+			if (c == EOF){
+				state = DONE;
+				currentToken = ENDFILE;
+			}
+			else if (c == '"'){
+				state = DONE;
+				currentToken = STRING;
 			}
 			break;
 		case DONE:

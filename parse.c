@@ -93,9 +93,8 @@ TreeNode * statement(void)
 	case ID: t = assign_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
-	case Int:  //‘› ±√ª”– µœ÷
-	case Float:
-	case String:
+	case INT:  //‘› ±√ª”– µœ÷
+	case FLOAT:
 		break;
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
@@ -113,15 +112,14 @@ TreeNode * if_stmt(void)
 	match(IF);
 	if (t != NULL) t->child[0] = exp();
 	
-	/*œ¬√Êµƒ”Ôæ‰ «“ª∏ˆ{–Ú¡–}*/
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();/*»Áπ˚‘⁄{}¿Ô√ÊæÕ «–Ú¡–£¨∑Ò‘ÚæÕ÷ª”–“ª∏ˆ”Ôæ‰*/
+	t->child[1] = in_block ? stmt_sequence() : statement();
 	match_possible_rbracket(in_block);
 
 	if (token == ELSE) {
 		match(ELSE);
 		bool in_block = match_possible_lbracket();
-		t->child[2] = in_block ? stmt_sequence() : statement();/*»Áπ˚‘⁄{}¿Ô√ÊæÕ «–Ú¡–£¨∑Ò‘ÚæÕ÷ª”–“ª∏ˆ”Ôæ‰*/
+		t->child[2] = in_block ? stmt_sequence() : statement();
 		match_possible_rbracket(in_block);
 	}
 	return t;
@@ -169,10 +167,8 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
-/*∂‘±‰¡øΩ¯––…˘√˜*/
 TreeNode* declare_stmt(TokenType token)
 {
-	/*token“ª∂® «Int£¨String£¨Float¿Ô√Êµƒ“ª÷÷*/
 
 
 	/*switch case token type */

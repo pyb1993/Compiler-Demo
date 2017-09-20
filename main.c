@@ -8,7 +8,7 @@ FILE * listing;
 FILE * code;
 
 /* allocate and set tracing flags */
-int EchoSource = FALSE;
+int EchoSource = TRUE;
 int TraceScan = TRUE;
 int TraceParse = FALSE;
 int TraceAnalyze = FALSE;
@@ -19,16 +19,19 @@ int Error = FALSE;
 int main(){
 
 	printf("hello world\n");
-	char *filename ="pyb_example.p";
-	source = fopen(filename,"r");
+	char *filename = "pyb_example.p";
+	source = fopen(filename, "r");
 	listing = stdout;
 
 	if (source == NULL){
 		printf("open error\n");
 		exit(1);
 	}
+
 	TokenType token = getToken();
-
-
+	while (token != ENDFILE)
+	{
+	  token = getToken();
+	} 
 	return 0;
 }
