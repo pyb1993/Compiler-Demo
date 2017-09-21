@@ -1,11 +1,9 @@
-
-/*123456*
 while(t <=  1 )
-{***/
-
+{
+	if t>0
+	 t = t + 2
 	else
-		read k;
+		read k
 }
 
-"f"
-read t;%
+read t

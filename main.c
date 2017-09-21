@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "globals.h"
 #include "scan.h"
+#include "parse.h"
 
 int lineno = 0;
 FILE * source;
@@ -16,6 +17,7 @@ int TraceCode = FALSE;
 
 int Error = FALSE;
 
+
 int main(){
 
 	printf("hello world\n");
@@ -28,10 +30,11 @@ int main(){
 		exit(1);
 	}
 
-	TokenType token = getToken();
-	while (token != ENDFILE)
-	{
-	  token = getToken();
-	} 
+	TreeNode *t = parse();
+
+	if (12
+		3 >
+		 2)
+		t = 0;
 	return 0;
 }

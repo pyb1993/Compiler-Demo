@@ -40,10 +40,10 @@ void printToken(TokenType token, const char* tokenString)
         case MINUS: fprintf(listing, "-\n"); break;
         case TIMES: fprintf(listing, "*\n"); break;
         case OVER: fprintf(listing, "/\n"); break;
-        case LBRACKET:fprintf(listing, "{"); break;
-        case RBRACKET:fprintf(listing, "}"); break;
-        case INT:fprintf(listing, "int "); break;
-        case FLOAT:fprintf(listing, "float "); break;
+        case LBRACKET:fprintf(listing, "{\n"); break;
+        case RBRACKET:fprintf(listing, "\n}"); break;
+        case INT:fprintf(listing, "innt\n "); break;
+        case FLOAT:fprintf(listing, "float\n "); break;
         case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
         case ENDFILE: fprintf(listing, "EOF\n"); break;
         case NUM:
@@ -106,7 +106,8 @@ TreeNode * newExpNode(ExpKind kind)
  * copy of an existing string
  */
 
-void my_strcpy(char * s,int len,char * t){
+void my_strcpy(char * s,int len,char * t)
+{
     int i = 0;
     while(i++ < len){
         *s++ = *t++;
@@ -150,11 +151,13 @@ void printTree(TreeNode * tree)
 {
     int i;
     INDENT;
-    while (tree != NULL) {
+    while (tree != NULL)
+	{
         printSpaces();
         if (tree->nodekind == StmtK)
         {
-            switch (tree->kind.stmt) {
+            switch (tree->kind.stmt) 
+			{
                 case IfK:
                     fprintf(listing, "If\n");
                     break;

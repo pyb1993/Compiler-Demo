@@ -34,10 +34,14 @@ static void syntaxError(char * message)
 
 static void match(TokenType expected)
 {
-	if (token == expected) token = getToken();
+	if (token == expected) {
+		token = getToken();
+	}
 	else {
 		syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
+		syntaxError("the required toke should be");
+		printToken(expected,"");
 		fprintf(listing, "      ");
 	}
 }
@@ -60,14 +64,15 @@ void match_possible_rbracket(bool in_block)
 }
 
 /*fucking multi platform!!!*/
-
+//there need to reconstruct , for check if ,while ,else statement in the global statement!
+// if token beyond int/float,error need to be throw
 TreeNode * stmt_sequence(void)
 {
 	TreeNode * t = statement();
 	TreeNode * p = t;
 
 	while ((token != ENDFILE) && (token != END) &&
-		   (token != RBRACKET))
+		   (token != RBRACKET) && (token != ELSE))
 	{
 		TreeNode * q;
 		q = statement();
@@ -83,6 +88,8 @@ TreeNode * stmt_sequence(void)
 	return t;
 }
 
+
+
 TreeNode * statement(void)
 {
 	TreeNode * t = NULL;
@@ -93,7 +100,7 @@ TreeNode * statement(void)
 	case ID: t = assign_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
-	case INT:  //‘› ±√ª”– µœ÷
+	case INT:  
 	case FLOAT:
 		break;
 	default: syntaxError("unexpected token -> ");
@@ -101,13 +108,15 @@ TreeNode * statement(void)
 		token = getToken();
 		break;
   } /* end case */
-	match(SEMI);
 	return t;
 }
 
 
+
+
 TreeNode * if_stmt(void)
 {
+	
 	TreeNode * t = newStmtNode(IfK);
 	match(IF);
 	if (t != NULL) t->child[0] = exp();
@@ -185,7 +194,7 @@ TreeNode* declare_stmt(TokenType token)
 TreeNode * exp(void)
 {
 	TreeNode * t = simple_exp();
-	if ((token == LT) || (token == EQ) || (token == GT)) {
+	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE)) {
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) {
 			p->child[0] = t;
@@ -210,7 +219,7 @@ TreeNode * simple_exp(void)
 			p->attr.op = token;
 			t = p;
 			match(token);
-			t->child[1] = term();//ªÒ»°µ⁄∂˛∏ˆterm±Ì¥Ô Ω
+			t->child[1] = term();//
 		}
 	}
 	return t;
@@ -246,8 +255,7 @@ TreeNode * factor(void)
 	case ID:
 		t = newExpNode(IdK);
 		if ((t != NULL) && (token == ID)){
-			t->attr.name = copyString(tokenString);
-			
+			t->attr.name = copyString(tokenString);			
 		}
 		match(ID);
 		break;
