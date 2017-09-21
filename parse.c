@@ -20,6 +20,8 @@ static TreeNode * while_stmt(void);
 static TreeNode * assign_stmt(void);
 static TreeNode * read_stmt(void);
 static TreeNode * write_stmt(void);
+static TreeNode * declare_stmt(void);
+static TreeNode * break_stmt(void);
 static TreeNode * exp(void);
 static TreeNode * simple_exp(void);
 static TreeNode * term(void);
@@ -97,10 +99,11 @@ TreeNode * statement(void)
   {
 	case IF: t = if_stmt(); break;
 	case WHILE: t = while_stmt(); break;
+    case BREAK: t = break_stmt();break;
 	case ID: t = assign_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
-	case INT:  
+	case INT:  t = declare_stmt();
 	case FLOAT:
 		break;
 	default: syntaxError("unexpected token -> ");
@@ -147,6 +150,15 @@ TreeNode * while_stmt(void)
 	return t;
 }
 
+
+TreeNode * break_stmt(void)
+{
+    TreeNode * t = newStmtNode(BreakK);
+    match(BREAK);
+    return t;
+}
+
+
 TreeNode * assign_stmt(void)
 {
 	TreeNode * t = newStmtNode(AssignK);
@@ -176,18 +188,21 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
-TreeNode* declare_stmt(TokenType token)
+TreeNode* declare_stmt(void)
 {
 
-
 	/*switch case token type */
-	TreeNode* t = newStmtNode(DeclareK);
-	match(token);
-	/*
-	construct the node
-	current_id.vartype = token;
-	current_id.name = copyString(tokenString);	
-	*/
+    TreeNode* t = newStmtNode(DeclareK);
+    switch(token)
+    {
+      // define a variable; eg: int value;
+      case INT:
+            t->type.vtype = Integer;
+            match(INT);
+            t->attr.name = copyString(tokenString);
+            match(ID);
+            break;
+    }
 	return t;
 }
 
@@ -205,6 +220,7 @@ TreeNode * exp(void)
 		if (t != NULL)
 			t->child[1] = simple_exp();
 	}
+
 	return t;
 }
 
@@ -249,9 +265,14 @@ TreeNode * factor(void)
 	case NUM:
 		t = newExpNode(ConstK);
 		if ((t != NULL) && (token == NUM))
-			t->attr.val.num = atoi(tokenString);
+			t->attr.val.integer = atoi(tokenString);
+            t->type.etype = RInteger;
 		match(NUM);
 		break;
+    case FlOATNUM:
+            t = newExpNode(ConstK);
+            syntaxError("to do: float token");
+            break;
 	case ID:
 		t = newExpNode(IdK);
 		if ((t != NULL) && (token == ID)){

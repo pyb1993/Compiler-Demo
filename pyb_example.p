@@ -1,9 +1,11 @@
 while(t <=  1 )
 {
-	if t>0
+int t
+if t>0{
 	 t = t + 2
-	else
+    }else
 		read k
+    break
 }
 
 read t

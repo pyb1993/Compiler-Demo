@@ -14,17 +14,6 @@
 */
 TreeNode * parse(void);
 /* function prototypes for recursive calls */
-static TreeNode * stmt_sequence(void);
-static TreeNode * statement(void);
-static TreeNode * if_stmt(void);
-static TreeNode * while_stmt(void);
-static TreeNode * assign_stmt(void);
-static TreeNode * read_stmt(void);
-static TreeNode * write_stmt(void);
-static TreeNode * exp(void);
-static TreeNode * simple_exp(void);
-static TreeNode * term(void);
-static TreeNode * factor(void);
 bool match_possible_lbracket();
 
 

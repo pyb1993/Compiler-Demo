@@ -31,9 +31,9 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, THEN, ELSE, END, WHILE, UNTIL, READ, WRITE,
+	IF, THEN, ELSE, END, WHILE,BREAK,UNTIL, READ, WRITE,
 	/* multicharacter tokens */
-	ID, NUM,
+	ID, NUM, FlOATNUM,
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
 	LBRACKET, RBRACKET, LE, GE,STRING,
@@ -51,10 +51,12 @@ extern int lineno; /* source line number for listing */
 /**************************************************/
 
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK } StmtKind;
+typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,BreakK } StmtKind;
 typedef enum { OpK, ConstK, IdK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { Void, Number, Boolean } ExpType;//表达式的类型 
+typedef enum { Void, RInteger, RBoolean,RFloat} ExpType;//experssion type
+typedef enum { Integer } Vartype;//variable type
+
 #define MAXCHILDREN 3
 
 typedef struct treeNode
@@ -68,12 +70,16 @@ typedef struct treeNode
 		TokenType op;//eg < > == + - * /
 		char * name;// the id name
         union {
-			int num;
+			int integer;
 			float flt;
 			char *str;
 		} val;// constk should contain one of three values
 	} attr;
-	ExpType type; /* for type checking of exps */
+    union{
+        ExpType etype;//ExpType type; /* for type checking of exps */
+        Vartype vtype;//variable type; for allocate memory and type checking
+    }type;
+	
 } TreeNode;
 
 /**************************************************/

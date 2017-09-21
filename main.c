@@ -2,6 +2,7 @@
 #include "globals.h"
 #include "scan.h"
 #include "parse.h"
+#include "util.h"
 
 int lineno = 0;
 FILE * source;
@@ -9,9 +10,9 @@ FILE * listing;
 FILE * code;
 
 /* allocate and set tracing flags */
-int EchoSource = TRUE;
-int TraceScan = TRUE;
-int TraceParse = FALSE;
+int EchoSource = FALSE;
+int TraceScan = FALSE;
+int TraceParse = TRUE;
 int TraceAnalyze = FALSE;
 int TraceCode = FALSE;
 
@@ -31,10 +32,7 @@ int main(){
 	}
 
 	TreeNode *t = parse();
-
-	if (12
-		3 >
-		 2)
-		t = 0;
+    printTree(t);
+    
 	return 0;
 }

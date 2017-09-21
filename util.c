@@ -42,7 +42,7 @@ void printToken(TokenType token, const char* tokenString)
         case OVER: fprintf(listing, "/\n"); break;
         case LBRACKET:fprintf(listing, "{\n"); break;
         case RBRACKET:fprintf(listing, "\n}"); break;
-        case INT:fprintf(listing, "innt\n "); break;
+        case INT:fprintf(listing, "int\n "); break;
         case FLOAT:fprintf(listing, "float\n "); break;
         case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
         case ENDFILE: fprintf(listing, "EOF\n"); break;
@@ -97,7 +97,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->nodekind = ExpK;
         t->kind.exp = kind;
         t->lineno = lineno;
-        t->type = Void;
+        t->type.etype = Void;
     }
     return t;
 }
@@ -162,7 +162,7 @@ void printTree(TreeNode * tree)
                     fprintf(listing, "If\n");
                     break;
                 case RepeatK:
-                    fprintf(listing, "Repeat\n");
+                    fprintf(listing, "While\n");
                     break;
                 case AssignK:
                     fprintf(listing, "Assign to: %s\n", tree->attr.name);
@@ -173,8 +173,15 @@ void printTree(TreeNode * tree)
                 case WriteK:
                     fprintf(listing, "Write\n");
                     break;
+                case DeclareK:
+                    fprintf(listing, "Declare variable (%s)\n",tree->attr.name);
+                    break;
+                case BreakK:
+                    fprintf(listing, "Break \n");
+                    break;
+    
                 default:
-                    fprintf(listing, "Unknown ExpNode kind\n");
+                    fprintf(listing, "Unknown StmtNode kind %d\n",tree->nodekind);
                     break;
             }
         }
@@ -186,17 +193,27 @@ void printTree(TreeNode * tree)
                     printToken(tree->attr.op, "\0");
                     break;
                 case ConstK:
-                    fprintf(listing, "Const: %d\n", tree->attr.val);
+                    switch (tree->type.etype) {
+                        case RInteger:
+                            fprintf(listing, "Const: %d\n", tree->attr.val.integer);
+                            break;
+                        case RFloat:
+                            fprintf(listing, "Const: %f\n", tree->attr.val.flt);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 case IdK:
                     fprintf(listing, "Id: %s\n", tree->attr.name);
                     break;
                 default:
-                    fprintf(listing, "Unknown ExpNode kind\n");
+                    fprintf(listing, "Unknown ExpNode kind %d\n",tree->nodekind);
                     break;
             }
         }
-        else fprintf(listing, "Unknown node kind\n");
+        else fprintf(listing, "Unknown node kind: %d\n",tree->nodekind);
+        
         for (i = 0; i<MAXCHILDREN; i++)
             printTree(tree->child[i]);
         tree = tree->sibling;
