@@ -97,7 +97,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->nodekind = ExpK;
         t->kind.exp = kind;
         t->lineno = lineno;
-        t->type.etype = Void;
+        t->type = Void;
     }
     return t;
 }
@@ -193,7 +193,7 @@ void printTree(TreeNode * tree)
                     printToken(tree->attr.op, "\0");
                     break;
                 case ConstK:
-                    switch (tree->type.etype) {
+                    switch (tree->type) {
                         case RInteger:
                             fprintf(listing, "Const: %d\n", tree->attr.val.integer);
                             break;
