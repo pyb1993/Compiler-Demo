@@ -31,7 +31,7 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, THEN, ELSE, END, WHILE,BREAK,UNTIL, READ, WRITE,
+	IF, THEN, ELSE,ELSIF, END, WHILE,BREAK,UNTIL, READ, WRITE,
 	/* multicharacter tokens */
 	ID, NUM, FlOATNUM,
 	/* special symbols */
@@ -54,8 +54,7 @@ typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,BreakK } StmtKind;
 typedef enum { OpK, ConstK, IdK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { Void, RInteger, RBoolean,RFloat} ExpType;//experssion type
-typedef enum { Integer } Vartype;//variable type
+typedef enum { Void, RInteger, RBoolean,RFloat,LInteger} Type;// type, the expression has the rvalue, and the variable has the lvalue
 
 #define MAXCHILDREN 3
 
@@ -75,11 +74,7 @@ typedef struct treeNode
 			char *str;
 		} val;// constk should contain one of three values
 	} attr;
-    union{
-        ExpType etype;//ExpType type; /* for type checking of exps */
-        Vartype vtype;//variable type; for allocate memory and type checking
-    }type;
-	
+    Type type;
 } TreeNode;
 
 /**************************************************/

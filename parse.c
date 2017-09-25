@@ -134,6 +134,13 @@ TreeNode * if_stmt(void)
 		t->child[2] = in_block ? stmt_sequence() : statement();
 		match_possible_rbracket(in_block);
 	}
+    else if(token == ELSIF){
+        match(ELSIF);
+        
+    
+    
+    
+    }
 	return t;
 }
 
@@ -197,7 +204,7 @@ TreeNode* declare_stmt(void)
     {
       // define a variable; eg: int value;
       case INT:
-            t->type.vtype = Integer;
+            t->type = LInteger;
             match(INT);
             t->attr.name = copyString(tokenString);
             match(ID);
@@ -266,7 +273,7 @@ TreeNode * factor(void)
 		t = newExpNode(ConstK);
 		if ((t != NULL) && (token == NUM))
 			t->attr.val.integer = atoi(tokenString);
-            t->type.etype = RInteger;
+            t->type = RInteger;
 		match(NUM);
 		break;
     case FlOATNUM:
