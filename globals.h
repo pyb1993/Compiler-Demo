@@ -35,8 +35,8 @@ typedef enum
 	/* multicharacter tokens */
 	ID, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
-	LBRACKET, RBRACKET, LE, GE,STRING,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
+	LBRACKET, RBRACKET,STRING,
 	/*variable type*/
 	INT,FLOAT,FUN
 } TokenType;

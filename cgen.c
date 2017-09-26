@@ -100,16 +100,19 @@ static void genStmt( TreeNode * tree)
 
 /* Procedure genExp generates code at an expression node */
 static void genExp( TreeNode * tree)
-{ int loc;
+{
+	int loc;
     TreeNode * p1, * p2;
-    switch (tree->kind.exp) {
+    switch (tree->kind.exp) 
+	{
             
         case ConstK :
             if (TraceCode) emitComment("-> Const") ;
             /* gen code to load integer constant using LDC */
-            switch (tree->type) {
+            switch (tree->type) 
+			{
                 case RInteger:
-                    emitRM("LDC",ac,tree->attr.val.integer,0,"load const");
+                    emitRM("LDC",ac,tree->attr.val.integer,0,"load const");// reg[ac] = tree->ttr.val.integer
                     break;
                 default:
                     emitComment("BUG in ConstK,unknwon expression type");
@@ -121,10 +124,9 @@ static void genExp( TreeNode * tree)
         case IdK :
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-            emitRM("LD",ac,loc,gp,"load id value");
+            emitRM("LD",ac,loc,gp,"load id value");// reg[ac] = Mem[reg[gp] + loc]
             if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
-            
         case OpK :
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
@@ -136,10 +138,11 @@ static void genExp( TreeNode * tree)
             /* gen code for ac = right operand */
             cGen(p2);
             /* now load left operand */
-            emitRM("LD",ac1,++tmpOffset,mp,"op: load left");
-            switch (tree->attr.op) {
+			emitRM("LD", ac1, ++tmpOffset, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+            switch (tree->attr.op) 
+			{
                 case PLUS :
-                    emitRO("ADD",ac,ac1,ac,"op +");
+                    emitRO("ADD",ac,ac1,ac,"op +");// ac = ac1 op ac
                     break;
                 case MINUS :
                     emitRO("SUB",ac,ac1,ac,"op -");
@@ -151,12 +154,28 @@ static void genExp( TreeNode * tree)
                     emitRO("DIV",ac,ac1,ac,"op /");
                     break;
                 case LT :
-                    emitRO("SUB",ac,ac1,ac,"op <") ;
-                    emitRM("JLT",ac,2,pc,"br if true") ;
-                    emitRM("LDC",ac,0,ac,"false case") ;
-                    emitRM("LDA",pc,1,pc,"unconditional jmp") ;
-                    emitRM("LDC",ac,1,ac,"true case") ;
-                    break;
+				case GT :
+				case LE:
+				case GE:
+					TokenType op = tree->attr.op;
+					char op_code[4] = "JLT";
+
+					if (op == LT || op == LE){
+						emitRO("SUB", ac, ac1, ac, "op <");
+						op_code[2] = (op == LT ? 'T' : 'E');
+					}
+					else{
+						emitRO("SUB", ac, ac, ac1, "op <");
+						op_code[1] = 'G';
+						op_code[2] = (op == GT ? 'T' : 'E');
+					}
+
+					/* now the op_code is JLE,JLT,GLE,GLT*/
+					emitRM(op_code, ac, 2, pc, "br if true");
+					emitRM("LDC", ac, 0, ac, "false case");
+					emitRM("LDA", pc, 1, pc, "unconditional jmp");
+					emitRM("LDC", ac, 1, ac, "true case");
+					break;
                 case EQ :
                     emitRO("SUB",ac,ac1,ac,"op ==") ;
                     emitRM("JEQ",ac,2,pc,"br if true");

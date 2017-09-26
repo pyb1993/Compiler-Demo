@@ -25,12 +25,4 @@ to do list
 9  auto x = 10; auto inference
 10 import other file
 
-
-
-
-
-
-
-
-
 */
