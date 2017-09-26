@@ -128,18 +128,16 @@ TreeNode * if_stmt(void)
 	t->child[1] = in_block ? stmt_sequence() : statement();
 	match_possible_rbracket(in_block);
 
-	if (token == ELSE) {
+	if (token == ELSE)
+    {
 		match(ELSE);
 		bool in_block = match_possible_lbracket();
 		t->child[2] = in_block ? stmt_sequence() : statement();
 		match_possible_rbracket(in_block);
 	}
-    else if(token == ELSIF){
+    else if(token == ELSIF)
+    {
         match(ELSIF);
-        
-    
-    
-    
     }
 	return t;
 }

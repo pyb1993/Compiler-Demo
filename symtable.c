@@ -3,14 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "symtable.h"
-
+#include "tinytype.h"
 /* SIZE is the size of the hash table */
 #define SIZE 211
 
 /* SHIFT is the power of two used as multiplier
  in hash function  */
 #define SHIFT 4
-
 
 
 /* the hash function */
@@ -43,6 +42,7 @@ typedef struct BucketListRec
     LineList lines;
     int memloc ; /* memory location for variable */
     int mem_size;/* memory size for this variable */
+    struct VarType var_type;
     struct BucketListRec * next;
 } * BucketList;
 
@@ -87,13 +87,33 @@ void st_insert( char * name, int lineno, int loc,int size)
  * location of a variable or -1 if not found
  */
 int st_lookup ( char * name )
-{ int h = hash(name);
+{   int h = hash(name);
     BucketList l =  hashTable[h];
     while ((l != NULL) && (strcmp(name,l->name) != 0))
         l = l->next;
     if (l == NULL) return -1;
     else return l->memloc;
 }
+
+
+Type st_lookup_type(char * name)
+{
+    int h = hash(name);
+    BucketList l =  hashTable[h];
+    while ((l != NULL) && (strcmp(name,l->name) != 0))
+        l = l->next;
+    if (l == NULL)
+        return ErrorType;
+    
+    if (l->var_type.typekind == BTYPE){
+        return l->var_type.typeinfo.btype;
+    }
+    else{
+        return ErrorType;
+    
+    }
+}
+
 
 /* Procedure printSymTab prints a formatted
  * listing of the symbol table contents
