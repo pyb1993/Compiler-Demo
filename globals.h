@@ -25,6 +25,7 @@
 
 /* MAXRESERVED = the number of reserved words */
 #define MAXRESERVED 20
+#define MEMUNITSIXE 4       //define the memory unit's size 4 bytes
 
 typedef enum
 /* book-keeping tokens */
@@ -54,7 +55,7 @@ typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,BreakK } StmtKind;
 typedef enum { OpK, ConstK, IdK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { Void, RInteger, RBoolean,RFloat,LInteger} Type;// type, the expression has the rvalue, and the variable has the lvalue
+typedef enum {ErrorType,Void,LBoolean,LInteger,LFloat,LStruct,LRBOUND,RBoolean,RInteger,RFloat,RStruct,Func} Type;// type, the expression has the rvalue, and the variable has the lvalue
 
 #define MAXCHILDREN 3
 

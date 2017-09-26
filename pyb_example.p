@@ -11,6 +11,7 @@ if t>0{
 read t
 /*
 to do list
+1.1 check the assign,read,write
 1. implement a simple macre: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token
 	which is the preporcessor !
@@ -24,5 +25,4 @@ to do list
 8  define variable
 9  auto x = 10; auto inference
 10 import other file
-
 */

@@ -8,9 +8,10 @@
 
 #ifndef _SYMTAB_H_
 #define _SYMTAB_H_
-
+#include "globals.h"
 /* st_insert insert token name, lineno and memory location */
 void st_insert( char * name, int lineno, int loc,int size );
+Type st_lookup_type(char * name);
 
 /* 
    Function st_lookup returns the memory
