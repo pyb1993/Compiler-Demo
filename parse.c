@@ -205,6 +205,7 @@ TreeNode* declare_stmt(void)
             t->type = LInteger;
             match(INT);
             t->attr.name = copyString(tokenString);
+
             match(ID);
             break;
     }

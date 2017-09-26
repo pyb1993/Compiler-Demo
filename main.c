@@ -2,6 +2,7 @@
 #include "globals.h"
 #include "scan.h"
 #include "parse.h"
+#include "analyze.h"
 #include "util.h"
 
 int lineno = 0;
@@ -13,11 +14,9 @@ FILE * code;
 int EchoSource = FALSE;
 int TraceScan = FALSE;
 int TraceParse = TRUE;
-int TraceAnalyze = FALSE;
+int TraceAnalyze = TRUE;
 int TraceCode = FALSE;
-
 int Error = FALSE;
-
 
 int main(){
 
@@ -32,7 +31,7 @@ int main(){
 	}
 
 	TreeNode *t = parse();
-    printTree(t);
+	buildSymtab(t);
     
 	return 0;
 }

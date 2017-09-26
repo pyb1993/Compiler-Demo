@@ -102,6 +102,7 @@ static void genStmt( TreeNode * tree)
 static void genExp( TreeNode * tree)
 {
 	int loc;
+	TokenType op;
     TreeNode * p1, * p2;
     switch (tree->kind.exp) 
 	{
@@ -155,9 +156,9 @@ static void genExp( TreeNode * tree)
                     break;
                 case LT :
 				case GT :
-				case LE:
-				case GE:
-					TokenType op = tree->attr.op;
+				case LE :
+				case GE :
+					op = tree->attr.op;
 					char op_code[4] = "JLT";
 
 					if (op == LT || op == LE){
