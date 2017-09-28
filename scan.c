@@ -321,8 +321,9 @@ TokenType getToken(void)
 } /* end getToken */
 
 // another way : save the linebuf,linepos and copy new string to it;  and finally restore them
-TokenType preprocess_token(TokenType token){
-	if (tokenString == "macro_10000000000000000008")
+TokenType preprocess_token(TokenType token)
+{
+	if (strcmp(tokenString,"macro_10000000000000000008"))
 	{
 		macro_pos = 0;
 		in_macro_replace = TRUE;
@@ -331,8 +332,6 @@ TokenType preprocess_token(TokenType token){
 		in_macro_replace = FALSE;
 		return newtoken;
 	}
-
-
-
+    return token;
 }
 

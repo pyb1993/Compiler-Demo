@@ -91,7 +91,6 @@ TreeNode * stmt_sequence(void)
 }
 
 
-
 TreeNode * statement(void)
 {
 	TreeNode * t = NULL;
@@ -207,6 +206,12 @@ TreeNode* declare_stmt(void)
             t->attr.name = copyString(tokenString);
 
             match(ID);
+            break;
+      default:
+            t->type = ErrorType;
+            syntaxError("undefined type");
+            match(ID);
+            
             break;
     }
 	return t;
