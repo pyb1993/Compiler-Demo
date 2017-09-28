@@ -112,6 +112,7 @@ void my_strcpy(char * s,int len,char * t)
     while(i++ < len){
         *s++ = *t++;
     }
+	*s++ = '\0';
 }
 
 char * copyString(char * s)

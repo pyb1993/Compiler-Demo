@@ -122,11 +122,13 @@ Type st_lookup_type(char * name)
 void printSymTab(FILE * listing)
 {
     int i;
-    fprintf(listing,"Variable Name  Location   Line Numbers\n");
-    fprintf(listing,"-------------  --------   ------------\n");
+    fprintf(listing,"Variable Name  Location   Memory Size      Line Numbers\n");
+    fprintf(listing,"-------------  --------   -----------       -------------\n");
     for (i=0;i<SIZE;++i)
-    { if (hashTable[i] != NULL)
-    { BucketList l = hashTable[i];
+	{
+		if (hashTable[i] == NULL) continue;
+
+        BucketList l = hashTable[i];
         while (l != NULL)
         { LineList t = l->lines;
             fprintf(listing,"%-14s ",l->name);
@@ -139,6 +141,6 @@ void printSymTab(FILE * listing)
             fprintf(listing,"\n");
             l = l->next;
         }
-     }
+     
     }
 } /* printSymTab */

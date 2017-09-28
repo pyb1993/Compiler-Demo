@@ -13,10 +13,7 @@
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 
 struct FuncType{
-
-
-
-
+	int a;
 };
 
 struct  VarType

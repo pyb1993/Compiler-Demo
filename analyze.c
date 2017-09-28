@@ -130,7 +130,7 @@ static void typeError(TreeNode * t, char * message)
 }
 
 int var_size_of(Type type){
-    return MEMUNITSIXE;
+    return 1;
 }
 
 

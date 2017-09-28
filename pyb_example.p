@@ -1,7 +1,10 @@
+int t
 while(t <=  1 )
 {
-int t
-if t>0{
+int k
+if t>0
+
+{
 	 t = t + 2
     }else
 		read k
@@ -9,6 +12,7 @@ if t>0{
 }
 
 read t
+
 /*
 to do list
 1.1 check the assign,read,write
@@ -25,6 +29,7 @@ to do list
 8  define variable
 9  auto x = 10; auto inference
 10 import other file
+<<<<<<< HEAD
 11 continuation
 
 
@@ -34,4 +39,6 @@ to do list
 
 
 
+=======
+>>>>>>> 2ee1e519b6408575c38322dd242c201803a3612c
 */

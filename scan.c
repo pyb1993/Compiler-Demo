@@ -21,11 +21,25 @@ static int linepos = 0; /* current position in LineBuf */
 static int bufsize = 0; /* current size of buffer string */
 static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
 
+static bool in_macro_replace = false;
+static char macro_replace_str_buf[20];
+static int macro_pos = 0;
 /* getNextChar fetches the next non-blank character
 from lineBuf, reading in a new line if lineBuf is
 exhausted */
 static int getNextChar(void)
 {
+
+	if (in_macro_replace){
+		if ( macro_pos < 20 && macro_replace_str_buf[macro_pos] != '\0')
+			return macro_replace_str_buf[macro_pos++];
+		else
+		{
+			EOF_flag = TRUE;
+			return EOF;
+		}
+	}
+
 	if ( bufsize <= linepos)
 	{
 		lineno++;
@@ -305,3 +319,20 @@ TokenType getToken(void)
 	}
 	return currentToken;
 } /* end getToken */
+
+// another way : save the linebuf,linepos and copy new string to it;  and finally restore them
+TokenType preprocess_token(TokenType token){
+	if (tokenString == "macro_10000000000000000008")
+	{
+		macro_pos = 0;
+		in_macro_replace = TRUE;
+		macro_replace_str_buf[0] = '1';// copy replaced string
+		TokenType newtoken = getToken();
+		in_macro_replace = FALSE;
+		return newtoken;
+	}
+
+
+
+}
+

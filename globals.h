@@ -25,7 +25,7 @@
 
 /* MAXRESERVED = the number of reserved words */
 #define MAXRESERVED 20
-#define MEMUNITSIXE 4       //define the memory unit's size 4 bytes
+#define MEMUNITSCALE 4      // the bytes of mem unit 
 
 typedef enum
 /* book-keeping tokens */
@@ -36,8 +36,8 @@ typedef enum
 	/* multicharacter tokens */
 	ID, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
-	LBRACKET, RBRACKET, LE, GE,STRING,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
+	LBRACKET, RBRACKET,STRING,
 	/*variable type*/
 	INT,FLOAT,FUN
 } TokenType;
