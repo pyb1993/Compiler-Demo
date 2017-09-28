@@ -12,7 +12,7 @@ FILE * code;
 /* allocate and set tracing flags */
 int EchoSource = FALSE;
 int TraceScan = FALSE;
-int TraceParse = TRUE;
+int TraceParse = FALSE;
 int TraceAnalyze = FALSE;
 int TraceCode = FALSE;
 
@@ -32,7 +32,7 @@ int main(){
 	}
 
 	TreeNode *t = parse();
-    printTree(t);
+	 printTree(t);
     
 	return 0;
 }
