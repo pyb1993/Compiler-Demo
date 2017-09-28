@@ -88,9 +88,9 @@ char * opCodeTab[]
 /* RA opcodes */
 };
 
-char * stepResultTab[]
-= { "OK", "Halted", "Instruction Memory Fault",
-"Data Memory Fault", "Division by 0"
+char * stepResultTab[] = 
+{ "OK", "Halted", "Instruction Memory Fault",
+  "Data Memory Fault", "Division by 0"
 };
 
 char pgmName[20];
@@ -269,12 +269,15 @@ int readInstructions(void)
 				return error("Missing colon", lineNo, loc);
 			if (!getWord())
 				return error("Missing opcode", lineNo, loc);
+			// get the instruction type op
 			op = opHALT;
 			while ((op < opRALim)
 				&& (strncmp(opCodeTab[op], word, 4) != 0))
 				op++;
+
 			if (strncmp(opCodeTab[op], word, 4) != 0)
 				return error("Illegal opcode", lineNo, loc);
+			
 			switch (opClass(op))
 			{
 			case opclRR:
@@ -556,6 +559,7 @@ int doCommand(void)
 
 	default: printf("Command %c unknown.\n", cmd); break;
 	}  /* case */
+	
 	stepResult = srOKAY;
 	if (stepcnt > 0)
 	{
@@ -617,8 +621,9 @@ main(int argc, char * argv[])
 	/* read-eval-print */
 	printf("TM  simulation (enter h for help)...\n");
 	do
-	done = !doCommand();
-	while (!done);
+{
+		done = !doCommand();
+	}while (!done);
 	printf("Simulation done.\n");
 	return 0;
 }
