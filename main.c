@@ -15,11 +15,7 @@ int EchoSource = FALSE;
 int TraceScan = FALSE;
 <<<<<<< HEAD
 int TraceParse = FALSE;
-int TraceAnalyze = FALSE;
-=======
-int TraceParse = TRUE;
 int TraceAnalyze = TRUE;
->>>>>>> 2ee1e519b6408575c38322dd242c201803a3612c
 int TraceCode = FALSE;
 int Error = FALSE;
 
