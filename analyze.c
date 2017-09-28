@@ -139,18 +139,22 @@ int var_size_of(Type type){
  */
 static void checkNode(TreeNode * t)
 {
+
     switch (t->nodekind)
     { case ExpK:
             switch (t->kind.exp)
-        { case OpK:
-                if ((t->child[0]->type != RInteger) ||
-                    (t->child[1]->type != RInteger))
-                    typeError(t,"Op applied to non-integer");
-                if ((t->attr.op == EQ) || (t->attr.op == LT))
-                    t->type = RBoolean;
-                else
-                    t->type = RInteger;
-                break;
+			{
+			case OpK:
+			{
+				TokenType op = t->attr.op;
+				if ((t->child[0]->type != RInteger) || (t->child[1]->type != RInteger))
+					typeError(t, "Op applied to non-integer");
+				if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
+					t->type = RBoolean;
+				else
+					t->type = RInteger;
+				break;	
+			}
             case ConstK:
             case IdK:
                 t->type = RInteger;
@@ -162,7 +166,7 @@ static void checkNode(TreeNode * t)
         case StmtK:
             switch (t->kind.stmt)
         { case IfK:
-                if (t->child[0]->type != RBoolean || t->child[0]->type != LBoolean)
+                if (t->child[0]->type != RBoolean && t->child[0]->type != LBoolean)
                     typeError(t->child[0],"if test is not Boolean");
                 break;
             case AssignK:
@@ -171,7 +175,7 @@ static void checkNode(TreeNode * t)
                  */
                 st_lookup(t->attr.name);
                 Type id_type = st_lookup_type(t->attr.name);
-                if (is_relative_type(id_type,t->child[1]->type))
+                if (is_relative_type(id_type,t->child[0]->type))
                     typeError(t->child[0],"assignment of different value");
                 break;
             case WriteK:

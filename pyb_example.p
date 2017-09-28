@@ -2,7 +2,7 @@ int t
 while(t <=  1 )
 {
 int k
-if t>0
+if t > 0
 
 {
 	 t = t + 2
@@ -10,8 +10,6 @@ if t>0
 		read k
     break
 }
-
-read t
 
 /*
 to do list

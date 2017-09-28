@@ -15,7 +15,7 @@ int EchoSource = FALSE;
 int TraceScan = FALSE;
 int TraceParse = FALSE;
 int TraceAnalyze = TRUE;
-int TraceCode = FALSE;
+int TraceCode = TRUE;
 int Error = FALSE;
 
 int main(){
@@ -32,6 +32,16 @@ int main(){
 
 	TreeNode *t = parse();
 	buildSymtab(t);
-    
+	typeCheck(t);
+
+
+	/**compute the length of filename before .tm **/
+	int len = strcspn(filename, ".");
+	char * codeFile = (char *)calloc(len+4,sizeof(char));
+	strncpy(codeFile, filename, len);
+	strcat(codeFile, ".tm");
+	code = fopen(codeFile,"w");
+	codeGen(t,codeFile);
+	fclose(code);
 	return 0;
 }
