@@ -13,7 +13,6 @@ FILE * code;
 /* allocate and set tracing flags */
 int EchoSource = FALSE;
 int TraceScan = FALSE;
-<<<<<<< HEAD
 int TraceParse = FALSE;
 int TraceAnalyze = TRUE;
 int TraceCode = FALSE;
