@@ -27,16 +27,5 @@ to do list
 8  define variable
 9  auto x = 10; auto inference
 10 import other file
-<<<<<<< HEAD
 11 continuation
-
-
-
-
-
-
-
-
-=======
->>>>>>> 2ee1e519b6408575c38322dd242c201803a3612c
 */
