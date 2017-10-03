@@ -42,7 +42,7 @@ typedef struct BucketListRec
     LineList lines;
     int memloc ; /* memory location for variable */
     int mem_size;/* memory size for this variable */
-    struct VarType var_type;
+    VarType var_type;
     struct BucketListRec * next;
 } * BucketList;
 
@@ -56,7 +56,7 @@ static BucketList hashTable[SIZE];
  * first time, otherwise ignored
  */
 
-void st_insert( char * name, int lineno, int loc,int size)
+void st_insert( char * name, int lineno, int loc,int size,VarType type)
 {
     int h = hash(name);
     BucketList l =  hashTable[h];
@@ -70,6 +70,7 @@ void st_insert( char * name, int lineno, int loc,int size)
         l->lines->lineno = lineno;
         l->memloc = loc;
         l->mem_size = size;
+		l->var_type = type;
         l->lines->next = NULL;
         l->next = hashTable[h];
         hashTable[h] = l;
@@ -95,7 +96,9 @@ int st_lookup ( char * name )
     else return l->memloc;
 }
 
-
+/*
+	return the upper type of variable
+*/
 Type st_lookup_type(char * name)
 {
     int h = hash(name);
@@ -104,13 +107,13 @@ Type st_lookup_type(char * name)
         l = l->next;
     if (l == NULL)
         return ErrorType;
-    
     if (l->var_type.typekind == BTYPE){
         return l->var_type.typeinfo.btype;
     }
-    else{
+    else
+	{
+		printf("type beyond BTYPE is not implemented\n");
         return ErrorType;
-    
     }
 }
 

@@ -5,7 +5,7 @@
 /* states in scanner DFA */
 typedef enum
 {
-	START, INASSIGN, INCOMMENT, INMULCOMMENT,INNUM, INID, OVER_OR_COMMENT,
+	START, INASSIGN, INCOMMENT, INMULCOMMENT,INNUM,INFLOATNUM,INID, OVER_OR_COMMENT,
 	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,IN_STR,
 	DONE
 }
@@ -205,16 +205,29 @@ TokenType getToken(void)
 			}
 			break;
 		case INNUM:
-			if (!isdigit(c))
+			if (!isdigit(c) && c != '.')
 			{ /* backup in the input */
 				ungetNextChar();
 				save = FALSE;
 				state = DONE;
 				currentToken = NUM;
 			}
+			else if (c == '.')
+			{
+				state = INFLOATNUM;
+			}
+			break;
+		case INFLOATNUM:
+			if (!isdigit(c))
+			{
+				ungetNextChar();
+				save = FALSE;
+				state = DONE;
+				currentToken = FlOATNUM;
+			}
 			break;
 		case INID:
-			if (!isalpha(c)){ /* backup in the input */
+			if (!(isalnum(c) || c == '_' || c == '?')){ /* backup in the input */
 				ungetNextChar();
 				save = FALSE;
 				state = DONE;

@@ -4,6 +4,8 @@
 #include "parse.h"
 #include "analyze.h"
 #include "util.h"
+#include "tm.h"
+
 
 int lineno = 0;
 FILE * source;
@@ -17,6 +19,8 @@ int TraceParse = FALSE;
 int TraceAnalyze = TRUE;
 int TraceCode = TRUE;
 int Error = FALSE;
+int done;
+
 
 int main(){
 
@@ -31,9 +35,17 @@ int main(){
 	}
 
 	TreeNode *t = parse();
-	buildSymtab(t);
-	typeCheck(t);
 
+	#if !NO_ANALYZE
+		if (!Error)
+		{
+			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
+			buildSymtab(t);
+			if (TraceAnalyze) fprintf(listing, "\nChecking Types...\n");
+			typeCheck(t);
+			if (TraceAnalyze) fprintf(listing, "\nType Checking Finished\n");
+		}
+	#endif
 
 	/**compute the length of filename before .tm **/
 	int len = strcspn(filename, ".");
@@ -43,5 +55,24 @@ int main(){
 	code = fopen(codeFile,"w");
 	codeGen(t,codeFile);
 	fclose(code);
+
+	/* read the program */
+	code = fopen(codeFile, "r");
+	if (!readInstructions(code))
+		exit(1);
+
+	printf("TM  simulation (enter h for help)...\n");
+	do
+	{
+		done = !doCommand();
+	} while (!done);
+	printf("Simulation done.\n");
+	fclose(code);
+
+	float a = 100;
+	unsigned char* b = (unsigned char*)&a;
+	printf("%02X %02X %02X %02X", b[0], b[1], b[2], b[3]);
+	int d = *(int *)(b);
+	float f = *(float *)(&d);
 	return 0;
 }

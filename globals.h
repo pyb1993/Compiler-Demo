@@ -55,7 +55,7 @@ typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,BreakK } StmtKind;
 typedef enum { OpK, ConstK, IdK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum {ErrorType,Void,LBoolean,LInteger,LFloat,LStruct,LRBOUND,RBoolean,RInteger,RFloat,RStruct,Func} Type;// type, the expression has the rvalue, and the variable has the lvalue
+typedef enum {LBoolean,LInteger,LFloat,LStruct,LRBOUND,RBoolean,RInteger,RFloat,RStruct,Func,Void,ErrorType} Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
 #define MAXCHILDREN 3
 
@@ -76,6 +76,7 @@ typedef struct treeNode
 		} val;// constk should contain one of three values
 	} attr;
     Type type;
+	Type converted_type;
 } TreeNode;
 
 /**************************************************/

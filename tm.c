@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include "tm.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -19,57 +16,6 @@
 #define   LINESIZE  121
 #define   WORDSIZE  20
 
-/******* type  *******/
-
-typedef enum {
-	opclRR,     /* reg operands r,s,t */
-	opclRM,     /* reg r, mem d+s */
-	opclRA      /* reg r, int d+s */
-} OPCLASS;
-
-typedef enum {
-	/* RR instructions */
-	opHALT,    /* RR     halt, operands are ignored */
-	opIN,      /* RR     read into reg(r); s and t are ignored */
-	opOUT,     /* RR     write from reg(r), s and t are ignored */
-	opADD,    /* RR     reg(r) = reg(s)+reg(t) */
-	opSUB,    /* RR     reg(r) = reg(s)-reg(t) */
-	opMUL,    /* RR     reg(r) = reg(s)*reg(t) */
-	opDIV,    /* RR     reg(r) = reg(s)/reg(t) */
-	opRRLim,   /* limit of RR opcodes */
-
-	/* RM instructions */
-	opLD,      /* RM     reg(r) = mem(d+reg(s)) */
-	opST,      /* RM     mem(d+reg(s)) = reg(r) */
-	opRMLim,   /* Limit of RM opcodes */
-
-	/* RA instructions */
-	opLDA,     /* RA     reg(r) = d+reg(s) */
-	opLDC,     /* RA     reg(r) = d ; reg(s) is ignored */
-	opJLT,     /* RA     if reg(r)<0 then reg(7) = d+reg(s) */
-	opJLE,     /* RA     if reg(r)<=0 then reg(7) = d+reg(s) */
-	opJGT,     /* RA     if reg(r)>0 then reg(7) = d+reg(s) */
-	opJGE,     /* RA     if reg(r)>=0 then reg(7) = d+reg(s) */
-	opJEQ,     /* RA     if reg(r)==0 then reg(7) = d+reg(s) */
-	opJNE,     /* RA     if reg(r)!=0 then reg(7) = d+reg(s) */
-	opRALim    /* Limit of RA opcodes */
-} OPCODE;
-
-typedef enum {
-	srOKAY,
-	srHALT,
-	srIMEM_ERR,
-	srDMEM_ERR,
-	srZERODIVIDE
-} STEPRESULT;
-
-typedef struct {
-	int iop;
-	int iarg1;
-	int iarg2;
-	int iarg3;
-} INSTRUCTION;
-
 /******** vars ********/
 int iloc = 0;
 int dloc = 0;
@@ -81,7 +27,7 @@ int dMem[DADDR_SIZE];
 int reg[NO_REGS];
 
 char * opCodeTab[]
-= { "HALT", "IN", "OUT", "ADD", "SUB", "MUL", "DIV", "????",
+= { "HALT", "IN", "OUT","MOV","ADD", "SUB", "MUL", "DIV", "????",
 /* RR opcodes */
 "LD", "ST", "????", /* RM opcodes */
 "LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "????"
@@ -94,7 +40,6 @@ char * stepResultTab[] =
 };
 
 char pgmName[20];
-FILE *pgm;
 
 char in_Line[LINESIZE];
 int lineLen;
@@ -232,7 +177,7 @@ int error(char * msg, int lineNo, int instNo)
 } /* error */
 
 /********************************************/
-int readInstructions(void)
+int readInstructions(FILE *pgm)
 {
 	OPCODE op;
 	int arg1, arg2, arg3;
@@ -592,38 +537,3 @@ int doCommand(void)
 } /* doCommand */
 
 
-/********************************************/
-/* E X E C U T I O N   B E G I N S   H E R E */
-/********************************************/
-
-main(int argc, char * argv[])
-{
-	if (argc != 2)
-	{
-		printf("usage: %s <filename>\n", argv[0]);
-		exit(1);
-	}
-	strcpy(pgmName, argv[1]);
-	if (strchr(pgmName, '.') == NULL)
-		strcat(pgmName, ".tm");
-	pgm = fopen(pgmName, "r");
-	if (pgm == NULL)
-	{
-		printf("file '%s' not found\n", pgmName);
-		exit(1);
-	}
-
-	/* read the program */
-	if (!readInstructions())
-		exit(1);
-	/* switch input file to terminal */
-	/* reset( input ); */
-	/* read-eval-print */
-	printf("TM  simulation (enter h for help)...\n");
-	do
-{
-		done = !doCommand();
-	}while (!done);
-	printf("Simulation done.\n");
-	return 0;
-}

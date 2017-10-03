@@ -98,6 +98,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->kind.exp = kind;
         t->lineno = lineno;
         t->type = Void;
+		t->type = Void;
     }
     return t;
 }

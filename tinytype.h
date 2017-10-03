@@ -1,10 +1,4 @@
-//
-//  tinytype.h
-//  compiler
-//
-//  Created by pyb on 2017/9/26.
-//  Copyright © 2017年 pyb. All rights reserved.
-//
+
 
 #ifndef tinytype_h
 #define tinytype_h
@@ -12,28 +6,30 @@
 #include "globals.h"
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 
-struct FuncType{
+typedef struct _FuncType{
 	int a;
-};
+} FuncType;
 
-struct  VarType
+typedef struct _VarType
 {
     
-    //struct BasicType * basic_type;// basic type such as the LInteger,LBoolean -> LFloat -> LBoolean and so on;
+    //struct BasicType * basic_type;//  -> LFloat -> LBoolean and so on;
     union
     {
-        Type btype;
-        struct FuncType ftype;// function can also be a variable
-        struct VarType * stype;
+        Type btype;				  // case basic type : such as the LInteger,LBoolean,LFloat
+         FuncType ftype;   //  case function type: function can also be a variable. which is not implemented.
+        struct _VarType * stype; //   case struct type :  
     } typeinfo;
     
-    struct VarType * next; //
-    TypeKind typekind; //
-};
+    struct _VarType * next; // only meaningful in the case strcut type
+    TypeKind typekind; //the upper type
+} VarType;
 
 
-bool equal_type(struct VarType a,struct VarType b);
-
+bool equal_type(VarType a, VarType b);
+VarType type_from_basic(Type type);
+int integer_from_node(TreeNode * t);
+float float_from_node(TreeNode * t);
 
 
 #endif /* tinytype_h */

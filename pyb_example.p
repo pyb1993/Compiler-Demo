@@ -1,20 +1,25 @@
-int t
-while(t <=  1 )
+int k 
+int n
+k = 2
+read n
+int t1
+int t2
+t1 = 1
+t2 = 1
+while(k < n)
 {
-int k
-if t > 0
-
-{
-	 t = t + 2
-    }else
-		read k
-    break
+	int tmp
+	tmp = t1
+	t1 = t2
+	t2 = tmp + t2
+	k = k + 1
 }
+write t2
 
 /*
 to do list
 1.1 check the assign,read,write
-1. implement a simple macre: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
+1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token
 	which is the preporcessor !
 	to implement the procedure, we need to save the linebuf,
@@ -28,4 +33,5 @@ to do list
 9  auto x = 10; auto inference
 10 import other file
 11 continuation
-*/
+
+

@@ -12,4 +12,8 @@ void buildSymtab(TreeNode *);
  */
 void typeCheck(TreeNode *);
 
+static void gen_converted_type(TreeNode * tree);
+
+
+
 #endif

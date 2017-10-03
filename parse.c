@@ -147,9 +147,9 @@ TreeNode * while_stmt(void)
 {
 	TreeNode * t = newStmtNode(RepeatK);
 	match(WHILE);
-	if (t != NULL) t->child[0] = exp();
+	if (t != NULL) t->child[0] = exp(); //child[0] for test
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement();
+	t->child[1] = in_block ? stmt_sequence() : statement(); // child[1] for body
     match_possible_rbracket(in_block);
 	return t;
 }
@@ -204,14 +204,19 @@ TreeNode* declare_stmt(void)
             t->type = LInteger;
             match(INT);
             t->attr.name = copyString(tokenString);
-
+			t->type = LInteger;
             match(ID);
             break;
+	  case FLOAT:
+		  t->type = RFloat;
+		  match(FLOAT);
+		  t->type = LFloat;
+		  t->attr.name = copyString(tokenString);
+		  match(ID);
       default:
             t->type = ErrorType;
             syntaxError("undefined type");
             match(ID);
-            
             break;
     }
 	return t;
@@ -275,20 +280,19 @@ TreeNode * factor(void)
 	switch (token) {
 	case NUM:
 		t = newExpNode(ConstK);
-		if ((t != NULL) && (token == NUM))
-			t->attr.val.integer = atoi(tokenString);
-            t->type = RInteger;
+		t->attr.val.integer = atoi(tokenString);
+		t->type = RInteger;
 		match(NUM);
 		break;
     case FlOATNUM:
             t = newExpNode(ConstK);
-            syntaxError("to do: float token");
+			t->attr.val.flt = atof(t);
+			t->type = RFloat;
+			match(FlOATNUM);
             break;
 	case ID:
 		t = newExpNode(IdK);
-		if ((t != NULL) && (token == ID)){
-			t->attr.name = copyString(tokenString);			
-		}
+		t->attr.name = copyString(tokenString);			
 		match(ID);
 		break;
 	case LPAREN:
