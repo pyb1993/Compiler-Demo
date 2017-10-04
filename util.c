@@ -43,6 +43,7 @@ void printToken(TokenType token, const char* tokenString)
         case RBRACKET:fprintf(listing, "\n}"); break;
         case INT:fprintf(listing, "int\n "); break;
         case FLOAT:fprintf(listing, "float\n "); break;
+		case VOID:fprintf(listing, "void\n "); break;
         case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
         case ENDFILE: fprintf(listing, "EOF\n"); break;
         case NUM:

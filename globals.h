@@ -39,7 +39,7 @@ typedef enum
 	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
 	LBRACKET, RBRACKET,STRING,
 	/*variable type*/
-	INT,FLOAT,FUN
+	INT,FLOAT,VOID,FUN
 } TokenType;
 
 extern FILE* source; /* source code text file */
@@ -73,6 +73,7 @@ typedef struct treeNode
 			int integer;
 			float flt;
 			char *str;
+			Type return_type; // used for the return type
 		} val;// constk should contain one of three values
 	} attr;
     Type type;

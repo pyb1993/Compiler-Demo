@@ -104,7 +104,10 @@ TreeNode * statement(void)
 	case WRITE: t = write_stmt(); break;
 	case INT:  
 	case FLOAT:
+	case VOID:
 		t = declare_stmt();
+		break;
+	case RBRACKET:// a empty statment
 		break;
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
@@ -189,24 +192,61 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
+/*this function will return declare_k -> declare_k -> .... declare_k*/
+TreeNode* paramK_stmt(void)
+{
+
+	match(LPAREN);
+	TreeNode * t = NULL;
+	TreeNode * next = t;
+	while (token != RPAREN)
+	{
+		if (token == VOID)
+		{
+			match(VOID);
+			next =  newStmtNode(DeclareK);
+			next->type = Void;
+			break;
+		}
+		else
+		{
+			next = declare_stmt();
+			next = next->sibling;
+		}
+		if (token != RPAREN) match(COMMA);
+	}
+	match(RPAREN);
+	return t;
+}
+
 TreeNode* declare_stmt(void)
 {
 
 	/*switch case token type */
     TreeNode* t = newStmtNode(DeclareK);
+	bool func_dec = FALSE;
     switch(token)
     {
       // define a variable; eg: int value;
       case INT:
-            t->type = LInteger;
             match(INT);
+			t->type = LInteger;
             t->attr.name = copyString(tokenString);
             match(ID);
+			func_dec = (token == LPAREN);
             break;
 	  case FLOAT:
-		  t->type = LFloat;
 		  match(FLOAT);
+		  t->type = LFloat;
 		  t->attr.name = copyString(tokenString);
+		  match(ID);
+		  func_dec = (token == RPAREN);
+		  break;
+	  case VOID:
+		  match(VOID);
+		  t->type = Void;
+		  t->attr.name = copyString(tokenString);
+		  func_dec = TRUE;
 		  match(ID);
 		  break;
       default:
@@ -215,6 +255,20 @@ TreeNode* declare_stmt(void)
             match(ID);
             break;
     }
+
+	if (func_dec)
+	{
+		t->attr.val.return_type = t->type;//define the return type;
+		t->type = Func;
+		t->child[0] = paramK_stmt();
+		match(LBRACKET);
+		t->child[1] = stmt_sequence();
+		match(RBRACKET);
+	}
+
+
+
+
 	return t;
 }
 

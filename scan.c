@@ -80,7 +80,8 @@ static struct
 } reservedWords[MAXRESERVED]
 = { { "if", IF }, { "else", ELSE }, { "end", END },
     { "while", WHILE },{"break",BREAK}, { "until", UNTIL }, { "read", READ },
-{ "write", WRITE }, { "int", INT }, {"float",FLOAT}, {"def", FUN} };
+	{ "write", WRITE }, { "int", INT }, { "float", FLOAT }, {"void",VOID},{"def", FUN} 
+  };
 
 /* lookup an identifier to see if it is a reserved word */
 /* uses linear search */
