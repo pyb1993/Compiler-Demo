@@ -53,15 +53,15 @@ char ch;
 int done;
 
 // macro used to DRY
-#define operand_proc(op) do{\
+#define operand_proc(op,func) do{\
 					switch (op)\
 				{\
-					case '+': reg[r] = lhs + rhs; break;\
-					case '-': reg[r] = lhs - rhs; break;\
-					case '*': reg[r] = lhs * rhs; break;\
+					case '+': reg[r] = func(lhs + rhs); break;\
+					case '-': reg[r] = func(lhs - rhs); break;\
+					case '*': reg[r] = func(lhs * rhs); break;\
 					case '/':\
 						if (rhs == 0) return srZERODIVIDE;\
-						else reg[r] = lhs + rhs;\
+						else reg[r] = func(lhs / rhs);\
 						break;\
 				}\
 				return srOKAY;\
@@ -77,112 +77,21 @@ static int reg_type(int reg){
 	return -1;
 }
 
-static int same_reg_type(int reg1,int reg2){
-	return reg_type(reg1) == reg_type(reg2);
-}
+static int same_reg_type(int reg1, int reg2);
 
-static float flt_from_reg(int r)
-{
-	float flt = flt_from_integer(reg[r]);
-	return flt;
-}
+static float flt_from_integer(int c);
 
-static float flt_from_integer(int c){
-	return *(float *)(&c);
-}
+static float flt_from_reg(int r);
 
+static int int_from_flt(float x);
 
+static void convert(int reg1, int reg2);
 
-static void convert(int reg1, int reg2)
-{
-	if (same_reg_type(reg1, reg2))
-	{
-		reg[reg2] = reg[reg1];
-		return;
-	}
-	float flt;
-	switch (reg1)
-	{
-	case ac:
-	case ac1:
-		assert(reg2 == fac || reg2 == fac1);
-		//int to float
-		flt = reg[reg1];
-		reg[reg2] = flt;
-		break;
-	case fac:
-	case fac1:
-		assert(reg2 == ac || reg2 == ac1);
-		//float to int
-		flt = flt_from_reg(reg1);
-		reg[reg2] = flt;
-		break;
-	}
+static STEPRESULT operand(int r, int s, int t, char op);
 
-}
+static STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op);
 
-
-static void load_const(int r, int c){
-	switch (r)
-	{
-	case ac:
-	case ac1:
-		reg[r] = c;
-		break;
-	case fac:
-	case fac1:
-		//float to int
-		reg[r] = flt_from_integer(c);
-		break;
-	}
-}
-
-static void store(int r, int m){
-
-	switch (r)
-	{
-	case ac:
-	case ac1:
-		dMem[m] = reg[r];
-		break;
-	case fac:
-	case fac1:
-		//float to int
-		reg[r] = flt_from_integer(c);
-		break;
-	}
-
-}
-
-static STEPRESULT operand(int r, int s, int t,char op)
-{
-	assert(same_reg_type(r, s) && same_reg_type(s,t));
-	float flt_s,flt_t;
-	switch (r)
-	{
-		case ac:
-		case ac1:
-			//int operation
-			reg[r] = reg[s] + reg[t];
-			return srOKAY;
-			break;
-		case fac:
-		case fac1:
-			//float to int
-			flt_s = flt_from_reg(s);
-			flt_t = flt_from_reg(t);
-			return do_operand_flt(r, flt_s, flt_t, op);
-			break;
-	}
-}
-
-static STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op){
-	operand_proc(op);
-}
-
-static STEPRESULT do_operand_int(int r, int lhs, int rhs, char op){
-	operand_proc(op);
-}
+static STEPRESULT do_operand_int(int r, int lhs, int rhs, char op);
 
 
 int opClass(int c)
@@ -516,7 +425,7 @@ STEPRESULT stepTM(void)
 			printf("OUT instruction prints: %d\n", reg[r]);
 		}
 		else if (same_reg_type(r, fac)) {
-			flt_num = flt_from_reg(reg[r]);
+			flt_num = flt_from_reg(r);
 			printf("OUT instruction prints: %f\n", flt_num);
 		}
 		break;
@@ -535,11 +444,11 @@ STEPRESULT stepTM(void)
 
 		/*************** RM instructions ********************/
 	case opLD:    reg[r] = dMem[m];  break;
-	case opST:    dMem[m] = reg[r];  break;
+	case opST:    dMem[m] = reg[r];  break;// no need to convert float,integer
 
 		/*************** RA instructions ********************/
 	case opLDA:    reg[r] = m; break;
-	case opLDC:    load_const(r, currentinstruction.iarg2); break;
+	case opLDC:    reg[r] = currentinstruction.iarg2;
 	case opJLT:    if (reg[r] <  0) reg[PC_REG] = m; break;
 	case opJLE:    if (reg[r] <= 0) reg[PC_REG] = m; break;
 	case opJGT:    if (reg[r] >  0) reg[PC_REG] = m; break;
@@ -724,3 +633,83 @@ int doCommand(void)
 } /* doCommand */
 
 
+ float flt_from_integer(int c){
+	float ret = *(float *)(&c);
+	return ret;
+}
+
+ float flt_from_reg(int r)
+{
+	float flt = flt_from_integer(reg[r]);
+	return flt;
+}
+
+  int int_from_flt(float x)
+ {
+	 int ret = *(int *)(&x);
+	 return ret;
+ }
+
+   STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op){
+	  operand_proc(op, int_from_flt);
+	  int x = int_from_flt(5.0 / 3.0);
+  }
+
+   STEPRESULT do_operand_int(int r, int lhs, int rhs, char op){
+	  operand_proc(op, (int));
+  }
+
+    STEPRESULT operand(int r, int s, int t, char op)
+   {
+	   assert(same_reg_type(r, s) && same_reg_type(s, t));
+	   float flt_s, flt_t;
+	   switch (r)
+	   {
+	   case ac:
+	   case ac1:
+		   //int operation
+		   return do_operand_int(r, reg[s], reg[t], op);
+		   break;
+	   case fac:
+	   case fac1:
+		   //float to int
+		   flt_s = flt_from_reg(s);
+		   flt_t = flt_from_reg(t);
+		   return do_operand_flt(r, flt_s, flt_t, op);
+		   break;
+	   }
+
+}
+
+	 void convert(int reg1, int reg2)
+	{
+		if (same_reg_type(reg1, reg2))
+		{
+			reg[reg2] = reg[reg1];
+			return;
+		}
+		float flt;
+		switch (reg1)
+		{
+		case ac:
+		case ac1:
+			assert(reg2 == fac || reg2 == fac1);
+			//int to float
+			flt = reg[reg1];
+			reg[reg2] = int_from_flt(flt);
+			break;
+		case fac:
+		case fac1:
+			assert(reg2 == ac || reg2 == ac1);
+			//float to int
+			flt = flt_from_reg(reg1);
+			reg[reg2] = flt;
+			break;
+		}
+
+	}
+
+
+ int same_reg_type(int reg1, int reg2){
+	return reg_type(reg1) == reg_type(reg2);
+}

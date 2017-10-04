@@ -1,12 +1,11 @@
-int k 
 int n
+float k
 k = 2
 read n
 int t1
 int t2
 t1 = 1
 t2 = 1
-write t2
 while(k < n + 3)
 {
 	int tmp
@@ -36,4 +35,3 @@ to do list
 10 import other file
 11 continuation
 */
-

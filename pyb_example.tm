@@ -7,36 +7,34 @@
 * -> Const
   2:    LDC  0,2(0) 	load integer const
 * <- Const
-  3:     ST  0,0(5) 	assign: store value
+  3:    MOV  9,0,0 	move register reg(s) tp reg(r)
+  4:     ST  9,1(5) 	assign: store value
 * <- assign
-  4:     IN  0,0,0 	read integer/float value
-  5:     ST  0,1(5) 	assign: store value
+  5:     IN  0,0,0 	read integer/float value
+  6:     ST  0,0(5) 	assign: store value
 * -> assign
 * -> Const
-  6:    LDC  0,1(0) 	load integer const
+  7:    LDC  0,1(0) 	load integer const
 * <- Const
-  7:     ST  0,2(5) 	assign: store value
+  8:     ST  0,2(5) 	assign: store value
 * <- assign
 * -> assign
 * -> Const
-  8:    LDC  0,1(0) 	load integer const
+  9:    LDC  0,1(0) 	load integer const
 * <- Const
-  9:     ST  0,3(5) 	assign: store value
+ 10:     ST  0,3(5) 	assign: store value
 * <- assign
-* -> Id
- 10:     LD  0,3(5) 	load id value
-* <- Id
- 11:    OUT  0,0,0 	output value in register[ac]
 * -> repeat
 * repeat: jump after body comes back here
 * -> Op
 * -> Id
- 12:     LD  0,0(5) 	load id value
+ 11:     LD  9,1(5) 	load id value
+ 12:    MOV  0,9,0 	move from one reg(s) to reg(r)
 * <- Id
  13:     ST  0,0(6) 	op: push left
 * -> Op
 * -> Id
- 14:     LD  0,1(5) 	load id value
+ 14:     LD  0,0(5) 	load id value
 * <- Id
  15:     ST  0,-1(6) 	op: push left
 * -> Const
@@ -81,35 +79,41 @@
 * -> assign
 * -> Op
 * -> Id
- 36:     LD  0,0(5) 	load id value
+ 36:     LD  9,1(5) 	load id value
+ 37:    MOV  0,9,0 	move from one reg(s) to reg(r)
 * <- Id
- 37:     ST  0,0(6) 	op: push left
+ 38:     ST  0,0(6) 	op: push left
 * -> Const
- 38:    LDC  0,1(0) 	load integer const
+ 39:    LDC  0,1(0) 	load integer const
 * <- Const
- 39:     LD  1,0(6) 	op: load left
- 40:    ADD  0,1,0 	op +
+ 40:     LD  1,0(6) 	op: load left
+ 41:    ADD  0,1,0 	op +
 * <- Op
- 41:     ST  0,0(5) 	assign: store value
+ 42:    MOV  9,0,0 	move register reg(s) tp reg(r)
+ 43:     ST  9,1(5) 	assign: store value
 * <- assign
- 42:    LDA  7,-31(7) 	unconditional jmp
- 25:    JEQ  0,17(7) 	repeat: jmp to the out of while
+* -> Id
+ 44:     LD  9,1(5) 	load id value
+* <- Id
+ 45:    OUT  9,0,0 	output value in register[ac]
+ 46:    LDA  7,-36(7) 	unconditional jmp
+ 25:    JEQ  0,21(7) 	repeat: jmp to the out of while
 * <- repeat
 * -> Id
- 43:     LD  0,3(5) 	load id value
+ 47:     LD  0,3(5) 	load id value
 * <- Id
- 44:    OUT  0,0,0 	output value in register[ac]
+ 48:    OUT  0,0,0 	output value in register[ac]
 * -> Op
 * -> Id
- 45:     LD  0,3(5) 	load id value
- 46:    MOV  9,0,0 	move from one reg(s) to reg(r)
+ 49:     LD  0,3(5) 	load id value
+ 50:    MOV  9,0,0 	move from one reg(s) to reg(r)
 * <- Id
- 47:     ST  9,0(6) 	op: push left
+ 51:     ST  9,0(6) 	op: push left
 * -> Const
- 48:    LDC  10,3.000000(0) * <- Const
- 49:     LD  10,0(6) 	op: load left
- 50:    DIV  9,10,9 	op /
+ 52:    LDC  9,3.000000(0) * <- Const
+ 53:     LD  10,0(6) 	op: load left
+ 54:    DIV  9,10,9 	op /
 * <- Op
- 51:    OUT  9,0,0 	output value in register[ac]
+ 55:    OUT  9,0,0 	output value in register[ac]
 * End of execution.
- 52:   HALT  0,0,0 	
+ 56:   HALT  0,0,0 	

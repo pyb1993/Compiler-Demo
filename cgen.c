@@ -148,7 +148,7 @@ static void genExp( TreeNode * tree)
 				break;
 			case RFloat:
 				 float_num = float_from_node(tree);
-				 emitLDCF("LDC", fac1, float_num, 0, "load float const");// reg[ac] = tree->ttr.val.integer
+				 emitLDCF("LDC", fac, float_num, 0, "load float const");// reg[ac] = tree->ttr.val.integer
 				break;
 			default:
 				emitComment("BUG in ConstK,unknwon expression type");

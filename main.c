@@ -60,6 +60,9 @@ int main(){
 	if (!readInstructions(code))
 		exit(1);
 
+	float x = 5.0;
+	int y = *(int *)(&x);
+	int z = *(float *)(&y);
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{

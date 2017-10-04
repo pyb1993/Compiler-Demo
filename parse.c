@@ -102,8 +102,9 @@ TreeNode * statement(void)
 	case ID: t = assign_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
-	case INT:  t = declare_stmt();
+	case INT:  
 	case FLOAT:
+		t = declare_stmt();
 		break;
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
@@ -112,8 +113,6 @@ TreeNode * statement(void)
   } /* end case */
 	return t;
 }
-
-
 
 
 TreeNode * if_stmt(void)
@@ -142,7 +141,6 @@ TreeNode * if_stmt(void)
 }
 
 
-
 TreeNode * while_stmt(void)
 {
 	TreeNode * t = newStmtNode(RepeatK);
@@ -161,7 +159,6 @@ TreeNode * break_stmt(void)
     match(BREAK);
     return t;
 }
-
 
 TreeNode * assign_stmt(void)
 {
@@ -211,6 +208,7 @@ TreeNode* declare_stmt(void)
 		  match(FLOAT);
 		  t->attr.name = copyString(tokenString);
 		  match(ID);
+		  break;
       default:
             t->type = ErrorType;
             syntaxError("undefined type");
