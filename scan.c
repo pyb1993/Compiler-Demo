@@ -257,7 +257,8 @@ TokenType getToken(void)
 				ungetTokenstring(&tokenStringIndex);
 				save = FALSE;
 			}
-			else {//over
+			else {
+				//over
 				state = DONE;
 				ungetNextChar();
 				currentToken = OVER;

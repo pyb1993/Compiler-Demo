@@ -72,7 +72,7 @@ void emitRO( char *op, int r, int s, int t, char *c);
  * s = the base register
  * c = a comment to be printed if TraceCode is TRUE
  */
-void emitRM(char * op, int r, int d, int s, char *c, Type converted_type);
+void emitRM(char * op, int r, int d, int s, char *c);
 
 /* Function emitSkip skips "howMany" code
  * locations for later backpatch. It also
@@ -111,7 +111,7 @@ char* genLabel();
  */
 
 // emit LDC code specifically
-void emiLDC(char * op, int r, float d, int s, char *c, Type converted_type);
+void emitLDCF(char * op, int r, float d, int s, char *c);
 
 
 

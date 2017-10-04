@@ -12,7 +12,6 @@
 #include "tinytype.h"
 /* counter for variable memory locations */
 static int location = 0;
-static bool can_convert(Type a, Type b);
 
  /* Procedure traverse is a generic recursive
  * syntax tree traversal routine:
@@ -46,7 +45,6 @@ static void typeError(TreeNode * t, char * message)
 }
 
 static int var_size_of(Type);
-static bool is_relative_type(Type a, Type b);
 
 /* nullProc is a do-nothing procedure to
  * generate preorder-only or postorder-only
@@ -158,15 +156,20 @@ static void checkNode(TreeNode * t)
 		case OpK:
 		{
 			TokenType op = t->attr.op;
-			if (can_convert(t->child[0]->type,RInteger) && can_convert(t->child[1]->type,RInteger))
-				typeError(t, "Op applied to non-integer");
+			if (!can_convert(t->child[0]->type,RInteger) || !can_convert(t->child[1]->type,RInteger))
+				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
 				t->type = RBoolean;
-			else if (t->child[0]->type == LFloat || t->child[0]->type == RFloat ||
-					    t->child[1]->type == LFloat || t->child[1]->type == RFloat )
+			else if (is_relative_type(t->child[0]->type, LFloat) ||
+					 is_relative_type(t->child[1]->type, LFloat))
 				t->type = RFloat;
+			else
+				t->type = RInteger;
 			break;	
 		}
+		case IdK:
+			t->type = st_lookup_type(t->attr.name);
+			break;
         default:
             break;
         }
@@ -188,13 +191,9 @@ static void checkNode(TreeNode * t)
 					typeError(t->child[0], "assgin is not allowed for this two types");					
 				}
                 break;
-            case WriteK:
-				if (t->child[0]->type != RInteger && t->child[0]->type != LInteger)
-                    typeError(t->child[0],"write of non-integer value");
-                break;
             case RepeatK:
-                if (t->child[1]->type != RBoolean && t->child[1]->type != LBoolean)
-                    typeError(t->child[1],"repeat test is not Boolean");
+                if (t->child[0]->type != RBoolean && t->child[0]->type != LBoolean)
+                    typeError(t->child[0],"repeat test is not Boolean");
                 break;
             default:
                 break;
@@ -205,39 +204,9 @@ static void checkNode(TreeNode * t)
     }
 }
 
-/*
- check if type a and type b is the same or relative LType,RType
- */
-bool is_relative_type(Type a, Type b)
-{
-    if (a == b)
-        return true;
-    else if (abs(b - a) == LRBOUND + 1)
-        return true;
 
-    return false;
-}
 // check type a can be converted to b
 
-bool can_convert(Type a, Type b)
-{
-
-	if (is_relative_type(a, b)) return true;
-	if (a == LBoolean || a == RBoolean){
-		if (b == LInteger || b == RInteger) return true;
-	}
-
-	if (a == LInteger || a == RInteger) {
-		if (b == LBoolean || b == RBoolean) return true;
-		if (b == LFloat || b == RFloat) return true;
-	}
-
-	if (a == LFloat || a == RFloat){
-		if (b == LInteger || b == RInteger) return true;
-	}
-
-	return false;
-}
 
 /* Procedure typeCheck performs type checking 
  * by a postorder syntax tree traversal
@@ -281,7 +250,6 @@ static void set_convertd_type(TreeNode * t, TokenType type){
 		set_convertd_type(t->child[i], type);
 	}
 }
-
 
 
 static void gen_converted_type(TreeNode * tree)

@@ -1,4 +1,6 @@
 #include "tm.h"
+#include "assert.h"
+#include "code.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -10,7 +12,7 @@
 /******* const *******/
 #define   IADDR_SIZE  1024 /* increase for large programs */
 #define   DADDR_SIZE  1024 /* increase for large programs */
-#define   NO_REGS 8
+#define   NO_REGS 11
 #define   PC_REG  7
 
 #define   LINESIZE  121
@@ -45,11 +47,144 @@ char in_Line[LINESIZE];
 int lineLen;
 int inCol;
 int num;
+float flt_num;
 char word[WORDSIZE];
 char ch;
 int done;
 
+// macro used to DRY
+#define operand_proc(op) do{\
+					switch (op)\
+				{\
+					case '+': reg[r] = lhs + rhs; break;\
+					case '-': reg[r] = lhs - rhs; break;\
+					case '*': reg[r] = lhs * rhs; break;\
+					case '/':\
+						if (rhs == 0) return srZERODIVIDE;\
+						else reg[r] = lhs + rhs;\
+						break;\
+				}\
+				return srOKAY;\
+				}while(0)
+
 /********************************************/
+
+
+
+static int reg_type(int reg){
+	if (reg == ac || reg == ac1) return ac;
+	if (reg == fac || reg == fac1) return fac;
+	return -1;
+}
+
+static int same_reg_type(int reg1,int reg2){
+	return reg_type(reg1) == reg_type(reg2);
+}
+
+static float flt_from_reg(int r)
+{
+	float flt = flt_from_integer(reg[r]);
+	return flt;
+}
+
+static float flt_from_integer(int c){
+	return *(float *)(&c);
+}
+
+
+
+static void convert(int reg1, int reg2)
+{
+	if (same_reg_type(reg1, reg2))
+	{
+		reg[reg2] = reg[reg1];
+		return;
+	}
+	float flt;
+	switch (reg1)
+	{
+	case ac:
+	case ac1:
+		assert(reg2 == fac || reg2 == fac1);
+		//int to float
+		flt = reg[reg1];
+		reg[reg2] = flt;
+		break;
+	case fac:
+	case fac1:
+		assert(reg2 == ac || reg2 == ac1);
+		//float to int
+		flt = flt_from_reg(reg1);
+		reg[reg2] = flt;
+		break;
+	}
+
+}
+
+
+static void load_const(int r, int c){
+	switch (r)
+	{
+	case ac:
+	case ac1:
+		reg[r] = c;
+		break;
+	case fac:
+	case fac1:
+		//float to int
+		reg[r] = flt_from_integer(c);
+		break;
+	}
+}
+
+static void store(int r, int m){
+
+	switch (r)
+	{
+	case ac:
+	case ac1:
+		dMem[m] = reg[r];
+		break;
+	case fac:
+	case fac1:
+		//float to int
+		reg[r] = flt_from_integer(c);
+		break;
+	}
+
+}
+
+static STEPRESULT operand(int r, int s, int t,char op)
+{
+	assert(same_reg_type(r, s) && same_reg_type(s,t));
+	float flt_s,flt_t;
+	switch (r)
+	{
+		case ac:
+		case ac1:
+			//int operation
+			reg[r] = reg[s] + reg[t];
+			return srOKAY;
+			break;
+		case fac:
+		case fac1:
+			//float to int
+			flt_s = flt_from_reg(s);
+			flt_t = flt_from_reg(t);
+			return do_operand_flt(r, flt_s, flt_t, op);
+			break;
+	}
+}
+
+static STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op){
+	operand_proc(op);
+}
+
+static STEPRESULT do_operand_int(int r, int lhs, int rhs, char op){
+	operand_proc(op);
+}
+
+
 int opClass(int c)
 {
 	if (c <= opRRLim) return (opclRR);
@@ -130,6 +265,27 @@ int getNum(void)
 	} while ((nonBlank()) && ((ch == '+') || (ch == '-')));
 	return temp;
 } /* getNum */
+
+float getFloat()
+{
+	int retry_times = 2;
+	char * str_head = (char*)malloc(30 * sizeof(char));
+	char * str_tail = str_head;
+
+	nonBlank();
+	while (retry_times > 0){
+		if (ch == '+' || ch == '-') *str_tail++ = ch;
+		else if (ch == '.') { retry_times -= 1; *str_tail++ = ch;}
+		else if (isdigit(ch)) { *str_tail++ = ch;}
+		else { retry_times = 0; break; }
+		getCh();
+	}
+	*str_tail = '\0';
+	flt_num = atof(str_head);
+	free(str_head);
+	return TRUE;
+}
+
 
 /********************************************/
 int getWord(void)
@@ -250,9 +406,19 @@ int readInstructions(FILE *pgm)
 				arg1 = num;
 				if (!skipCh(','))
 					return error("Missing comma", lineNo, loc);
-				if (!getNum())
-					return error("Bad displacement", lineNo, loc);
-				arg2 = num;
+				/*
+					load float , load integer	
+				*/
+				if (op == opLDC && same_reg_type(arg1,fac))
+				{
+					getFloat();
+					arg2 = *(int *)(&flt_num);
+				}
+				else{
+					if (!getNum())	return error("Bad displacement", lineNo, loc);
+					arg2 = num;
+				}
+				
 				if (!skipCh('(') && !skipCh(','))
 					return error("Missing LParen", lineNo, loc);
 				if ((!getNum()) || (num < 0) || (num >= NO_REGS))
@@ -274,15 +440,15 @@ int readInstructions(FILE *pgm)
 STEPRESULT stepTM(void)
 {
 	INSTRUCTION currentinstruction;
-	int pc;
+	int pc_pos;
 	int r, s, t, m;
 	int ok;
 
-	pc = reg[PC_REG];
-	if ((pc < 0) || (pc > IADDR_SIZE))
+	pc_pos = reg[PC_REG];
+	if ((pc_pos < 0) || (pc_pos > IADDR_SIZE))
 		return srIMEM_ERR;
-	reg[PC_REG] = pc + 1;
-	currentinstruction = iMem[pc];
+	reg[PC_REG] = pc_pos + 1;
+	currentinstruction = iMem[pc_pos];
 	switch (opClass(currentinstruction.iop))
 	{
 	case opclRR:
@@ -327,23 +493,44 @@ STEPRESULT stepTM(void)
 			gets(in_Line);
 			lineLen = strlen(in_Line);
 			inCol = 0;
-			ok = getNum();
+			/*
+				deal with the float number
+			*/
+			if (same_reg_type(r, ac)) { 
+				ok = getNum(); 
+				reg[r] = num;
+			}
+			else if (same_reg_type(r,fac)) {
+				ok = getFloat();
+				reg[r] = flt_num;
+			}
+			else{
+				assert(!("undefined type", 1));
+			}
 			if (!ok) printf("Illegal value\n");
-			else reg[r] = num;
 		} while (!ok);
 		break;
 
 	case opOUT:
-		printf("OUT instruction prints: %d\n", reg[r]);
+		if (same_reg_type(r, ac)) {
+			printf("OUT instruction prints: %d\n", reg[r]);
+		}
+		else if (same_reg_type(r, fac)) {
+			flt_num = flt_from_reg(reg[r]);
+			printf("OUT instruction prints: %f\n", flt_num);
+		}
 		break;
-	case opADD:  reg[r] = reg[s] + reg[t];  break;
-	case opSUB:  reg[r] = reg[s] - reg[t];  break;
-	case opMUL:  reg[r] = reg[s] * reg[t];  break;
+	case opMOV:	 
+		/*deal  with the conversion of different format*/
+		convert(s,r);// s -> r
+		break;
+	case opADD:  operand(r, s, t, '+'); break;
+	case opSUB:  operand(r, s, t, '-');  break;
+	case opMUL:  operand(r, s, t, '*'); break;
 
 	case opDIV:
 		/***********************************/
-		if (reg[t] != 0) reg[r] = reg[s] / reg[t];
-		else return srZERODIVIDE;
+		if (operand(r, s, t, '/') != srOKAY) return srZERODIVIDE;
 		break;
 
 		/*************** RM instructions ********************/
@@ -352,7 +539,7 @@ STEPRESULT stepTM(void)
 
 		/*************** RA instructions ********************/
 	case opLDA:    reg[r] = m; break;
-	case opLDC:    reg[r] = currentinstruction.iarg2;   break;
+	case opLDC:    load_const(r, currentinstruction.iarg2); break;
 	case opJLT:    if (reg[r] <  0) reg[PC_REG] = m; break;
 	case opJLE:    if (reg[r] <= 0) reg[PC_REG] = m; break;
 	case opJGT:    if (reg[r] >  0) reg[PC_REG] = m; break;

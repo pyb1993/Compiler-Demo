@@ -30,6 +30,8 @@ bool equal_type(VarType a, VarType b);
 VarType type_from_basic(Type type);
 int integer_from_node(TreeNode * t);
 float float_from_node(TreeNode * t);
+bool is_relative_type(Type a, Type b);
+bool can_convert(Type a, Type b);
 
 
 #endif /* tinytype_h */

@@ -18,19 +18,22 @@
  stored, and incremeted when loaded again
  */
 static int tmpOffset = 0;
-
 /* prototype for internal recursive code generator */
 static void cGen (TreeNode * tree);
 
 /*function used to get the relative register  */
-static int get_reg(Type type){
-	if (type == LInteger || type == RInteger){
+static int get_reg(Type type)
+{
+	if (type == LFloat || type == RFloat)
+	{
 		return fac;
 	}
-	else if (type == LFloat || type == RFloat) {
+	else if (is_relative_type(type, LInteger) || is_relative_type(type, LBoolean)) 
+	{
 		return ac;
 	}
-	else{
+	else
+	{
 		assert(!"get reg is not implemented for other type");
 		return 0;
 	}
@@ -44,9 +47,9 @@ static int get_reg1(Type type){
 static void genStmt( TreeNode * tree)
 {
     TreeNode * p1, * p2, * p3;
-	Type type = st_lookup_type(tree->attr.name);
     int savedLoc1,savedLoc2,currentLoc;
     int loc;
+	TokenType type;
     switch (tree->kind.stmt) {
             
         case IfK :
@@ -86,7 +89,7 @@ static void genStmt( TreeNode * tree)
 			/* generate code for body */
 			cGen(p2);
 			currentLoc = emitSkip(0);
-			emitRM("LDA", pc, (savedLoc2 - (currentLoc + 1)), pc, "unconditional jmp",type);
+			emitRM("LDA", pc, (savedLoc2 - (currentLoc + 1)), pc, "unconditional jmp");
 			currentLoc = emitSkip(0);
             emitBackup(savedLoc1);
             emitRM_Abs("JEQ",ac,currentLoc,"repeat: jmp to the out of while");
@@ -96,9 +99,9 @@ static void genStmt( TreeNode * tree)
         
         case AssignK:
             if (TraceCode) emitComment("-> assign");
-            /*	to gen converted_attribute*/
 			cGen(tree->child[0]);// load value in register ac or fac 
-			emitRO("MOV", get_reg(type), get_reg(tree->converted_type), 0, "move register reg(s) tp reg(r)");
+			type = st_lookup_type(tree->attr.name);
+			emitRO("MOV", get_reg(type), get_reg(tree->child[0]->converted_type), 0, "move register reg(s) tp reg(r)");
             loc = st_lookup(tree->attr.name);// get the memory location of identifier
 			emitRM("ST", get_reg(type), loc, gp, "assign: store value",type);//mem[reg[gp]+loc] =  reg[ac]		
             if (TraceCode)  emitComment("<- assign") ;
@@ -106,15 +109,17 @@ static void genStmt( TreeNode * tree)
             
         case ReadK:
             loc = st_lookup(tree->attr.name);
+			type = st_lookup_type(tree->attr.name);
 			//todo, optimize follow code. DRY
-			emitRO("IN", get_reg(type), 0, 0, "read integer/float value",type);
-			emitRM("ST", get_reg(type), loc, gp, "assign: store value",type);//mem[reg[gp]+loc] =  reg[ac]
+			emitRO("IN", get_reg(type), 0, 0, "read integer/float value");
+			emitRM("ST", get_reg(type), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
 			break;
         case WriteK:
             /* generate code for expression to write */
             cGen(tree->child[0]);
-            /* now output it */
-            emitRO("OUT",get_reg(type),0,0,"output value in register[ac]",type);
+			type = tree->child[0]->type;
+			/* now output it */
+            emitRO("OUT",get_reg(type),0,0,"output value in register[ac]");
             break;
         default:
             break;
@@ -139,11 +144,11 @@ static void genExp( TreeNode * tree)
 			{
 			case RInteger:
 				 integer = integer_from_node(tree);
-				 emitRM("LDC", ac, integer, 0, "load integer const", type);// reg[ac] = tree->ttr.val.integer
+				 emitRM("LDC", ac, integer, 0, "load integer const");// reg[ac] = tree->ttr.val.integer
 				break;
 			case RFloat:
 				 float_num = float_from_node(tree);
-				 emiLDC("LDC", fac1, float_num, 0, "load float const", type);// reg[ac] = tree->ttr.val.integer
+				 emitLDCF("LDC", fac1, float_num, 0, "load float const");// reg[ac] = tree->ttr.val.integer
 				break;
 			default:
 				emitComment("BUG in ConstK,unknwon expression type");
@@ -155,8 +160,8 @@ static void genExp( TreeNode * tree)
         case IdK :
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-			emitRM("LD", get_reg(tree->type), loc, gp, "load id value", type);// reg[ac] = Mem[reg[gp] + loc]
-			emitRM("MOV", get_reg(type), get_reg(tree->type), 0, "move from one reg(s) to reg(r)",type);// tiny machine wuold analyze the instruction 
+			emitRM("LD", get_reg(tree->type), loc, gp, "load id value");// reg[ac] = Mem[reg[gp] + loc]
+			emitRO("MOV", get_reg(type), get_reg(tree->type), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
             if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
         case OpK :
@@ -166,10 +171,10 @@ static void genExp( TreeNode * tree)
             /* gen code for ac = left arg */
             cGen(p1);
             /* gen code to push left operand */
-			emitRM("ST", get_reg(type), tmpOffset--, mp, "op: push left",type);
+			emitRM("ST", get_reg(type), tmpOffset--, mp, "op: push left");
             /* gen code for ac = right operand */
             cGen(p2);
-			emitRM("LD", get_reg1(type), ++tmpOffset, mp, "op: load left",type); //reg[ac1] = mem[reg[mp] + tmpoffset]
+			emitRM("LD", get_reg1(type), ++tmpOffset, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
             
 			int reg = get_reg(type);
 			int reg1 = get_reg1(type);
@@ -205,17 +210,17 @@ static void genExp( TreeNode * tree)
 					}
 
 					/* now the op_code is JLE,JLT,GLE,GLT*/
-					emitRM(op_code, ac, 2, pc, "br if true", type);
-					emitRM("LDC", ac, 0, ac, "false case", type);
-					emitRM("LDA", pc, 1, pc, "unconditional jmp", type);
-					emitRM("LDC", ac, 1, ac, "true case", type);
+					emitRM(op_code, ac, 2, pc, "br if true");
+					emitRM("LDC", ac, 0, ac, "false case");
+					emitRM("LDA", pc, 1, pc, "unconditional jmp");
+					emitRM("LDC", ac, 1, ac, "true case");
 					break;
                 case EQ :
-					emitRO("SUB", reg, reg1, reg, "op ==, convertd_type", type);
-					emitRM("JEQ", ac, 2, pc, "br if true", type);
-					emitRM("LDC", ac, 0, ac, "false case", type);
-					emitRM("LDA", pc, 1, pc, "unconditional jmp", type);
-					emitRM("LDC", ac, 1, ac, "true case", type);
+					emitRO("SUB", reg, reg1, reg, "op ==, convertd_type");
+					emitRM("JEQ", ac, 2, pc, "br if true");
+					emitRM("LDC", ac, 0, ac, "false case" );
+					emitRM("LDA", pc, 1, pc, "unconditional jmp");
+					emitRM("LDC", ac, 1, ac, "true case");
                     break;
                 default:
                     emitComment("BUG: Unknown operator");
@@ -266,8 +271,8 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     emitComment(s);
     /* generate standard prelude */
     emitComment("Standard prelude:");
-    emitRM("LD",mp,0,ac,"load maxaddress from location 0",type);
-    emitRM("ST",ac,0,ac,"clear location 0",type);
+    emitRM("LD",mp,0,ac,"load maxaddress from location 0");
+    emitRM("ST",ac,0,ac,"clear location 0");
     emitComment("End of standard prelude.");
     /* generate code for TINY program */
     cGen(syntaxTree);

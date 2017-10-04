@@ -6,7 +6,8 @@ int t1
 int t2
 t1 = 1
 t2 = 1
-while(k < n)
+write t2
+while(k < n + 3)
 {
 	int tmp
 	tmp = t1
@@ -15,6 +16,7 @@ while(k < n)
 	k = k + 1
 }
 write t2
+write t2 / 3.0
 
 /*
 to do list
@@ -33,5 +35,5 @@ to do list
 9  auto x = 10; auto inference
 10 import other file
 11 continuation
-
+*/
 

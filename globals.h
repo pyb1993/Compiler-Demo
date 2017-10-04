@@ -32,7 +32,7 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, THEN, ELSE,ELSIF, END, WHILE,BREAK,UNTIL, READ, WRITE,
+	IF, ELSE,ELSIF, END, WHILE,BREAK,UNTIL, READ, WRITE,
 	/* multicharacter tokens */
 	ID, NUM, FlOATNUM,
 	/* special symbols */

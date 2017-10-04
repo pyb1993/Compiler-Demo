@@ -55,7 +55,6 @@ int main(){
 	code = fopen(codeFile,"w");
 	codeGen(t,codeFile);
 	fclose(code);
-
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))

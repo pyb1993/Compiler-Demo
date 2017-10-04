@@ -18,13 +18,15 @@ VarType type_from_basic(Type type)
 
 
 int integer_from_node(TreeNode * t){
-	if (t->converted_type == Void) return t->attr.val.integer;
 	
 	switch (t->type)
 	{
 		case LFloat:
 		case RFloat:
 			return t->attr.val.flt;
+		case LInteger:
+		case RInteger:
+			return t->attr.val.integer;
 		default:
 			assert(!("not defined such conversion",1));
 			return 0;
@@ -34,10 +36,12 @@ int integer_from_node(TreeNode * t){
 }
 
 float float_from_node(TreeNode * t){
-	if (t->converted_type == Void) return t->attr.val.flt;
 
 	switch (t->type)
 	{
+	case LFloat:
+	case RFloat:
+		return t->attr.val.flt;
 	case LInteger:
 	case RInteger:
 		return t->attr.val.integer;
@@ -46,4 +50,34 @@ float float_from_node(TreeNode * t){
 		return 0;
 		break;
 	}
+}
+
+bool is_relative_type(Type a, Type b)
+{
+	if (a == b)
+		return true;
+	else if (abs(b - a) == LRBOUND + 1)
+		return true;
+
+	return false;
+}
+
+bool can_convert(Type a, Type b)
+{
+
+	if (is_relative_type(a, b)) return true;
+	if (a == LBoolean || a == RBoolean){
+		if (b == LInteger || b == RInteger) return true;
+	}
+
+	if (a == LInteger || a == RInteger) {
+		if (b == LBoolean || b == RBoolean) return true;
+		if (b == LFloat || b == RFloat) return true;
+	}
+
+	if (a == LFloat || a == RFloat){
+		if (b == LInteger || b == RInteger) return true;
+	}
+
+	return false;
 }

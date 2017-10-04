@@ -19,6 +19,7 @@ typedef enum {
 	opHALT,    /* RR     halt, operands are ignored */
 	opIN,      /* RR     read into reg(r); s and t are ignored */
 	opOUT,     /* RR     write from reg(r), s and t are ignored */
+	opMOV,     /*RR move register from one to another*/
 	opADD,    /* RR     reg(r) = reg(s)+reg(t) */
 	opSUB,    /* RR     reg(r) = reg(s)-reg(t) */
 	opMUL,    /* RR     reg(r) = reg(s)*reg(t) */

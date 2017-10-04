@@ -204,13 +204,11 @@ TreeNode* declare_stmt(void)
             t->type = LInteger;
             match(INT);
             t->attr.name = copyString(tokenString);
-			t->type = LInteger;
             match(ID);
             break;
 	  case FLOAT:
-		  t->type = RFloat;
-		  match(FLOAT);
 		  t->type = LFloat;
+		  match(FLOAT);
 		  t->attr.name = copyString(tokenString);
 		  match(ID);
       default:
@@ -286,7 +284,7 @@ TreeNode * factor(void)
 		break;
     case FlOATNUM:
             t = newExpNode(ConstK);
-			t->attr.val.flt = atof(t);
+			t->attr.val.flt = atof(tokenString);
 			t->type = RFloat;
 			match(FlOATNUM);
             break;
