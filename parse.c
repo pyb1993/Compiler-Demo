@@ -195,25 +195,23 @@ TreeNode * write_stmt(void)
 /*this function will return declare_k -> declare_k -> .... declare_k*/
 TreeNode* paramK_stmt(void)
 {
-
 	match(LPAREN);
-	TreeNode * t = NULL;
-	TreeNode * next = t;
+	
+	if (token == VOID || token == RPAREN)
+	{
+		if (token == VOID) match(VOID);
+		match(RPAREN);
+		return NULL;
+	}
+
+	TreeNode * t = declare_stmt();
+	TreeNode * next = t->sibling;
+	
 	while (token != RPAREN)
 	{
-		if (token == VOID)
-		{
-			match(VOID);
-			next =  newStmtNode(DeclareK);
-			next->type = Void;
-			break;
-		}
-		else
-		{
-			next = declare_stmt();
-			next = next->sibling;
-		}
-		if (token != RPAREN) match(COMMA);
+		next = declare_stmt();
+		next = next->sibling;		
+		if (token != RPAREN ) match(COMMA);
 	}
 	match(RPAREN);
 	return t;
@@ -258,15 +256,13 @@ TreeNode* declare_stmt(void)
 
 	if (func_dec)
 	{
-		t->attr.val.return_type = t->type;//define the return type;
+		t->return_type = t->type;//define the return type;
 		t->type = Func;
 		t->child[0] = paramK_stmt();
 		match(LBRACKET);
 		t->child[1] = stmt_sequence();
 		match(RBRACKET);
 	}
-
-
 
 
 	return t;

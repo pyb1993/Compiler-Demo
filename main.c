@@ -16,7 +16,7 @@ FILE * code;
 int EchoSource = TRUE;
 int TraceScan = TRUE;
 int TraceParse = TRUE;
-int TraceAnalyze = FALSE;
+int TraceAnalyze = TRUE;
 int TraceCode = FALSE;
 int Error = FALSE;
 int done;
@@ -35,13 +35,11 @@ int main(){
 
 	TreeNode *t = parse();
 
-	#if 0
+	#if 1
 		if (!Error)
 		{
 			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
 			buildSymtab(t);
-			if (TraceAnalyze) fprintf(listing, "\nChecking Types...\n");
-			typeCheck(t);
 			if (TraceAnalyze) fprintf(listing, "\nType Checking Finished\n");
 		}
 	#endif

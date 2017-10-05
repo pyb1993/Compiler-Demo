@@ -4,18 +4,62 @@
 /*
  to compare type a and type b is identical
  */
-bool equal_type( VarType a, VarType b){
-    return false;
-}
 
-VarType type_from_basic(Type type)
+
+VarType * type_from_basic(Type type)
 {
 	VarType * t = (VarType *)malloc(sizeof(VarType));
 	t->typekind = BTYPE;
 	t->typeinfo.btype = type;
-	return (*t);
+	return t;
 }
 
+VarType * new_type(TreeNode * tree){
+	VarType * t = (VarType *)malloc(sizeof(VarType));
+	switch (tree->type){
+	case Func:
+		t->typekind = FUNTYPE;
+		t->typeinfo.ftype = new_func_type(tree);
+		break;
+	case LStruct:
+		assert(("not implemented struct", 1));
+		break;
+	default:
+		assert(("not implemented int or other", 1));
+		break;
+	}
+	return t;
+}
+
+/*return the func_type, which is consisted of paramNode and return type*/
+FuncType new_func_type(TreeNode * tree){
+	FuncType ftype;
+	ftype.return_type = tree->return_type;
+	ftype.params = new_param_node(tree->child[0]);
+	return ftype;
+}
+
+ParamNode * new_param_node(TreeNode * tree)
+{
+	ParamNode * p;
+	ParamNode * pnode;
+
+	if (tree == NULL) return NULL;
+
+    p = (ParamNode *)malloc(sizeof(ParamNode));
+	pnode = p;
+
+	do
+	{
+		pnode->type = tree->type;
+		pnode = pnode->next_param;
+		tree = tree->sibling;
+		if (tree != NULL)  { pnode = (ParamNode *)malloc(sizeof(ParamNode)); }
+	} while (tree != NULL);
+
+	pnode = NULL;
+	return p;
+}
 
 int integer_from_node(TreeNode * t){
 	

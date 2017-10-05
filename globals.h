@@ -73,10 +73,10 @@ typedef struct treeNode
 			int integer;
 			float flt;
 			char *str;
-			Type return_type; // used for the return type
 		} val;// constk should contain one of three values
 	} attr;
     Type type;
+	Type return_type; // used only for the return type
 	Type converted_type;
 } TreeNode;
 

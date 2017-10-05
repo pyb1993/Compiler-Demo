@@ -13,30 +13,35 @@
 /* counter for variable memory locations */
 static int location = 0;
 
- /* Procedure traverse is a generic recursive
- * syntax tree traversal routine:
- * it applies preProc in preorder and postProc
- * in postorder to tree pointed to by t
+ /* 
+   a global 
  */
-static void traverse( TreeNode * t, void (* preProc) (TreeNode *), void (* postProc) (TreeNode *))
+
+static bool is_global = false;
+static void checkNode(TreeNode * t);
+
+static void traverse(TreeNode * t, void(*preProc) (TreeNode *), void(*postProc) (TreeNode *), void(*postProc2) (TreeNode *))
 {
     if (t != NULL)
     {
         preProc(t);
         for (int i=0; i < MAXCHILDREN; i++)
         {
-                traverse(t->child[i],preProc,postProc);
-        }
+			bool tmp = is_global;
+			is_global = false;
+            traverse(t->child[i],preProc,postProc,postProc2);
+			is_global = tmp;//restore
+		}
         postProc(t);
-        traverse(t->sibling,preProc,postProc);
-    }
+        traverse(t->sibling,preProc,postProc,postProc2);// sibling means the stmt_sequence
+		postProc2(t);
+	}
 }
 
 static void defineError(TreeNode * t ,char * msg){
     fprintf(listing,"Define error at line %d: %s\n",t->lineno,msg);
     Error = TRUE;
 }
-
 
 static void typeError(TreeNode * t, char * message)
 {
@@ -58,77 +63,59 @@ static void nullProc(TreeNode * t) { }
  */
 static void insertNode( TreeNode * t)
 {
-    switch (t->nodekind)
+	VarType * type = NULL;
+
+	 switch (t->nodekind)
     { case StmtK:
             switch (t->kind.stmt)
         {
             case DeclareK:
                 if (t->type == Func)
                 {
-                    /*
-                     possible method:
-                     t has the attribute of parameters list and return type
-                     the symtable should also contain the type info.
-                     */
-                    defineError(t,"func type not implemented");
-                }
+					type = new_type(t);// create the function type
+					st_insert(t->attr.name, t->lineno, location++, 1, type);// function occupy 4 bytes
+				}
                 else
                 {
-                    if (st_lookup(t->attr.name) == -1)
-                    {
-                        int var_szie = var_size_of(t->type);
-						VarType type = type_from_basic(t->type);
-                        st_insert(t->attr.name,t->lineno,location++,var_szie,type);
-                    }
-                    else
-                    {
-                        defineError(t,"duplicate definition");
-                    }
+					if (st_lookup(t->attr.name) != -1){	
+						defineError(t, "duplicate definition");
+					}
+                    
+                    int var_szie = var_size_of(t->type);
+					type = type_from_basic(t->type);
+                    st_insert(t->attr.name,t->lineno,location++,var_szie,type);
                 }
-                
                 break;
-            case AssignK:
-            case ReadK:
-                if (st_lookup(t->attr.name) == -1)// todo there are look up two times, can be optimized
-                /* not yet in table, so treat as new definition */
-                    defineError(t,"undefined variable");
-				else{
-					/* already in table, so ignore location,
-					 add line number of use only */
-					VarType type = type_from_basic(t->type);
-					st_insert(t->attr.name, t->lineno, 0, 1, type);					
-				}
-                break;
-            default:
-                break;
+
         }
             break;
         case ExpK:
-            switch (t->kind.exp)
-        {
-            case IdK:
-                if (st_lookup(t->attr.name) == -1)
-                /* not yet in table, undefined variable */
-                    defineError(t,"undefined variable");
-				else{
-					VarType type = type_from_basic(t->type);
-					st_insert(t->attr.name, t->lineno, 0, 1,type);
-				}
-                break;
-            default:
-                break;
-        }
-            break;
-        default:
+			if (t->kind.exp == IdK && st_lookup(t->attr.name) == -1)
+				defineError(t,"undefined variable");
             break;
     }
 }
+
+
+static void deleteNode(TreeNode * t)
+{
+	if (is_global) return;
+
+	if ((t->nodekind == StmtK) && (t->kind.stmt == DeclareK))
+	{
+		st_delete(t->attr.name);
+		
+	}
+}
+
 
 /* Function buildSymtab constructs the symbol
  * table by preorder traversal of the syntax tree
  */
 void buildSymtab(TreeNode * syntaxTree)
-{ traverse(syntaxTree,insertNode,nullProc);
+{ 
+	is_global = true;
+	traverse(syntaxTree,insertNode,checkNode,deleteNode);
     if (TraceAnalyze)
     { fprintf(listing,"\nSymbol table:\n\n");
         printSymTab(listing);
@@ -144,9 +131,8 @@ int var_size_of(Type type){
 /* Procedure checkNode performs
  * type checking at a single tree node
  */
-static void checkNode(TreeNode * t)
+ void checkNode(TreeNode * t)
 {
-
     switch (t->nodekind)
     {
 	 case ExpK:
@@ -211,9 +197,7 @@ static void checkNode(TreeNode * t)
 /* Procedure typeCheck performs type checking 
  * by a postorder syntax tree traversal
  */
-void typeCheck(TreeNode * syntaxTree)
-{ traverse(syntaxTree,nullProc,checkNode);
-}
+
 
 
 /*assert the node is exp*/
