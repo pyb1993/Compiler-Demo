@@ -28,11 +28,6 @@ static BucketList insert_into_list( BucketList list,BucketList inserted);
 static BucketList del_from_list(BucketList list, char * name);
 static void free_node(BucketList node);
 
-void st_insert(char * name, int lineno, int loc, int size, VarType * type);
-void st_delete(char * name);
-Type st_lookup_type(char * name);
-int st_lookup(char * name);
-void printSymTab(FILE * listing);
 
 
 /*insert the node into the hashtable */

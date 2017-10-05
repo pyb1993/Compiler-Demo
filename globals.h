@@ -52,7 +52,7 @@ extern int lineno; /* source line number for listing */
 /**************************************************/
 
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,BreakK } StmtKind;
+typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK } StmtKind;
 typedef enum { OpK, ConstK, IdK } ExpKind;
 /* ExpType is used for type checking */
 typedef enum {LBoolean,LInteger,LFloat,LStruct,LRBOUND,RBoolean,RInteger,RFloat,RStruct,Func,Void,ErrorType} Type;// literal type, the expression has the rvalue, and the variable has the lvalue

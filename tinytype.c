@@ -8,9 +8,19 @@
 
 VarType * type_from_basic(Type type)
 {
-	VarType * t = (VarType *)malloc(sizeof(VarType));
-	t->typekind = BTYPE;
-	t->typeinfo.btype = type;
+	VarType * t;
+	switch (type)
+	{
+	case INT:
+	case FLOAT:
+		t = (VarType *)malloc(sizeof(VarType));
+		t->typekind = BTYPE;
+		t->typeinfo.btype = type;
+		break;
+	default:
+		assert((!"ERROR TYPE !!!"));
+		break;
+	}
 	return t;
 }
 

@@ -10,6 +10,7 @@
 #include "symtable.h"
 #include "analyze.h"
 #include "tinytype.h"
+#include "assert.h"
 /* counter for variable memory locations */
 static int location = 0;
 
@@ -61,32 +62,55 @@ static void nullProc(TreeNode * t) { }
  * identifiers stored in t into
  * the symbol table
  */
+
+/*insert the param */
+static int insertParam(TreeNode * t)
+{
+	if (t == NULL) return 0;
+
+	Type type = type_from_basic(t->type);
+	int var_size = var_size_of(type);
+	int size = insertParam(t->sibling) + var_size;// offset of param in reverse
+	
+	// convert to the DeclareK temporarily to insert it as the declare node	
+	if (st_lookup(t->attr.name) != -1)
+	{
+		defineError(t, "duplicate definition");
+	}
+
+	st_insert(t->attr.name, t->lineno, size,var_size, type);
+	location += var_size;
+	return size;
+}
+
 static void insertNode( TreeNode * t)
 {
 	VarType * type = NULL;
 
 	 switch (t->nodekind)
-    { case StmtK:
+    { 
+	 case StmtK:
             switch (t->kind.stmt)
         {
             case DeclareK:
-                if (t->type == Func)
+				if (st_lookup(t->attr.name) != -1)
+				{
+					defineError(t, "duplicate definition");
+				}
+				
+				if (t->type == Func)
                 {
 					type = new_type(t);// create the function type
 					st_insert(t->attr.name, t->lineno, location++, 1, type);// function occupy 4 bytes
 				}
                 else
-                {
-					if (st_lookup(t->attr.name) != -1){	
-						defineError(t, "duplicate definition");
-					}
-                    
+                {   
                     int var_szie = var_size_of(t->type);
 					type = type_from_basic(t->type);
-                    st_insert(t->attr.name,t->lineno,location++,var_szie,type);
+                    st_insert(t->attr.name,t->lineno,location,var_szie,type);
+					location += var_szie;
                 }
                 break;
-
         }
             break;
         case ExpK:

@@ -39,7 +39,8 @@ static int get_reg(Type type)
 	}
 }
 
-static int get_reg1(Type type){
+static int get_reg1(Type type)
+{
 	return get_reg(type) + 1;
 }
 
@@ -50,8 +51,7 @@ static void genStmt( TreeNode * tree)
     int savedLoc1,savedLoc2,currentLoc;
     int loc;
 	TokenType type;
-    switch (tree->kind.stmt) {
-            
+    switch (tree->kind.stmt) {            
         case IfK :
             if (TraceCode) emitComment("-> if");
             p1 = tree->child[0] ;

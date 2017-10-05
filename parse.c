@@ -210,6 +210,7 @@ TreeNode* paramK_stmt(void)
 	while (token != RPAREN)
 	{
 		next = declare_stmt();
+		next->type = ParamK;//except type(paramk,declarek), other is the identical
 		next = next->sibling;		
 		if (token != RPAREN ) match(COMMA);
 	}
