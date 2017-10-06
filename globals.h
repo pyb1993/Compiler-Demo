@@ -53,7 +53,7 @@ extern int lineno; /* source line number for listing */
 
 typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK } StmtKind;
-typedef enum { OpK, ConstK, IdK } ExpKind;
+typedef enum { OpK, ConstK, IdK,FuncallK } ExpKind;
 /* ExpType is used for type checking */
 typedef enum {LBoolean,LInteger,LFloat,LStruct,LRBOUND,RBoolean,RInteger,RFloat,RStruct,Func,Void,ErrorType} Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
@@ -66,9 +66,8 @@ typedef struct treeNode
 	int lineno;
 	NodeKind nodekind;
 	union { StmtKind stmt; ExpKind exp; } kind;
-	struct {
+	union {
 		TokenType op;//eg < > == + - * /
-		int scope_depth;// used to indicate the scope filed
 		char * name;// the id name
         union {
 			int integer;
@@ -79,6 +78,7 @@ typedef struct treeNode
     Type type;
 	Type return_type; // used only for the return type
 	Type converted_type;
+
 } TreeNode;
 
 

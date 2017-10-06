@@ -9,8 +9,15 @@
 #include "util.h"
 #include "scan.h"
 #include "parse.h"
-
+/*
+	todo: solve the ugly implementation!!!
+		   how to solve function call and assignment???
+		   see the source code impl
+*/
 static TokenType token; /* holds current token */
+static TokenType token_array[10000];// holds last token
+static char* token_string_array[10000];
+static int pos = 0;// hold the current token position
 
 /* function prototypes for recursive calls */
 static TreeNode * stmt_sequence(void);
@@ -18,6 +25,7 @@ static TreeNode * statement(void);
 static TreeNode * if_stmt(void);
 static TreeNode * while_stmt(void);
 static TreeNode * assign_stmt(void);
+static TreeNode * funcall_exp(void);
 static TreeNode * read_stmt(void);
 static TreeNode * write_stmt(void);
 static TreeNode * declare_stmt(void);
@@ -28,7 +36,14 @@ static TreeNode * term(void);
 static TreeNode * factor(void);
 //help function
 static TreeNode * parseOneVar();
+static TreeNode * parseOneExp();
+static TreeNode * param_pass(void);// parse function call params
+static TreeNode * paramK_stmt(void);// parse function def params
 
+static TreeNode * idStartStmt();
+static void       initTokens();
+static TokenType  currentToken();
+static void		  unGetToken();
 
 static void syntaxError(char * message)
 {
@@ -40,7 +55,7 @@ static void syntaxError(char * message)
 static void match(TokenType expected)
 {
 	if (token == expected) {
-		token = getToken();
+		token = currentToken();
 	}
 	else {
 		syntaxError("unexpected token -> ");
@@ -102,7 +117,7 @@ TreeNode * statement(void)
 	case IF: t = if_stmt(); break;
 	case WHILE: t = while_stmt(); break;
     case BREAK: t = break_stmt();break;
-	case ID: t = assign_stmt(); break;
+	case ID: t = idStartStmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
 	case INT:  
@@ -114,7 +129,7 @@ TreeNode * statement(void)
 		break;
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
-		token = getToken();
+		token = currentToken();
 		break;
   } /* end case */
 	return t;
@@ -177,6 +192,37 @@ TreeNode * assign_stmt(void)
 	return t;
 }
 
+TreeNode * funcall_exp(void)
+{
+
+	TreeNode *t = newExpNode(FuncallK);
+	t->attr.name = copyString(tokenString);//function name
+	match(ID);
+	match(LPAREN);
+	t->child[0] = param_pass();
+}
+
+ TreeNode * param_pass(void)
+{
+	if (token == VOID || token == RPAREN)
+	{
+		if (token == VOID) match(VOID);
+		match(RPAREN);
+		return NULL;
+	}
+
+	TreeNode *t = parseOneExp();// parse first param, why deal with it specifically? because I need to return t
+	TreeNode *next = t;
+
+	while (token != RPAREN)
+	{
+		next->sibling = parseOneExp();
+		next = next->sibling;
+	}
+	return t;
+}
+
+
 TreeNode * read_stmt(void)
 {
 	TreeNode * t = newStmtNode(ReadK);
@@ -195,8 +241,8 @@ TreeNode * write_stmt(void)
 	return t;
 }
 
-/*this function will return declare_k -> declare_k -> .... declare_k*/
-TreeNode* paramK_stmt(void)
+/*this function will return paramk -> paramk -> .... paramk*/
+static TreeNode* paramK_stmt(void)
 {
 	match(LPAREN);
 	
@@ -216,8 +262,11 @@ TreeNode* paramK_stmt(void)
 		next = next->sibling;
 	}
 	match(RPAREN);
+	int a = (1,2,4);
 	return t;
 }
+
+
 
 TreeNode* parseOneVar()
 {
@@ -226,6 +275,67 @@ TreeNode* parseOneVar()
 	if (token != RPAREN) { match(COMMA); }
 	return t;
 }
+
+TreeNode* parseOneExp()
+{
+	TreeNode * t = exp();
+	if (token != RPAREN) { match(COMMA);}
+	return t;
+}
+
+// if the first token is id, two possibilities
+TreeNode * idStartStmt()
+{
+	match(ID);
+	if (token == ASSIGN)
+	{
+		unGetToken();
+		return assign_stmt();
+	}
+	else if(token == LPAREN)
+	{
+		unGetToken();
+		return funcall_exp();
+	}
+}
+
+ void unGetToken()
+{
+	 pos--;
+
+}
+
+ TokenType  currentToken()
+ {
+	 
+	 int i = 0;
+	 char * str = token_string_array[pos];
+	 if (str == NULL) return ENDFILE;
+	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
+	 return token_array[pos++];
+ }
+
+ /* init tokens and tokenStrings */
+ void initTokens()
+ {
+	#define addToken(token,tokenstr)  do{\
+									     token_array[pos] = token;\
+										 token_string_array[pos++] = tokenstr;\
+										}while(0)\
+
+	 int pos = 0;
+	 TokenType tok = getToken();
+	 addToken(tok, copyString(tokenString));
+	 while (tok != ENDFILE)
+	 {
+		 tok = getToken();
+		 addToken(tok, copyString(tokenString));
+	 }
+
+	 addToken(ENDFILE, NULL);
+	 pos = 0;
+ }
+
 
 TreeNode* declare_stmt(void)
 {
@@ -248,7 +358,7 @@ TreeNode* declare_stmt(void)
 		  t->type = LFloat;
 		  t->attr.name = copyString(tokenString);
 		  match(ID);
-		  func_dec = (token == RPAREN);
+		  func_dec = (token == LPAREN);
 		  break;
 	  case VOID:
 		  match(VOID);
@@ -273,13 +383,8 @@ TreeNode* declare_stmt(void)
 		t->child[1] = stmt_sequence();
 		match(RBRACKET);
 	}
-
-
 	return t;
 }
-
-
-
 
 TreeNode * exp(void)
 {
@@ -350,11 +455,24 @@ TreeNode * factor(void)
 			match(FlOATNUM);
             break;
 	case ID:
-		t = newExpNode(IdK);
-		t->attr.name = copyString(tokenString);			
+		// todo, support assignment exp
+		// todo, remove code to other
 		match(ID);
+		if (token == LPAREN)
+		{
+			unGetToken();
+			t = funcall_exp();
+		}
+		else
+		{
+			unGetToken();
+			t = newExpNode(IdK);
+			t->attr.name = copyString(tokenString);
+			match(ID);
+		}
 		break;
 	case LPAREN:
+		// todo support comma expression, backup the pos, and restore!!!
 		match(LPAREN);
 		t = exp();
 		match(RPAREN);
@@ -362,7 +480,7 @@ TreeNode * factor(void)
 	default:
 		syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
-		token = getToken( );
+		token = currentToken( );
 		break;
 	}
 	return t;
@@ -377,7 +495,8 @@ TreeNode * factor(void)
 TreeNode * parse(void)
 {
 	TreeNode * t;
-	token = getToken();
+	initTokens();
+	token = currentToken();
 	t = stmt_sequence();
 	if (token != ENDFILE)
 		syntaxError("Code ends before file\n");

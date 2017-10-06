@@ -10,6 +10,8 @@ void buildSymtab(TreeNode *);
  * by a postorder syntax tree traversal
  */
 void typeCheck(TreeNode *);
+int  insertParam(TreeNode * t);
+void deleteParam(TreeNode * t);
 
 static void gen_converted_type(TreeNode * tree);
 

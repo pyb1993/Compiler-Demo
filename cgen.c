@@ -8,11 +8,13 @@
 /****************************************************/
 
 #include "globals.h"
+#include "analyze.h"
 #include "symtable.h"
 #include "code.h"
 #include "cgen.h"
 #include "tinytype.h"
 #include "assert.h"
+
 /* tmpOffset is the memory offset for temps
  It is decremented each time a temp is
  stored, and incremeted when loaded again
@@ -51,7 +53,8 @@ static void genStmt( TreeNode * tree)
     int savedLoc1,savedLoc2,currentLoc;
     int loc;
 	TokenType type;
-    switch (tree->kind.stmt) {            
+    switch (tree->kind.stmt)
+	{            
         case IfK :
             if (TraceCode) emitComment("-> if");
             p1 = tree->child[0] ;
@@ -114,13 +117,22 @@ static void genStmt( TreeNode * tree)
 			emitRO("IN", get_reg(type), 0, 0, "read integer/float value");
 			emitRM("ST", get_reg(type), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
 			break;
-        case WriteK:
+    
+		case WriteK:
             /* generate code for expression to write */
             cGen(tree->child[0]);
 			type = tree->child[0]->type;
 			/* now output it */
             emitRO("OUT",get_reg(type),0,0,"output value in register[ac]");
             break;
+		
+		case DeclareK:
+			/*deal with the function  */
+			if (tree->type != Func) return;
+			insertParam(tree->child[0]);
+			cGen(tree->child[1]);// generate code for the function body
+			deleteParam(tree->child[0]);
+			break;
         default:
             break;
     }
@@ -178,6 +190,7 @@ static void genExp( TreeNode * tree)
             
 			int reg = get_reg(type);
 			int reg1 = get_reg1(type);
+
 			switch (tree->attr.op) 
 			{
                 case PLUS :
@@ -199,11 +212,13 @@ static void genExp( TreeNode * tree)
 					op = tree->attr.op;
 					char op_code[4] = "JLT";
 
-					if (op == LT || op == LE){
+					if (op == LT || op == LE)
+					{
 						emitRO("SUB", reg, reg1, reg, "op <");
 						op_code[2] = (op == LT ? 'T' : 'E');
 					}
-					else{
+					else
+					{
 						emitRO("SUB", reg, reg1, reg, "op <");
 						op_code[1] = 'G';
 						op_code[2] = (op == GT ? 'T' : 'E');

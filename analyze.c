@@ -69,7 +69,7 @@ static void nullProc(TreeNode * t) { }
  */
 
 /*insert the param */
-static int insertParam(TreeNode * t)
+ int insertParam(TreeNode * t)
 {
 	VarType * type;
 	if (t == NULL) return 0;
@@ -84,9 +84,21 @@ static int insertParam(TreeNode * t)
 	}
 
 	st_insert(t->attr.name, t->lineno, size,var_size,scope_depth, type);
+	printf("%s %d \n",t->attr.name, size);
 	location += var_size;
 	return size;
 }
+
+ void deleteParam(TreeNode * t)
+ {
+	 TreeNode * param = t;
+	 while (param != NULL)
+	 {
+		 st_delete(param->attr.name);
+		 param = param->sibling;
+	 }
+ }
+
 
 static void insertNode( TreeNode * t)
 {
@@ -128,15 +140,22 @@ static void insertNode( TreeNode * t)
     }
 }
 
-
+/*notice one thing: delete param list after function body,not imediately!*/
 static void deleteNode(TreeNode * t)
 {
-	if (is_global) return;
-
-	if ((t->nodekind == StmtK) && (t->kind.stmt == DeclareK || t->kind.stmt == ParamK))
+	if (t->nodekind != StmtK) return;
+	switch (t->kind.stmt)
 	{
-		st_delete(t->attr.name);
-		
+	case DeclareK:
+		if (!is_global)
+		{
+			st_delete(t->attr.name);
+		}
+		else if(t->type == Func)
+		{
+			deleteParam(t->child[0]);
+		}
+		break;
 	}
 }
 
