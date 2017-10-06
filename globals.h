@@ -66,8 +66,9 @@ typedef struct treeNode
 	int lineno;
 	NodeKind nodekind;
 	union { StmtKind stmt; ExpKind exp; } kind;
-	union {
+	struct {
 		TokenType op;//eg < > == + - * /
+		int scope_depth;// used to indicate the scope filed
 		char * name;// the id name
         union {
 			int integer;
@@ -79,6 +80,10 @@ typedef struct treeNode
 	Type return_type; // used only for the return type
 	Type converted_type;
 } TreeNode;
+
+
+
+
 
 /**************************************************/
 /***********   Flags for tracing       ************/

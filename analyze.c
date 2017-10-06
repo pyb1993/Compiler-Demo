@@ -18,7 +18,8 @@ static int location = 0;
    a global 
  */
 
-static bool is_global = false;
+static bool is_global = true;
+static int scope_depth = 0; //  0 is global scope,1 is the first child scope
 static void checkNode(TreeNode * t);
 
 static void traverse(TreeNode * t, void(*preProc) (TreeNode *), void(*postProc) (TreeNode *), void(*postProc2) (TreeNode *))
@@ -30,8 +31,12 @@ static void traverse(TreeNode * t, void(*preProc) (TreeNode *), void(*postProc) 
         {
 			bool tmp = is_global;
 			is_global = false;
+			scope_depth++;
+
             traverse(t->child[i],preProc,postProc,postProc2);
+
 			is_global = tmp;//restore
+			scope_depth--;
 		}
         postProc(t);
         traverse(t->sibling,preProc,postProc,postProc2);// sibling means the stmt_sequence
@@ -66,19 +71,19 @@ static void nullProc(TreeNode * t) { }
 /*insert the param */
 static int insertParam(TreeNode * t)
 {
+	VarType * type;
 	if (t == NULL) return 0;
-
-	Type type = type_from_basic(t->type);
-	int var_size = var_size_of(type);
+	type = type_from_basic(t->type);
+	int var_size = var_size_of(t->type);
 	int size = insertParam(t->sibling) + var_size;// offset of param in reverse
 	
 	// convert to the DeclareK temporarily to insert it as the declare node	
-	if (st_lookup(t->attr.name) != -1)
+	if (is_duplicate_var(t->attr.name,scope_depth))
 	{
 		defineError(t, "duplicate definition");
 	}
 
-	st_insert(t->attr.name, t->lineno, size,var_size, type);
+	st_insert(t->attr.name, t->lineno, size,var_size,scope_depth, type);
 	location += var_size;
 	return size;
 }
@@ -93,7 +98,7 @@ static void insertNode( TreeNode * t)
             switch (t->kind.stmt)
         {
             case DeclareK:
-				if (st_lookup(t->attr.name) != -1)
+				if (is_duplicate_var(t->attr.name,scope_depth))
 				{
 					defineError(t, "duplicate definition");
 				}
@@ -101,13 +106,16 @@ static void insertNode( TreeNode * t)
 				if (t->type == Func)
                 {
 					type = new_type(t);// create the function type
-					st_insert(t->attr.name, t->lineno, location++, 1, type);// function occupy 4 bytes
+					st_insert(t->attr.name, t->lineno, location++, 1,scope_depth, type);// function occupy 4 bytes
+					scope_depth++;
+					insertParam(t->child[0]);
+					scope_depth--;
 				}
                 else
                 {   
                     int var_szie = var_size_of(t->type);
 					type = type_from_basic(t->type);
-                    st_insert(t->attr.name,t->lineno,location,var_szie,type);
+					st_insert(t->attr.name, t->lineno, location, var_szie, scope_depth,type);
 					location += var_szie;
                 }
                 break;
@@ -125,7 +133,7 @@ static void deleteNode(TreeNode * t)
 {
 	if (is_global) return;
 
-	if ((t->nodekind == StmtK) && (t->kind.stmt == DeclareK))
+	if ((t->nodekind == StmtK) && (t->kind.stmt == DeclareK || t->kind.stmt == ParamK))
 	{
 		st_delete(t->attr.name);
 		
@@ -139,6 +147,7 @@ static void deleteNode(TreeNode * t)
 void buildSymtab(TreeNode * syntaxTree)
 { 
 	is_global = true;
+	scope_depth = 0;
 	traverse(syntaxTree,insertNode,checkNode,deleteNode);
     if (TraceAnalyze)
     { fprintf(listing,"\nSymbol table:\n\n");

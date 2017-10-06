@@ -11,14 +11,16 @@ VarType * type_from_basic(Type type)
 	VarType * t;
 	switch (type)
 	{
-	case INT:
-	case FLOAT:
+	case LStruct:
+	case RStruct:
+	case Func:
+		t = NULL;
+		assert((!"ERROR TYPE !!!"));
+		break;
+	default:
 		t = (VarType *)malloc(sizeof(VarType));
 		t->typekind = BTYPE;
 		t->typeinfo.btype = type;
-		break;
-	default:
-		assert((!"ERROR TYPE !!!"));
 		break;
 	}
 	return t;

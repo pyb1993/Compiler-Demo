@@ -1,5 +1,4 @@
-void f()
+void f(int a)
 {
-	int x
-	int x
+	int a	
 }

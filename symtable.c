@@ -15,6 +15,7 @@ typedef struct BucketListRec
 	char * name;
 	int memloc; /* memory location for variable */
 	int mem_size;/* memory size for this variable */
+	int scope_depth;// the scope depth
 	VarType* var_type;
 	struct BucketListRec * next;
 } *BucketList;
@@ -23,11 +24,11 @@ typedef struct BucketListRec
 static BucketList hashTable[SIZE];
 
 static int hash(char * key);
-static BucketList construct_node(char * name, int lineno, int loc, int size, VarType * type);
+static BucketList construct_node(char * name, int lineno, int loc, int size,int depth, VarType * type);
 static BucketList insert_into_list( BucketList list,BucketList inserted);
 static BucketList del_from_list(BucketList list, char * name);
 static void free_node(BucketList node);
-
+static BucketList st_get_node(char * name);
 
 
 /*insert the node into the hashtable */
@@ -57,32 +58,40 @@ void st_delete(char * name)
 * first time, otherwise ignored
 */
 
-void st_insert( char * name, int lineno, int loc,int size,VarType * type)
+void st_insert( char * name, int lineno, int loc,int size,int depth,VarType * type)
 {
     int h = hash(name);
-	BucketList inserted = construct_node(name, lineno, loc, size, type);
+	BucketList inserted = construct_node(name, lineno, loc, size,depth, type);
 	hashTable[h] = insert_into_list(hashTable[h],inserted);
 } 
 
 /*
 	return the head of list, and insert node to the list;
 */
-BucketList insert_into_list(BucketList list,BucketList inserted){
+BucketList insert_into_list(BucketList list,BucketList inserted)
+{
 	if (list == NULL) {	return inserted;}
 
 	BucketList p = list;
-	while (p->next != NULL){ p = p->next;}
+	if (strcmp(p->name, inserted->name) == 0)
+	{
+		inserted->next = p;
+		return inserted;
+	}
 
+	while (p->next != NULL && strcmp(p->next,inserted->name) != 0){ p = p->next;}
+	inserted->next = p->next;
 	p->next = inserted;
 	return list;
 }
 
-BucketList construct_node(char * name, int lineno, int loc, int size, VarType * type)
+BucketList construct_node(char * name, int lineno, int loc, int size,int depth, VarType * type)
 {
 	BucketList list = (BucketList)malloc(sizeof(struct BucketListRec));
 	list->name = name; // note: name cannot be free !!!
 	list->memloc = loc;
 	list->mem_size = size;
+	list->scope_depth = depth;
 	list->var_type = type;
 	list->next = NULL;
 	return list;
@@ -118,37 +127,42 @@ void free_node(BucketList l){
  * location of a variable or -1 if not found
  */
 int st_lookup ( char * name )
-{   int h = hash(name);
-    BucketList l =  hashTable[h];
-	while ((l != NULL) && (strcmp(name, l->name) != 0))
-	{
-		l = l->next;
-	}
-    if (l == NULL) 
-		return -1;
-    else return 
-		l->memloc;
+{  
+	BucketList l = st_get_node(name);
+	return (l == NULL) ? -1 : l->memloc;
 }
 
 /*
+	used for get type
 	return the upper type of variable
 */
 Type st_lookup_type(char * name)
 {
-    int h = hash(name);
-    BucketList l =  hashTable[h];
-    while ((l != NULL) && (strcmp(name,l->name) != 0))
-        l = l->next;
-    if (l == NULL)
-        return ErrorType;
-    if (l->var_type->typekind == BTYPE){
-        return l->var_type->typeinfo.btype;
-    }
-    else
+	BucketList l = st_get_node(name);
+	assert(l != NULL);
+	assert(l->var_type->typekind == BTYPE);
+    return l->var_type->typeinfo.btype;
+}
+
+bool is_duplicate_var(char * name, int depth)
+{
+	BucketList l = st_get_node(name);
+	if (l == NULL)
 	{
-		printf("type beyond BTYPE is not implemented\n");
-        return ErrorType;
-    }
+		return false;
+	}
+
+	return l->scope_depth == depth;
+}
+
+/*assume name must exist*/
+static BucketList st_get_node(char * name)
+{
+	int h = hash(name);
+	BucketList l = hashTable[h];
+	while ((l != NULL) && (strcmp(name, l->name) != 0))
+		l = l->next;
+	return l;
 }
 
 
@@ -159,8 +173,8 @@ Type st_lookup_type(char * name)
 void printSymTab(FILE * listing)
 {
     int i;
-    fprintf(listing,"Variable Name  Location   Memory Size      Line Numbers\n");
-    fprintf(listing,"-------------  --------   -----------       -------------\n");
+    fprintf(listing,"Variable Name  Location   Memory Size   Scope Depth      Line Numbers\n");
+    fprintf(listing,"-------------  --------   -----------	 -----------	  ------------\n");
     for (i=0;i<SIZE;++i)
 	{
 		if (hashTable[i] == NULL) continue;
@@ -171,7 +185,7 @@ void printSymTab(FILE * listing)
             fprintf(listing,"%-14s ",l->name);
             fprintf(listing,"%-8d  ",l->memloc);
             fprintf(listing,"%-8d bytes  ",l->mem_size);
-
+			fprintf(listing, "%-8d bytes  ", l->scope_depth);
             fprintf(listing,"\n");
             l = l->next;
         }

@@ -26,6 +26,9 @@ static TreeNode * exp(void);
 static TreeNode * simple_exp(void);
 static TreeNode * term(void);
 static TreeNode * factor(void);
+//help function
+static TreeNode * parseOneVar();
+
 
 static void syntaxError(char * message)
 {
@@ -204,17 +207,23 @@ TreeNode* paramK_stmt(void)
 		return NULL;
 	}
 
-	TreeNode * t = declare_stmt();
-	TreeNode * next = t->sibling;
-	
+	TreeNode *t = parseOneVar();// parse first param, why deal with it specifically? because I need to return t
+	TreeNode *next = t;
+
 	while (token != RPAREN)
 	{
-		next = declare_stmt();
-		next->type = ParamK;//except type(paramk,declarek), other is the identical
-		next = next->sibling;		
-		if (token != RPAREN ) match(COMMA);
+		next->sibling = parseOneVar();
+		next = next->sibling;
 	}
 	match(RPAREN);
+	return t;
+}
+
+TreeNode* parseOneVar()
+{
+	TreeNode * t = declare_stmt();
+	t->kind.exp = ParamK;
+	if (token != RPAREN) { match(COMMA); }
 	return t;
 }
 
@@ -268,6 +277,9 @@ TreeNode* declare_stmt(void)
 
 	return t;
 }
+
+
+
 
 TreeNode * exp(void)
 {
