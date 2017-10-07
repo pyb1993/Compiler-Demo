@@ -302,28 +302,33 @@ TreeNode * idStartStmt()
  void unGetToken()
 {
 	 pos--;
+	 token = token_array[pos];
+	 int i = 0;
+	 
+	 char * str = token_string_array[pos];
+	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
 
 }
 
  TokenType  currentToken()
  {
-	 
 	 int i = 0;
-	 char * str = token_string_array[pos];
-	 if (str == NULL) return ENDFILE;
+	
+	 char * str = token_string_array[++pos];
 	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
-	 return token_array[pos++];
+	 
+	 return token_array[pos];
  }
 
  /* init tokens and tokenStrings */
  void initTokens()
  {
 	#define addToken(token,tokenstr)  do{\
-									     token_array[pos] = token;\
-										 token_string_array[pos++] = tokenstr;\
+									     token_array[i] = token;\
+										 token_string_array[i++] = tokenstr;\
 										}while(0)\
 
-	 int pos = 0;
+	 int i = 0;
 	 TokenType tok = getToken();
 	 addToken(tok, copyString(tokenString));
 	 while (tok != ENDFILE)
@@ -333,7 +338,7 @@ TreeNode * idStartStmt()
 	 }
 
 	 addToken(ENDFILE, NULL);
-	 pos = 0;
+	 pos = -1;
  }
 
 
@@ -486,12 +491,8 @@ TreeNode * factor(void)
 	return t;
 }
 
-/****************************************/
-/* the primary function of the parser   */
-/****************************************/
-/* Function parse returns the newly
-* constructed syntax tree
-*/
+
+/* Function parse returns the newly constructed syntax tree*/
 TreeNode * parse(void)
 {
 	TreeNode * t;
