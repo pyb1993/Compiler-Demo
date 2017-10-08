@@ -253,9 +253,11 @@ int readInstructions(FILE *pgm)
 	int loc, regNo, lineNo;
 	for (regNo = 0; regNo < NO_REGS; regNo++)
 		reg[regNo] = 0;
+
 	dMem[0] = DADDR_SIZE - 1;
 	dMem[1] = GP_ADRESS;
 	dMem[2] = FIRST_FP;
+	
 	for (loc = 1; loc < DADDR_SIZE; loc++)
 		dMem[loc] = 0;
 	for (loc = 0; loc < IADDR_SIZE; loc++)

@@ -11,15 +11,15 @@
 #include "analyze.h"
 #include "tinytype.h"
 #include "assert.h"
-/* counter for variable memory locations */
+/* counter for global variable memory locations */
 static int location = 0;
+static int stack_offset = 0; 
+static int scope_depth = 0; //  0 is global scope,1 is the first child scope
 
- /* 
+/* 
    a global 
  */
 
-static bool is_global = true;
-static int scope_depth = 0; //  0 is global scope,1 is the first child scope
 static void checkNode(TreeNode * t);
 
 static void traverse(TreeNode * t, void(*preProc) (TreeNode *), void(*postProc) (TreeNode *), void(*postProc2) (TreeNode *))
@@ -29,18 +29,14 @@ static void traverse(TreeNode * t, void(*preProc) (TreeNode *), void(*postProc) 
         preProc(t);
         for (int i=0; i < MAXCHILDREN; i++)
         {
-			bool tmp = is_global;
-			is_global = false;
+
 			scope_depth++;
-
             traverse(t->child[i],preProc,postProc,postProc2);
-
-			is_global = tmp;//restore
 			scope_depth--;
 		}
         postProc(t);
         traverse(t->sibling,preProc,postProc,postProc2);// sibling means the stmt_sequence
-		postProc2(t);
+		postProc2(t,scope_depth);
 	}
 }
 
@@ -69,13 +65,18 @@ static void nullProc(TreeNode * t) { }
  */
 
 /*insert the param */
- int insertParam(TreeNode * t)
+int insertParam(TreeNode * t,int scope_depth){
+	_insertParam(t,scope_depth);
+	stack_offset = -2;
+}
+
+ int _insertParam(TreeNode * t,int scope_depth)
 {
 	VarType * type;
 	if (t == NULL) return 0;
 	type = type_from_basic(t->type);
 	int var_size = var_size_of(t->type);
-	int size = insertParam(t->sibling) + var_size;// offset of param in reverse
+	int size = insertParam(t->sibling,scope_depth) + var_size;// offset of param in reverse
 	
 	// convert to the DeclareK temporarily to insert it as the declare node	
 	if (is_duplicate_var(t->attr.name,scope_depth))
@@ -84,13 +85,14 @@ static void nullProc(TreeNode * t) { }
 	}
 
 	st_insert(t->attr.name, t->lineno, size,var_size,scope_depth, type);
-	printf("%s %d \n",t->attr.name, size);
-	location += var_size;
+	printf("stack offset %s %d \n",t->attr.name, size);
+	stack_offset += var_size;
 	return size;
 }
 
  void deleteParam(TreeNode * t)
  {
+	 stack_offset = 0;
 	 TreeNode * param = t;
 	 while (param != NULL)
 	 {
@@ -117,19 +119,32 @@ static void insertNode( TreeNode * t)
 				
 				if (t->type == Func)
                 {
+					/*
+						todo :support local procedure
+					
+					
+					*/
 					type = new_type(t);// create the function type
 					st_insert(t->attr.name, t->lineno, location++, 1,scope_depth, type);// function occupy 4 bytes
 					scope_depth++;
-					insertParam(t->child[0]);
+					insertParam(t->child[0],scope_depth);
 					scope_depth--;
 				}
-                else
+				else if (scope_depth == 0) //global var
                 {   
                     int var_szie = var_size_of(t->type);
 					type = type_from_basic(t->type);
 					st_insert(t->attr.name, t->lineno, location, var_szie, scope_depth,type);
 					location += var_szie;
                 }
+				else // local variable
+				{
+					int var_szie = var_size_of(t->type);
+					type = type_from_basic(t->type);
+					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope_depth, type);
+					stack_offset -= var_szie;
+					printf("local variable stack offset %s %d\n",t->attr.name,stack_offset+var_szie);
+				}
                 break;
         }
             break;
@@ -141,17 +156,17 @@ static void insertNode( TreeNode * t)
 }
 
 /*notice one thing: delete param list after function body,not imediately!*/
-static void deleteNode(TreeNode * t)
+void deleteNode(TreeNode * t,int scope_depth)
 {
 	if (t->nodekind != StmtK) return;
 	switch (t->kind.stmt)
 	{
 	case DeclareK:
-		if (!is_global)
+		if (scope_depth > 0)
 		{
 			st_delete(t->attr.name);
 		}
-		else if(t->type == Func)
+		if(t->type == Func)
 		{
 			deleteParam(t->child[0]);
 		}
@@ -165,7 +180,6 @@ static void deleteNode(TreeNode * t)
  */
 void buildSymtab(TreeNode * syntaxTree)
 { 
-	is_global = true;
 	scope_depth = 0;
 	traverse(syntaxTree,insertNode,checkNode,deleteNode);
     if (TraceAnalyze)
