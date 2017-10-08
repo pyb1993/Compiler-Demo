@@ -133,15 +133,24 @@ int st_lookup ( char * name )
 }
 
 /*
-	used for get type
+	used for get basic type
 	return the upper type of variable
 */
 Type st_lookup_type(char * name)
 {
 	BucketList l = st_get_node(name);
 	assert(l != NULL);
-	assert(l->var_type->typekind == BTYPE);
-    return l->var_type->typeinfo.btype;
+	if (l->var_type->typekind == BTYPE) return l->var_type->typeinfo.btype;
+	if (l->var_type->typekind == FUNTYPE) return l->var_type->typeinfo.ftype.return_type;
+}
+
+/*get the type info of var named \key*/
+
+VarType* st_get_var_type_info(char * key)
+{
+	BucketList l = st_get_node(key);
+	assert(l != NULL);
+	return l->var_type;
 }
 
 bool is_duplicate_var(char * name, int depth)

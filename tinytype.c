@@ -53,24 +53,14 @@ FuncType new_func_type(TreeNode * tree){
 
 ParamNode * new_param_node(TreeNode * tree)
 {
-	ParamNode * p;
+	ParamNode * current;
 	ParamNode * pnode;
-
 	if (tree == NULL) return NULL;
-
-    p = (ParamNode *)malloc(sizeof(ParamNode));
-	pnode = p;
-
-	do
-	{
-		pnode->type = tree->type;
-		pnode = pnode->next_param;
-		tree = tree->sibling;
-		if (tree != NULL)  { pnode = (ParamNode *)malloc(sizeof(ParamNode)); }
-	} while (tree != NULL);
-
-	pnode = NULL;
-	return p;
+	pnode = new_param_node(tree->sibling);
+	current = (ParamNode *)malloc(sizeof(ParamNode));
+	current->type = tree->type;
+	current->next_param = pnode;
+	return current;
 }
 
 int integer_from_node(TreeNode * t){
@@ -91,7 +81,8 @@ int integer_from_node(TreeNode * t){
 
 }
 
-float float_from_node(TreeNode * t){
+float float_from_node(TreeNode * t)
+{
 
 	switch (t->type)
 	{

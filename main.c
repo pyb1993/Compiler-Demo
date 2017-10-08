@@ -28,13 +28,14 @@ int main(){
 	source = fopen(filename, "r");
 	listing = stdout;
 
-	if (source == NULL){
+	if (source == NULL)
+	{
 		printf("open error\n");
 		exit(1);
 	}
 
 	TreeNode *t = parse();
-
+	printTree(t);
 	#if 1
 		if (!Error)
 		{

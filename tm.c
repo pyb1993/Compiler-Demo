@@ -10,8 +10,12 @@
 #endif
 
 /******* const *******/
-#define   IADDR_SIZE  1024 /* increase for large programs */
-#define   DADDR_SIZE  1024 /* increase for large programs */
+#define   IADDR_SIZE  4096 /* increase for large programs */
+#define   DADDR_SIZE  4096 /* increase for large programs */
+
+#define   GP_ADRESS 3072 /*the gp adress*/
+#define   FIRST_FP  2048 /*the main fp*/
+
 #define   NO_REGS 11
 #define   PC_REG  7
 
@@ -250,6 +254,8 @@ int readInstructions(FILE *pgm)
 	for (regNo = 0; regNo < NO_REGS; regNo++)
 		reg[regNo] = 0;
 	dMem[0] = DADDR_SIZE - 1;
+	dMem[1] = GP_ADRESS;
+	dMem[2] = FIRST_FP;
 	for (loc = 1; loc < DADDR_SIZE; loc++)
 		dMem[loc] = 0;
 	for (loc = 0; loc < IADDR_SIZE; loc++)

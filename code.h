@@ -27,24 +27,19 @@
  */
 #define  mp 6
 
-/* gp = "global pointer" points
- * to bottom of memory for (global)
- * variable storage
- */
-#define gp 5
+#define gp 5 // global address
+#define fp 2 // stack bottom
+#define sp 3 // stack top
 
 /* accumulator */
 #define  ac 0
-
-/* 2nd accumulator */
 #define  ac1 1
 
-/* the float register*/
+/* the float accumulator*/
 #define fac 9
 #define fac1 10
 
 /* code emitting utilities */
-
 /* Procedure emitComment prints a comment line
  * with comment c in the code file
  */

@@ -200,6 +200,7 @@ TreeNode * funcall_exp(void)
 	match(ID);
 	match(LPAREN);
 	t->child[0] = param_pass();
+	return t;
 }
 
  TreeNode * param_pass(void)
@@ -219,6 +220,7 @@ TreeNode * funcall_exp(void)
 		next->sibling = parseOneExp();
 		next = next->sibling;
 	}
+	match(RPAREN);
 	return t;
 }
 

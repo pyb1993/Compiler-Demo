@@ -178,7 +178,10 @@ void printTree(TreeNode * tree)
                 case DeclareK:
                     fprintf(listing, "Declare variable (%s)\n",tree->attr.name);
                     break;
-                case BreakK:
+				case ParamK:
+					fprintf(listing, "Param variable (%s)\n", tree->attr.name);
+					break;
+				case BreakK:
                     fprintf(listing, "Break \n");
                     break;
     
@@ -203,12 +206,16 @@ void printTree(TreeNode * tree)
                             fprintf(listing, "Const: %f\n", tree->attr.val.flt);
                             break;
                         default:
-                            break;
+							fprintf(listing, "unknown constK\b");
+							break;
                     }
                     break;
                 case IdK:
                     fprintf(listing, "Id: %s\n", tree->attr.name);
                     break;
+				case FuncallK:
+					fprintf(listing, "function call: %s()\n", tree->attr.name);
+					break;
                 default:
                     fprintf(listing, "Unknown ExpNode kind %d\n",tree->nodekind);
                     break;

@@ -134,7 +134,7 @@ static void insertNode( TreeNode * t)
         }
             break;
         case ExpK:
-			if (t->kind.exp == IdK && st_lookup(t->attr.name) == -1)
+			if (t->kind.exp == IdK || t->kind.exp == FuncallK && st_lookup(t->attr.name) == -1)
 				defineError(t,"undefined variable");
             break;
     }
@@ -205,8 +205,33 @@ int var_size_of(Type type){
 				t->type = RInteger;
 			break;	
 		}
+
 		case IdK:
 			t->type = st_lookup_type(t->attr.name);
+			break;
+
+		case FuncallK:
+			t->type = st_lookup_type(t->attr.name);// get function return type
+		
+			/*check the paramter type is legal*/
+			VarType *var_type = st_get_var_type_info(t->attr.name);
+			ParamNode *param_type_node = var_type->typeinfo.ftype.params;
+			TreeNode * param_node = t->child[0];
+			while (param_type_node != NULL)
+			{
+				if (param_node == NULL)
+				{
+					typeError(param_node, "parameter num doesn't match the function definition");
+					break;
+				}
+				if (!can_convert(param_type_node->type, param_node->converted_type))
+				{
+					typeError(param_node, "parameter cannot match the function definition");
+					break;
+				}
+				param_type_node = param_type_node->next_param;
+				param_node = param_node->sibling;
+			}
 			break;
         default:
             break;
@@ -256,12 +281,17 @@ int var_size_of(Type type){
 static Type is_float(TreeNode * t)
 {
 	if (t == NULL) return Void;
+	if (t->child[0] != NULL && t->child[0]->converted_type != Void) return t->child[0]->converted_type;
+	
 	switch (t->kind.exp)
 	{
 	case ConstK:
 		return t->type;
 		break;
 	case IdK:
+		return st_lookup_type(t->attr.name);
+		break;
+	case FuncallK:
 		return st_lookup_type(t->attr.name);
 		break;
 	default:

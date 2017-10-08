@@ -5,4 +5,4 @@ void f(int a,int b,float d)
 	int x
 }
 
-f()
+f(1,2,3.12)

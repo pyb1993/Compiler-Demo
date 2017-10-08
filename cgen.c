@@ -176,7 +176,16 @@ static void genExp( TreeNode * tree)
 			emitRO("MOV", get_reg(type), get_reg(tree->type), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
             if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
-        case OpK :
+		case FuncallK:
+			/*first:  step:push the paramter into the stack
+			  second: jump to the function body, store the stack bottom, and push the return address
+			  third:  generate the function body stmt_sequence
+			*/
+
+			break;
+		
+		
+		case OpK :
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
             p2 = tree->child[1];
@@ -288,6 +297,17 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     emitComment("Standard prelude:");
     emitRM("LD",mp,0,ac,"load maxaddress from location 0");
     emitRM("ST",ac,0,ac,"clear location 0");
+	
+	emitRM("LD", gp, 1, ac, "load gp adress from location 1");
+	emitRM("ST", ac, 1, ac, "clear location 1");
+
+	emitRM("LD", fp, 2, ac, "load gp adress from location 1");
+	emitRM("LD", sp, 2, ac, "load gp adress from location 1");
+	emitRM("ST", ac, 2, ac, "clear location 1");
+
+
+
+
     emitComment("End of standard prelude.");
     /* generate code for TINY program */
     cGen(syntaxTree);
