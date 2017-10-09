@@ -1,117 +1,177 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "symtable.h"
 #include "tinytype.h"
+#include "assert.h"
 /* SIZE is the size of the hash table */
 #define SIZE 211
 
-/* SHIFT is the power of two used as multiplier
- in hash function  */
+/* SHIFT is the power of two used as multiplierin hash function  */
 #define SHIFT 4
 
-
-/* the hash function */
-static int hash ( char * key )
-{ int temp = 0;
-    int i = 0;
-    while (key[i] != '\0')
-    {
-        temp = ((temp << SHIFT) + key[i]) % SIZE;
-        ++i;
-    }
-    return temp;
-}
-
-/* the list of line numbers of the source
- * code in which a variable is referenced
- */
-typedef struct LineListRec
-{
-    int lineno;
-    struct LineListRec * next;
-} * LineList;
-
-/*
-   The LineList is used to reference how many lineno are reference by the variable
-   HashTable [BucketList(   )->BucketList(   )][ BucketList()->BucketList(   )]
- */
 typedef struct BucketListRec
-{   char * name;
-    LineList lines;
-    int memloc ; /* memory location for variable */
-    int mem_size;/* memory size for this variable */
-    struct VarType var_type;
-    struct BucketListRec * next;
-} * BucketList;
+{
+	char * name;
+	int memloc; /* memory location for variable */
+	int mem_size;/* memory size for this variable */
+	int scope_depth;// the scope depth
+	VarType* var_type;
+	struct BucketListRec * next;
+} *BucketList;
 
 /* the hash table */
 static BucketList hashTable[SIZE];
-/* the Lab table*/
+
+static int hash(char * key);
+static BucketList construct_node(char * name, int lineno, int loc, int size,int depth, VarType * type);
+static BucketList insert_into_list( BucketList list,BucketList inserted);
+static BucketList del_from_list(BucketList list, char * name);
+static void free_node(BucketList node);
+static BucketList st_get_node(char * name);
+
+
+/*insert the node into the hashtable */
+/* the hash function */
+int hash(char * key)
+{
+	int temp = 0;
+	int i = 0;
+	while (key[i] != '\0')
+	{
+		temp = ((temp << SHIFT) + key[i]) % SIZE;
+		++i;
+	}
+	return temp;
+}
+
+
+void st_delete(char * name)
+{
+	int h = hash(name);
+	hashTable[h] = del_from_list(hashTable[h], name);
+}
 
 /* Procedure st_insert inserts line numbers and
- * memory locations into the symbol table
- * loc = memory location is inserted only the
- * first time, otherwise ignored
- */
+* memory locations into the symbol table
+* loc = memory location is inserted only the
+* first time, otherwise ignored
+*/
 
-void st_insert( char * name, int lineno, int loc,int size)
+void st_insert( char * name, int lineno, int loc,int size,int depth,VarType * type)
 {
     int h = hash(name);
-    BucketList l =  hashTable[h];
-    while ((l != NULL) && (strcmp(name,l->name) != 0))
-        l = l->next;
-    if (l == NULL) /* variable not yet in table */
-    {
-        l = (BucketList) malloc(sizeof(struct BucketListRec));
-        l->name = name;
-        l->lines = (LineList) malloc(sizeof(struct LineListRec));
-        l->lines->lineno = lineno;
-        l->memloc = loc;
-        l->mem_size = size;
-        l->lines->next = NULL;
-        l->next = hashTable[h];
-        hashTable[h] = l;
-    }
-    else /* found in table, so just add line number */
-    { LineList t = l->lines;
-        while (t->next != NULL) t = t->next;
-        t->next = (LineList) malloc(sizeof(struct LineListRec));
-        t->next->lineno = lineno;
-        t->next->next = NULL;
-    }
-} /* st_insert */
+	BucketList inserted = construct_node(name, lineno, loc, size,depth, type);
+	hashTable[h] = insert_into_list(hashTable[h],inserted);
+} 
+
+/*
+	return the head of list, and insert node to the list;
+*/
+BucketList insert_into_list(BucketList list,BucketList inserted)
+{
+	if (list == NULL) {	return inserted;}
+
+	BucketList p = list;
+	if (strcmp(p->name, inserted->name) == 0)
+	{
+		inserted->next = p;
+		return inserted;
+	}
+
+	while (p->next != NULL && strcmp(p->next,inserted->name) != 0){ p = p->next;}
+	inserted->next = p->next;
+	p->next = inserted;
+	return list;
+}
+
+BucketList construct_node(char * name, int lineno, int loc, int size,int depth, VarType * type)
+{
+	BucketList list = (BucketList)malloc(sizeof(struct BucketListRec));
+	list->name = name; // note: name cannot be free !!!
+	list->memloc = loc;
+	list->mem_size = size;
+	list->scope_depth = depth;
+	list->var_type = type;
+	list->next = NULL;
+	return list;
+}
+
+
+/*return the first node in the list after delete*/
+BucketList del_from_list(BucketList list, char * name){
+	assert((list != NULL || !"delete failed!"));
+	if (strcmp(list->name, name) == 0){
+		BucketList last = list->next;
+		free_node(list);
+		return last;
+	}
+	
+	while ((list->next != NULL) && (strcmp(name, list->next->name) != 0))
+	{
+		list = list->next;
+	}
+
+	assert((list != NULL || !"delete failed!"));
+	BucketList last = list->next->next;
+	free_node(list->next);
+	list->next = last;
+	return list;
+}
+
+void free_node(BucketList l){
+	free(l);
+}
 
 /* Function st_lookup returns the memory
  * location of a variable or -1 if not found
  */
 int st_lookup ( char * name )
-{   int h = hash(name);
-    BucketList l =  hashTable[h];
-    while ((l != NULL) && (strcmp(name,l->name) != 0))
-        l = l->next;
-    if (l == NULL) return -1;
-    else return l->memloc;
+{  
+	BucketList l = st_get_node(name);
+	return (l == NULL) ? -1 : l->memloc;
 }
 
-
+/*
+	used for get basic type
+	return the upper type of variable
+*/
 Type st_lookup_type(char * name)
 {
-    int h = hash(name);
-    BucketList l =  hashTable[h];
-    while ((l != NULL) && (strcmp(name,l->name) != 0))
-        l = l->next;
-    if (l == NULL)
-        return ErrorType;
-    
-    if (l->var_type.typekind == BTYPE){
-        return l->var_type.typeinfo.btype;
-    }
-    else{
-        return ErrorType;
-    
-    }
+	BucketList l = st_get_node(name);
+	assert(l != NULL);
+	if (l->var_type->typekind == BTYPE) return l->var_type->typeinfo.btype;
+	if (l->var_type->typekind == FUNTYPE) return l->var_type->typeinfo.ftype.return_type;
+}
+
+/*get the type info of var named \key*/
+
+VarType* st_get_var_type_info(char * key)
+{
+	BucketList l = st_get_node(key);
+	assert(l != NULL);
+	return l->var_type;
+}
+
+bool is_duplicate_var(char * name, int depth)
+{
+	BucketList l = st_get_node(name);
+	if (l == NULL)
+	{
+		return false;
+	}
+
+	return l->scope_depth == depth;
+}
+
+/*assume name must exist*/
+static BucketList st_get_node(char * name)
+{
+	int h = hash(name);
+	BucketList l = hashTable[h];
+	while ((l != NULL) && (strcmp(name, l->name) != 0))
+		l = l->next;
+	return l;
 }
 
 
@@ -122,22 +182,19 @@ Type st_lookup_type(char * name)
 void printSymTab(FILE * listing)
 {
     int i;
-    fprintf(listing,"Variable Name  Location   Memory Size      Line Numbers\n");
-    fprintf(listing,"-------------  --------   -----------       -------------\n");
+    fprintf(listing,"Variable Name  Location   Memory Size   Scope Depth      Line Numbers\n");
+    fprintf(listing,"-------------  --------   -----------	 -----------	  ------------\n");
     for (i=0;i<SIZE;++i)
 	{
 		if (hashTable[i] == NULL) continue;
 
         BucketList l = hashTable[i];
         while (l != NULL)
-        { LineList t = l->lines;
+        { 
             fprintf(listing,"%-14s ",l->name);
             fprintf(listing,"%-8d  ",l->memloc);
             fprintf(listing,"%-8d bytes  ",l->mem_size);
-            while (t != NULL)
-            { fprintf(listing,"%4d ",t->lineno);
-                t = t->next;
-            }
+			fprintf(listing, "%-8d bytes  ", l->scope_depth);
             fprintf(listing,"\n");
             l = l->next;
         }

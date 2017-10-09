@@ -1,64 +1,119 @@
-* TINY Compilation to TM Code
 * File: pyb_example.tm
 * Standard prelude:
   0:     LD  6,0(0) 	load maxaddress from location 0
   1:     ST  0,0(0) 	clear location 0
 * End of standard prelude.
+* -> assign
+* -> Const
+  2:    LDC  0,2(0) 	load integer const
+* <- Const
+  3:    MOV  9,0,0 	move register reg(s) tp reg(r)
+  4:     ST  9,1(5) 	assign: store value
+* <- assign
+  5:     IN  0,0,0 	read integer/float value
+  6:     ST  0,0(5) 	assign: store value
+* -> assign
+* -> Const
+  7:    LDC  0,1(0) 	load integer const
+* <- Const
+  8:     ST  0,2(5) 	assign: store value
+* <- assign
+* -> assign
+* -> Const
+  9:    LDC  0,1(0) 	load integer const
+* <- Const
+ 10:     ST  0,3(5) 	assign: store value
+* <- assign
 * -> repeat
 * repeat: jump after body comes back here
 * -> Op
 * -> Id
-  2:     LD  0,0(5) 	load id value
+ 11:     LD  9,1(5) 	load id value
+ 12:    MOV  0,9,0 	move from one reg(s) to reg(r)
 * <- Id
-  3:     ST  0,0(6) 	op: push left
-* -> Const
-  4:    LDC  0,1(0) 	load const
-* <- Const
-  5:     LD  1,0(6) 	op: load left
-  6:    SUB  0,1,0 	op <
-  7:    JLE  0,2(7) 	br if true
-  8:    LDC  0,0(0) 	false case
-  9:    LDA  7,1(7) 	unconditional jmp
- 10:    LDC  0,1(0) 	true case
-* <- Op
-* -> if
+ 13:     ST  0,0(6) 	op: push left
 * -> Op
 * -> Id
- 11:     LD  0,0(5) 	load id value
+ 14:     LD  0,0(5) 	load id value
 * <- Id
- 12:     ST  0,0(6) 	op: push left
+ 15:     ST  0,-1(6) 	op: push left
 * -> Const
- 13:    LDC  0,0(0) 	load const
+ 16:    LDC  0,3(0) 	load integer const
 * <- Const
- 14:     LD  1,0(6) 	op: load left
- 15:    SUB  0,0,1 	op <
- 16:    JGT  0,2(7) 	br if true
- 17:    LDC  0,0(0) 	false case
- 18:    LDA  7,1(7) 	unconditional jmp
- 19:    LDC  0,1(0) 	true case
+ 17:     LD  1,-1(6) 	op: load left
+ 18:    ADD  0,1,0 	op +
 * <- Op
-* if: jump to else belongs here
+ 19:     LD  1,0(6) 	op: load left
+ 20:    SUB  0,1,0 	op <
+ 21:    JLT  0,2(7) 	br if true
+ 22:    LDC  0,0(0) 	false case
+ 23:    LDA  7,1(7) 	unconditional jmp
+ 24:    LDC  0,1(0) 	true case
+* <- Op
+* -> assign
+* -> Id
+ 26:     LD  0,2(5) 	load id value
+* <- Id
+ 27:     ST  0,4(5) 	assign: store value
+* <- assign
+* -> assign
+* -> Id
+ 28:     LD  0,3(5) 	load id value
+* <- Id
+ 29:     ST  0,2(5) 	assign: store value
+* <- assign
 * -> assign
 * -> Op
 * -> Id
- 21:     LD  0,0(5) 	load id value
+ 30:     LD  0,4(5) 	load id value
 * <- Id
- 22:     ST  0,0(6) 	op: push left
-* -> Const
- 23:    LDC  0,2(0) 	load const
-* <- Const
- 24:     LD  1,0(6) 	op: load left
- 25:    ADD  0,1,0 	op +
+ 31:     ST  0,0(6) 	op: push left
+* -> Id
+ 32:     LD  0,3(5) 	load id value
+* <- Id
+ 33:     LD  1,0(6) 	op: load left
+ 34:    ADD  0,1,0 	op +
 * <- Op
- 26:     ST  0,0(5) 	assign: store value
+ 35:     ST  0,3(5) 	assign: store value
 * <- assign
-* if: jump to end belongs here
- 20:    JEQ  0,7(7) 	if: jmp to else
- 28:     IN  0,0,0 	read integer value
- 29:     ST  0,1(5) 	read: store value
- 27:    LDA  7,2(7) 	jmp to end
-* <- if
- 11:    JEQ  0,18(7) 	repeat: jmp back to body
+* -> assign
+* -> Op
+* -> Id
+ 36:     LD  9,1(5) 	load id value
+ 37:    MOV  0,9,0 	move from one reg(s) to reg(r)
+* <- Id
+ 38:     ST  0,0(6) 	op: push left
+* -> Const
+ 39:    LDC  0,1(0) 	load integer const
+* <- Const
+ 40:     LD  1,0(6) 	op: load left
+ 41:    ADD  0,1,0 	op +
+* <- Op
+ 42:    MOV  9,0,0 	move register reg(s) tp reg(r)
+ 43:     ST  9,1(5) 	assign: store value
+* <- assign
+* -> Id
+ 44:     LD  9,1(5) 	load id value
+* <- Id
+ 45:    OUT  9,0,0 	output value in register[ac]
+ 46:    LDA  7,-36(7) 	unconditional jmp
+ 25:    JEQ  0,21(7) 	repeat: jmp to the out of while
 * <- repeat
+* -> Id
+ 47:     LD  0,3(5) 	load id value
+* <- Id
+ 48:    OUT  0,0,0 	output value in register[ac]
+* -> Op
+* -> Id
+ 49:     LD  0,3(5) 	load id value
+ 50:    MOV  9,0,0 	move from one reg(s) to reg(r)
+* <- Id
+ 51:     ST  9,0(6) 	op: push left
+* -> Const
+ 52:    LDC  9,3.000000(0) * <- Const
+ 53:     LD  10,0(6) 	op: load left
+ 54:    DIV  9,10,9 	op /
+* <- Op
+ 55:    OUT  9,0,0 	output value in register[ac]
 * End of execution.
- 30:   HALT  0,0,0 	
+ 56:   HALT  0,0,0 	

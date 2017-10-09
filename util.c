@@ -17,7 +17,6 @@ void printToken(TokenType token, const char* tokenString)
     switch (token)
     {
         case IF:
-        case THEN:
         case ELSE:
         case END:
         case WHILE:
@@ -44,6 +43,7 @@ void printToken(TokenType token, const char* tokenString)
         case RBRACKET:fprintf(listing, "\n}"); break;
         case INT:fprintf(listing, "int\n "); break;
         case FLOAT:fprintf(listing, "float\n "); break;
+		case VOID:fprintf(listing, "void\n "); break;
         case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
         case ENDFILE: fprintf(listing, "EOF\n"); break;
         case NUM:
@@ -98,6 +98,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->kind.exp = kind;
         t->lineno = lineno;
         t->type = Void;
+		t->type = Void;
     }
     return t;
 }
@@ -177,7 +178,10 @@ void printTree(TreeNode * tree)
                 case DeclareK:
                     fprintf(listing, "Declare variable (%s)\n",tree->attr.name);
                     break;
-                case BreakK:
+				case ParamK:
+					fprintf(listing, "Param variable (%s)\n", tree->attr.name);
+					break;
+				case BreakK:
                     fprintf(listing, "Break \n");
                     break;
     
@@ -202,12 +206,16 @@ void printTree(TreeNode * tree)
                             fprintf(listing, "Const: %f\n", tree->attr.val.flt);
                             break;
                         default:
-                            break;
+							fprintf(listing, "unknown constK\b");
+							break;
                     }
                     break;
                 case IdK:
                     fprintf(listing, "Id: %s\n", tree->attr.name);
                     break;
+				case FuncallK:
+					fprintf(listing, "function call: %s()\n", tree->attr.name);
+					break;
                 default:
                     fprintf(listing, "Unknown ExpNode kind %d\n",tree->nodekind);
                     break;

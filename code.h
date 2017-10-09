@@ -27,20 +27,19 @@
  */
 #define  mp 6
 
-/* gp = "global pointer" points
- * to bottom of memory for (global)
- * variable storage
- */
-#define gp 5
+#define gp 5 // global address
+#define fp 2 // stack bottom
+#define sp 3 // stack top
 
 /* accumulator */
 #define  ac 0
-
-/* 2nd accumulator */
 #define  ac1 1
 
-/* code emitting utilities */
+/* the float accumulator*/
+#define fac 9
+#define fac1 10
 
+/* code emitting utilities */
 /* Procedure emitComment prints a comment line
  * with comment c in the code file
  */
@@ -68,7 +67,7 @@ void emitRO( char *op, int r, int s, int t, char *c);
  * s = the base register
  * c = a comment to be printed if TraceCode is TRUE
  */
-void emitRM( char * op, int r, int d, int s, char *c);
+void emitRM(char * op, int r, int d, int s, char *c);
 
 /* Function emitSkip skips "howMany" code
  * locations for later backpatch. It also
@@ -106,7 +105,8 @@ char* genLabel();
     when we execute the code, we need labeltable.
  */
 
-
+// emit LDC code specifically
+void emitLDCF(char * op, int r, float d, int s, char *c);
 
 
 

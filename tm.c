@@ -1,7 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include "tm.h"
+#include "assert.h"
+#include "code.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -11,64 +10,17 @@
 #endif
 
 /******* const *******/
-#define   IADDR_SIZE  1024 /* increase for large programs */
-#define   DADDR_SIZE  1024 /* increase for large programs */
-#define   NO_REGS 8
+#define   IADDR_SIZE  4096 /* increase for large programs */
+#define   DADDR_SIZE  4096 /* increase for large programs */
+
+#define   GP_ADRESS 3072 /*the gp adress*/
+#define   FIRST_FP  2048 /*the main fp*/
+
+#define   NO_REGS 11
 #define   PC_REG  7
 
 #define   LINESIZE  121
 #define   WORDSIZE  20
-
-/******* type  *******/
-
-typedef enum {
-	opclRR,     /* reg operands r,s,t */
-	opclRM,     /* reg r, mem d+s */
-	opclRA      /* reg r, int d+s */
-} OPCLASS;
-
-typedef enum {
-	/* RR instructions */
-	opHALT,    /* RR     halt, operands are ignored */
-	opIN,      /* RR     read into reg(r); s and t are ignored */
-	opOUT,     /* RR     write from reg(r), s and t are ignored */
-	opADD,    /* RR     reg(r) = reg(s)+reg(t) */
-	opSUB,    /* RR     reg(r) = reg(s)-reg(t) */
-	opMUL,    /* RR     reg(r) = reg(s)*reg(t) */
-	opDIV,    /* RR     reg(r) = reg(s)/reg(t) */
-	opRRLim,   /* limit of RR opcodes */
-
-	/* RM instructions */
-	opLD,      /* RM     reg(r) = mem(d+reg(s)) */
-	opST,      /* RM     mem(d+reg(s)) = reg(r) */
-	opRMLim,   /* Limit of RM opcodes */
-
-	/* RA instructions */
-	opLDA,     /* RA     reg(r) = d+reg(s) */
-	opLDC,     /* RA     reg(r) = d ; reg(s) is ignored */
-	opJLT,     /* RA     if reg(r)<0 then reg(7) = d+reg(s) */
-	opJLE,     /* RA     if reg(r)<=0 then reg(7) = d+reg(s) */
-	opJGT,     /* RA     if reg(r)>0 then reg(7) = d+reg(s) */
-	opJGE,     /* RA     if reg(r)>=0 then reg(7) = d+reg(s) */
-	opJEQ,     /* RA     if reg(r)==0 then reg(7) = d+reg(s) */
-	opJNE,     /* RA     if reg(r)!=0 then reg(7) = d+reg(s) */
-	opRALim    /* Limit of RA opcodes */
-} OPCODE;
-
-typedef enum {
-	srOKAY,
-	srHALT,
-	srIMEM_ERR,
-	srDMEM_ERR,
-	srZERODIVIDE
-} STEPRESULT;
-
-typedef struct {
-	int iop;
-	int iarg1;
-	int iarg2;
-	int iarg3;
-} INSTRUCTION;
 
 /******** vars ********/
 int iloc = 0;
@@ -81,7 +33,7 @@ int dMem[DADDR_SIZE];
 int reg[NO_REGS];
 
 char * opCodeTab[]
-= { "HALT", "IN", "OUT", "ADD", "SUB", "MUL", "DIV", "????",
+= { "HALT", "IN", "OUT","MOV","ADD", "SUB", "MUL", "DIV", "????",
 /* RR opcodes */
 "LD", "ST", "????", /* RM opcodes */
 "LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "????"
@@ -94,17 +46,58 @@ char * stepResultTab[] =
 };
 
 char pgmName[20];
-FILE *pgm;
 
 char in_Line[LINESIZE];
 int lineLen;
 int inCol;
 int num;
+float flt_num;
 char word[WORDSIZE];
 char ch;
 int done;
 
+// macro used to DRY
+#define operand_proc(op,func) do{\
+					switch (op)\
+				{\
+					case '+': reg[r] = func(lhs + rhs); break;\
+					case '-': reg[r] = func(lhs - rhs); break;\
+					case '*': reg[r] = func(lhs * rhs); break;\
+					case '/':\
+						if (rhs == 0) return srZERODIVIDE;\
+						else reg[r] = func(lhs / rhs);\
+						break;\
+				}\
+				return srOKAY;\
+				}while(0)
+
 /********************************************/
+
+
+
+static int reg_type(int reg){
+	if (reg == ac || reg == ac1) return ac;
+	if (reg == fac || reg == fac1) return fac;
+	return -1;
+}
+
+static int same_reg_type(int reg1, int reg2);
+
+static float flt_from_integer(int c);
+
+static float flt_from_reg(int r);
+
+static int int_from_flt(float x);
+
+static void convert(int reg1, int reg2);
+
+static STEPRESULT operand(int r, int s, int t, char op);
+
+static STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op);
+
+static STEPRESULT do_operand_int(int r, int lhs, int rhs, char op);
+
+
 int opClass(int c)
 {
 	if (c <= opRRLim) return (opclRR);
@@ -186,6 +179,27 @@ int getNum(void)
 	return temp;
 } /* getNum */
 
+float getFloat()
+{
+	int retry_times = 2;
+	char * str_head = (char*)malloc(30 * sizeof(char));
+	char * str_tail = str_head;
+
+	nonBlank();
+	while (retry_times > 0){
+		if (ch == '+' || ch == '-') *str_tail++ = ch;
+		else if (ch == '.') { retry_times -= 1; *str_tail++ = ch;}
+		else if (isdigit(ch)) { *str_tail++ = ch;}
+		else { retry_times = 0; break; }
+		getCh();
+	}
+	*str_tail = '\0';
+	flt_num = atof(str_head);
+	free(str_head);
+	return TRUE;
+}
+
+
 /********************************************/
 int getWord(void)
 {
@@ -232,14 +246,18 @@ int error(char * msg, int lineNo, int instNo)
 } /* error */
 
 /********************************************/
-int readInstructions(void)
+int readInstructions(FILE *pgm)
 {
 	OPCODE op;
 	int arg1, arg2, arg3;
 	int loc, regNo, lineNo;
 	for (regNo = 0; regNo < NO_REGS; regNo++)
 		reg[regNo] = 0;
+
 	dMem[0] = DADDR_SIZE - 1;
+	dMem[1] = GP_ADRESS;
+	dMem[2] = FIRST_FP;
+	
 	for (loc = 1; loc < DADDR_SIZE; loc++)
 		dMem[loc] = 0;
 	for (loc = 0; loc < IADDR_SIZE; loc++)
@@ -305,9 +323,19 @@ int readInstructions(void)
 				arg1 = num;
 				if (!skipCh(','))
 					return error("Missing comma", lineNo, loc);
-				if (!getNum())
-					return error("Bad displacement", lineNo, loc);
-				arg2 = num;
+				/*
+					load float , load integer	
+				*/
+				if (op == opLDC && same_reg_type(arg1,fac))
+				{
+					getFloat();
+					arg2 = *(int *)(&flt_num);
+				}
+				else{
+					if (!getNum())	return error("Bad displacement", lineNo, loc);
+					arg2 = num;
+				}
+				
 				if (!skipCh('(') && !skipCh(','))
 					return error("Missing LParen", lineNo, loc);
 				if ((!getNum()) || (num < 0) || (num >= NO_REGS))
@@ -329,15 +357,15 @@ int readInstructions(void)
 STEPRESULT stepTM(void)
 {
 	INSTRUCTION currentinstruction;
-	int pc;
+	int pc_pos;
 	int r, s, t, m;
 	int ok;
 
-	pc = reg[PC_REG];
-	if ((pc < 0) || (pc > IADDR_SIZE))
+	pc_pos = reg[PC_REG];
+	if ((pc_pos < 0) || (pc_pos > IADDR_SIZE))
 		return srIMEM_ERR;
-	reg[PC_REG] = pc + 1;
-	currentinstruction = iMem[pc];
+	reg[PC_REG] = pc_pos + 1;
+	currentinstruction = iMem[pc_pos];
 	switch (opClass(currentinstruction.iop))
 	{
 	case opclRR:
@@ -382,32 +410,53 @@ STEPRESULT stepTM(void)
 			gets(in_Line);
 			lineLen = strlen(in_Line);
 			inCol = 0;
-			ok = getNum();
+			/*
+				deal with the float number
+			*/
+			if (same_reg_type(r, ac)) { 
+				ok = getNum(); 
+				reg[r] = num;
+			}
+			else if (same_reg_type(r,fac)) {
+				ok = getFloat();
+				reg[r] = flt_num;
+			}
+			else{
+				assert(!("undefined type", 1));
+			}
 			if (!ok) printf("Illegal value\n");
-			else reg[r] = num;
 		} while (!ok);
 		break;
 
 	case opOUT:
-		printf("OUT instruction prints: %d\n", reg[r]);
+		if (same_reg_type(r, ac)) {
+			printf("OUT instruction prints: %d\n", reg[r]);
+		}
+		else if (same_reg_type(r, fac)) {
+			flt_num = flt_from_reg(r);
+			printf("OUT instruction prints: %f\n", flt_num);
+		}
 		break;
-	case opADD:  reg[r] = reg[s] + reg[t];  break;
-	case opSUB:  reg[r] = reg[s] - reg[t];  break;
-	case opMUL:  reg[r] = reg[s] * reg[t];  break;
+	case opMOV:	 
+		/*deal  with the conversion of different format*/
+		convert(s,r);// s -> r
+		break;
+	case opADD:  operand(r, s, t, '+'); break;
+	case opSUB:  operand(r, s, t, '-');  break;
+	case opMUL:  operand(r, s, t, '*'); break;
 
 	case opDIV:
 		/***********************************/
-		if (reg[t] != 0) reg[r] = reg[s] / reg[t];
-		else return srZERODIVIDE;
+		if (operand(r, s, t, '/') != srOKAY) return srZERODIVIDE;
 		break;
 
 		/*************** RM instructions ********************/
 	case opLD:    reg[r] = dMem[m];  break;
-	case opST:    dMem[m] = reg[r];  break;
+	case opST:    dMem[m] = reg[r];  break;// no need to convert float,integer
 
 		/*************** RA instructions ********************/
 	case opLDA:    reg[r] = m; break;
-	case opLDC:    reg[r] = currentinstruction.iarg2;   break;
+	case opLDC:    reg[r] = currentinstruction.iarg2;
 	case opJLT:    if (reg[r] <  0) reg[PC_REG] = m; break;
 	case opJLE:    if (reg[r] <= 0) reg[PC_REG] = m; break;
 	case opJGT:    if (reg[r] >  0) reg[PC_REG] = m; break;
@@ -592,38 +641,85 @@ int doCommand(void)
 } /* doCommand */
 
 
-/********************************************/
-/* E X E C U T I O N   B E G I N S   H E R E */
-/********************************************/
-
-main(int argc, char * argv[])
-{
-	if (argc != 2)
-	{
-		printf("usage: %s <filename>\n", argv[0]);
-		exit(1);
-	}
-	strcpy(pgmName, argv[1]);
-	if (strchr(pgmName, '.') == NULL)
-		strcat(pgmName, ".tm");
-	pgm = fopen(pgmName, "r");
-	if (pgm == NULL)
-	{
-		printf("file '%s' not found\n", pgmName);
-		exit(1);
-	}
-
-	/* read the program */
-	if (!readInstructions())
-		exit(1);
-	/* switch input file to terminal */
-	/* reset( input ); */
-	/* read-eval-print */
-	printf("TM  simulation (enter h for help)...\n");
-	do
-{
-		done = !doCommand();
-	}while (!done);
-	printf("Simulation done.\n");
-	return 0;
+ float flt_from_integer(int c){
+	float ret = *(float *)(&c);
+	return ret;
 }
+
+ float flt_from_reg(int r)
+{
+	float flt = flt_from_integer(reg[r]);
+	return flt;
+}
+
+  int int_from_flt(float x)
+ {
+	 int ret = *(int *)(&x);
+	 return ret;
+ }
+
+   STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op){
+	  operand_proc(op, int_from_flt);
+	  int x = int_from_flt(5.0 / 3.0);
+  }
+
+   STEPRESULT do_operand_int(int r, int lhs, int rhs, char op){
+	  operand_proc(op, (int));
+  }
+
+    STEPRESULT operand(int r, int s, int t, char op)
+   {
+	   assert(same_reg_type(r, s) && same_reg_type(s, t));
+	   float flt_s, flt_t;
+	   switch (r)
+	   {
+	   case ac:
+	   case ac1:
+		   //int operation
+		   return do_operand_int(r, reg[s], reg[t], op);
+		   break;
+	   case fac:
+	   case fac1:
+		   //float to int
+		   flt_s = flt_from_reg(s);
+		   flt_t = flt_from_reg(t);
+		   return do_operand_flt(r, flt_s, flt_t, op);
+		   break;
+	   }
+
+}
+
+	 void convert(int reg1, int reg2)
+	{
+		if (same_reg_type(reg1, reg2))
+		{
+			reg[reg2] = reg[reg1];
+			return;
+		}
+		float flt;
+		switch (reg1)
+		{
+		case ac:
+		case ac1:
+			assert(reg2 == fac || reg2 == fac1);
+			//int to float
+			flt = reg[reg1];
+			reg[reg2] = int_from_flt(flt);
+			break;
+		case fac:
+		case fac1:
+			assert(reg2 == ac || reg2 == ac1);
+			//float to int
+			flt = flt_from_reg(reg1);
+			reg[reg2] = flt;
+			break;
+		}
+
+	}
+
+
+
+ int same_reg_type(int reg1, int reg2){
+	return reg_type(reg1) == reg_type(reg2);
+}
+

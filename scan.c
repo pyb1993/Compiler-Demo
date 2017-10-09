@@ -5,7 +5,7 @@
 /* states in scanner DFA */
 typedef enum
 {
-	START, INASSIGN, INCOMMENT, INMULCOMMENT,INNUM, INID, OVER_OR_COMMENT,
+	START, INASSIGN, INCOMMENT, INMULCOMMENT,INNUM,INFLOATNUM,INID, OVER_OR_COMMENT,
 	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,IN_STR,
 	DONE
 }
@@ -21,24 +21,11 @@ static int linepos = 0; /* current position in LineBuf */
 static int bufsize = 0; /* current size of buffer string */
 static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
 
-static bool in_macro_replace = false;
-static char macro_replace_str_buf[20];
-static int macro_pos = 0;
 /* getNextChar fetches the next non-blank character
 from lineBuf, reading in a new line if lineBuf is
 exhausted */
 static int getNextChar(void)
 {
-
-	if (in_macro_replace){
-		if ( macro_pos < 20 && macro_replace_str_buf[macro_pos] != '\0')
-			return macro_replace_str_buf[macro_pos++];
-		else
-		{
-			EOF_flag = TRUE;
-			return EOF;
-		}
-	}
 
 	if ( bufsize <= linepos)
 	{
@@ -80,7 +67,8 @@ static struct
 } reservedWords[MAXRESERVED]
 = { { "if", IF }, { "else", ELSE }, { "end", END },
     { "while", WHILE },{"break",BREAK}, { "until", UNTIL }, { "read", READ },
-{ "write", WRITE }, { "int", INT }, {"float",FLOAT}, {"def", FUN} };
+	{ "write", WRITE }, { "int", INT }, { "float", FLOAT }, {"void",VOID},{"def", FUN} 
+  };
 
 /* lookup an identifier to see if it is a reserved word */
 /* uses linear search */
@@ -205,16 +193,29 @@ TokenType getToken(void)
 			}
 			break;
 		case INNUM:
-			if (!isdigit(c))
+			if (!isdigit(c) && c != '.')
 			{ /* backup in the input */
 				ungetNextChar();
 				save = FALSE;
 				state = DONE;
 				currentToken = NUM;
 			}
+			else if (c == '.')
+			{
+				state = INFLOATNUM;
+			}
+			break;
+		case INFLOATNUM:
+			if (!isdigit(c))
+			{
+				ungetNextChar();
+				save = FALSE;
+				state = DONE;
+				currentToken = FlOATNUM;
+			}
 			break;
 		case INID:
-			if (!isalpha(c)){ /* backup in the input */
+			if (!(isalnum(c) || c == '_' || c == '?')){ /* backup in the input */
 				ungetNextChar();
 				save = FALSE;
 				state = DONE;
@@ -244,7 +245,8 @@ TokenType getToken(void)
 				ungetTokenstring(&tokenStringIndex);
 				save = FALSE;
 			}
-			else {//over
+			else {
+				//over
 				state = DONE;
 				ungetNextChar();
 				currentToken = OVER;
@@ -320,18 +322,4 @@ TokenType getToken(void)
 	return currentToken;
 } /* end getToken */
 
-// another way : save the linebuf,linepos and copy new string to it;  and finally restore them
-TokenType preprocess_token(TokenType token)
-{
-	if (strcmp(tokenString,"macro_10000000000000000008"))
-	{
-		macro_pos = 0;
-		in_macro_replace = TRUE;
-		macro_replace_str_buf[0] = '1';// copy replaced string
-		TokenType newtoken = getToken();
-		in_macro_replace = FALSE;
-		return newtoken;
-	}
-    return token;
-}
 
