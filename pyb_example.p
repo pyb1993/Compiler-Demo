@@ -1,16 +1,6 @@
-int y
-void f(int a,int b,float d)
+void f()
 {
-	int y
-	int x
+	int a
+	int b
+	out a
 }
-
-void t(int a)
-{
-
-	int u
-}
-
-int m
-
-f(1,2,3.12)

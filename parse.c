@@ -96,7 +96,8 @@ TreeNode * stmt_sequence(void)
 	{
 		TreeNode * q;
 		q = statement();
-		if (q != NULL) {
+		if (q != NULL) 
+		{
 			if (t == NULL) t = p = q;
 			else /* now p cannot be NULL either */
 			{
@@ -298,6 +299,11 @@ TreeNode * idStartStmt()
 	{
 		unGetToken();
 		return funcall_exp();
+	}
+	else
+	{
+		syntaxError("unexpected token -> ");
+		return ;
 	}
 }
 

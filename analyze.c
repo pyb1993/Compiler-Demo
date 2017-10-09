@@ -14,7 +14,7 @@
 /* counter for global variable memory locations */
 static int location = 0;
 static int stack_offset = 0; 
-static int scope_depth = 0; //  0 is global scope,1 is the first child scope
+static int g_scope_depth = 0; //  0 is global scope,1 is the first child scope
 
 /* 
    a global 
@@ -22,21 +22,21 @@ static int scope_depth = 0; //  0 is global scope,1 is the first child scope
 
 static void checkNode(TreeNode * t);
 
-static void traverse(TreeNode * t, void(*preProc) (TreeNode *), void(*postProc) (TreeNode *), void(*postProc2) (TreeNode *))
+static void traverse(TreeNode * t, void(*preProc) (TreeNode *,int ), void(*postProc) (TreeNode *), void(*postProc2) (TreeNode *,int))
 {
     if (t != NULL)
     {
-        preProc(t);
+		preProc(t, g_scope_depth);
         for (int i=0; i < MAXCHILDREN; i++)
         {
 
-			scope_depth++;
+			g_scope_depth++;
             traverse(t->child[i],preProc,postProc,postProc2);
-			scope_depth--;
+			g_scope_depth--;
 		}
         postProc(t);
         traverse(t->sibling,preProc,postProc,postProc2);// sibling means the stmt_sequence
-		postProc2(t,scope_depth);
+		postProc2(t, g_scope_depth);
 	}
 }
 
@@ -102,7 +102,7 @@ int insertParam(TreeNode * t,int scope_depth){
  }
 
 
-static void insertNode( TreeNode * t)
+ void insertNode( TreeNode * t,int scope)
 {
 	VarType * type = NULL;
 
@@ -112,7 +112,7 @@ static void insertNode( TreeNode * t)
             switch (t->kind.stmt)
         {
             case DeclareK:
-				if (is_duplicate_var(t->attr.name,scope_depth))
+				if (is_duplicate_var(t->attr.name,scope))
 				{
 					defineError(t, "duplicate definition");
 				}
@@ -121,27 +121,23 @@ static void insertNode( TreeNode * t)
                 {
 					/*
 						todo :support local procedure
-					
-					
 					*/
 					type = new_type(t);// create the function type
-					st_insert(t->attr.name, t->lineno, location++, 1,scope_depth, type);// function occupy 4 bytes
-					scope_depth++;
-					insertParam(t->child[0],scope_depth);
-					scope_depth--;
+					st_insert(t->attr.name, t->lineno, location++, 1,scope, type);// function occupy 4 bytes
+					insertParam(t->child[0],scope+1);
 				}
-				else if (scope_depth == 0) //global var
+				else if (scope == 0) //global var
                 {   
                     int var_szie = var_size_of(t->type);
 					type = type_from_basic(t->type);
-					st_insert(t->attr.name, t->lineno, location, var_szie, scope_depth,type);
+					st_insert(t->attr.name, t->lineno, location, var_szie, scope,type);
 					location += var_szie;
                 }
 				else // local variable
 				{
 					int var_szie = var_size_of(t->type);
 					type = type_from_basic(t->type);
-					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope_depth, type);
+					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope, type);
 					stack_offset -= var_szie;
 					printf("local variable stack offset %s %d\n",t->attr.name,stack_offset+var_szie);
 				}
@@ -180,7 +176,7 @@ void deleteNode(TreeNode * t,int scope_depth)
  */
 void buildSymtab(TreeNode * syntaxTree)
 { 
-	scope_depth = 0;
+	g_scope_depth = 0;
 	traverse(syntaxTree,insertNode,checkNode,deleteNode);
     if (TraceAnalyze)
     { fprintf(listing,"\nSymbol table:\n\n");

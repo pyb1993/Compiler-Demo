@@ -128,12 +128,28 @@ static void genStmt( TreeNode * tree,int scope)
 		
 		case DeclareK:
 			/*deal with the function  */
-			if (tree->type != Func) return;
-			insertParam(tree->child[0],scope + 1);
-			cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
-			//todo support return value
-			emitRO("return", 0, 0, 0, "return to adress : reg[fp]");
-			deleteNode(tree,scope);
+			if (scope == 0 && tree->type == Func) 
+			{
+				insertParam(tree->child[0], scope + 1);
+				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
+				emitRO("MOV", fp, sp, 0, "push the fp");//reg[fp] = reg[sp]
+				emitRM("PUSH", ac1, sp, 0, "push the last fp");//dMem[reg[sp]--] = ac1
+				
+				// assume the caller sotre the return adress reg[pc] in reg[ac]
+				emitRM("PUSH", ac, sp, 0, "push the return adress");// dMem[reg[sp]--] = return adress;
+				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
+				//todo support return value
+				emitRM("LD", ac, -1, fp, "store the return adress");//reg[ac] = dMem[reg[fp]-1](return adress)
+				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
+				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
+				emitRO("return", 0, 0, 0, "return to adress : reg[fp]+1");// execute reg[pc] = reg[ac]
+			
+				deleteNode(tree, scope);
+			}
+			else if (scope > 0 )
+			{
+				insertNode(tree,scope );// declare the local variable
+			}
 			break;
         default:
             break;
@@ -298,14 +314,14 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     emitComment(s);
     /* generate standard prelude */
     emitComment("Standard prelude:");
-    emitRM("LD",mp,0,ac,"load maxaddress from location 0");//reg[mp] = dMem[reg[ac]+0] 
+    emitRM("LD",mp,0,ac,"load maxaddress from location 0");//reg[mp] = dMem[reg[ac]] 
     emitRM("ST",ac,0,ac,"clear location 0");// dMem[reg[ac] + 0] = reg[ac]
 	
 	emitRM("LD", gp, 1, ac, "load gp adress from location 1");
 	emitRM("ST", ac, 1, ac, "clear location 2");
 
-	emitRM("LD", fp, 2, ac, "load gp adress from location 1");
-	emitRM("LD", sp, 2, ac, "load gp adress from location 1");
+	emitRM("LD", fp, 2, ac, "load first fp from location 2");
+	emitRM("LD", sp, 2, ac, "load first sp from location 2");
 	emitRM("ST", ac, 2, ac, "clear location 3");
 
     emitComment("End of standard prelude.");
