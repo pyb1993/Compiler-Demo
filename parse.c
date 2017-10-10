@@ -205,6 +205,7 @@ TreeNode * funcall_exp(void)
 
  TreeNode * param_pass(void)
 {
+    TreeNode * next;
 	if (token == VOID || token == RPAREN)
 	{
 		if (token == VOID) match(VOID);

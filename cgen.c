@@ -106,7 +106,7 @@ static void genStmt( TreeNode * tree,int scope)
 			type = st_lookup_type(tree->attr.name);
 			emitRO("MOV", get_reg(type), get_reg(tree->child[0]->converted_type), 0, "move register reg(s) tp reg(r)");
             loc = st_lookup(tree->attr.name);// get the memory location of identifier
-			emitRM("ST", get_reg(type), loc, gp, "assign: store value",type);//mem[reg[gp]+loc] =  reg[ac]		
+			emitRM("ST", get_reg(type), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
             if (TraceCode)  emitComment("<- assign") ;
             break; /* assign_k */
             
