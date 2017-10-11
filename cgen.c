@@ -133,12 +133,12 @@ static void genStmt( TreeNode * tree,int scope)
 				insertParam(tree->child[0], scope + 1);
 				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
 				emitRO("MOV", fp, sp, 0, "push the fp");//reg[fp] = reg[sp]
-				emitRM("PUSH", ac1, sp, 0, "push the last fp");//dMem[reg[sp]--] = ac1
-				
-				// assume the caller sotre the return adress reg[pc] in reg[ac]
-				emitRM("PUSH", ac, sp, 0, "push the return adress");// dMem[reg[sp]--] = return adress;
+				emitRM("PUSH", ac1, 0, 0, "push the last fp");//dMem[reg[sp]--] = reg[ac1]
+				emitRM("PUSH", ac, 0, 0, "push the return adress");//  assume the caller sotre the return adress reg[pc] in reg[ac];  dMem[reg[sp]--] = return adress;
+                
 				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
-				//todo support return value
+				
+                //todo support return value
 				emitRM("LD", ac, -1, fp, "store the return adress");//reg[ac] = dMem[reg[fp]-1](return adress)
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
@@ -196,8 +196,9 @@ static void genExp( TreeNode * tree,int scope)
             break; /* IdK */
 		case FuncallK:
 			/*first:  step:push the paramter into the stack
-			  second: jump to the function body, store the stack bottom, and push the return address
-			  third:  generate the function body stmt_sequence
+			  second: jump to the function body, store the stack bottom, and push the return address to reg[ac]
+			  third:  generate the function body stmt_sequence.
+              last :  assueme the return value will be stored in the tmpstack,
 			*/
 			break;
 		
