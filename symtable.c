@@ -31,6 +31,7 @@ static void free_node(BucketList node);
 static BucketList st_get_node(char * name);
 
 
+
 /*insert the node into the hashtable */
 /* the hash function */
 int hash(char * key)
@@ -142,6 +143,11 @@ Type st_lookup_type(char * name)
 	assert(l != NULL);
 	if (l->var_type->typekind == BTYPE) return l->var_type->typeinfo.btype;
 	if (l->var_type->typekind == FUNTYPE) return l->var_type->typeinfo.ftype.return_type;
+}
+
+int st_lookup_scope(char * name){
+	BucketList l = st_get_node(name);
+	return l->scope_depth;
 }
 
 /*get the type info of var named \key*/

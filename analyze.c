@@ -51,7 +51,6 @@ static void typeError(TreeNode * t, char * message)
 	Error = TRUE;
 }
 
-static int var_size_of(Type);
 
 /* nullProc is a do-nothing procedure to
  * generate preorder-only or postorder-only
@@ -75,7 +74,7 @@ int insertParam(TreeNode * t,int scope_depth){
 	VarType * type;
 	if (t == NULL) return 0;
 	type = type_from_basic(t->type);
-	int var_size = var_size_of(t->type);
+	int var_size = var_size_of(t);
 	int size = insertParam(t->sibling,scope_depth) + var_size;// offset of param in reverse
 	
 	// convert to the DeclareK temporarily to insert it as the declare node	
@@ -123,15 +122,15 @@ int insertParam(TreeNode * t,int scope_depth){
 						todo :support local procedure
 					*/
 					type = new_type(t);// create the function type
-					st_insert(t->attr.name, t->lineno, location++, 1,scope, type);// function occupy 4 bytes
+					st_insert(t->attr.name, t->lineno, location--, 1,scope, type);// function occupy 4 bytes
 					insertParam(t->child[0],scope+1);
 				}
 				else if (scope == 0) //global var
                 {   
-                    int var_szie = var_size_of(t->type);
+                    int var_szie = var_size_of(t);
 					type = type_from_basic(t->type);
 					st_insert(t->attr.name, t->lineno, location, var_szie, scope,type);
-					location += var_szie;
+					location -= var_szie;
                 }
 				else // local variable
 				{
@@ -185,8 +184,16 @@ void buildSymtab(TreeNode * syntaxTree)
 }
 
 
-int var_size_of(Type type){
-    return 1;
+int var_size_of(TreeNode* tree){
+	Type type = tree->type;
+	if (is_relative_type(type,LInteger)) return 1;
+	if (is_relative_type(type, LFloat)) return 1;
+	if (is_relative_type(type, LStruct)){
+		VarType * vartype = st_get_var_type_info(tree->attr.name);
+		assert(!"undefined struct size");
+		return 0;
+	}
+	assert(!"undefined type size");
 }
 
 

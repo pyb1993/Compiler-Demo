@@ -11,6 +11,7 @@ void buildSymtab(TreeNode *);
  * by a postorder syntax tree traversal
  */
 void typeCheck(TreeNode *);
+int var_size_of(TreeNode *);
 void  insertNode(TreeNode * t, int scope_depth);
 int  insertParam(TreeNode * t,int scope_depth);
 void deleteNode(TreeNode * t,int scope_depth);
