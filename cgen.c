@@ -106,8 +106,18 @@ static void genStmt( TreeNode * tree,int scope)
 			type = st_lookup_type(tree->attr.name);
 			emitRO("MOV", get_reg(type), get_reg(tree->child[0]->converted_type), 0, "move register reg(s) tp reg(r)");
             loc = st_lookup(tree->attr.name);// get the memory location of identifier
-			emitRM("ST", get_reg(type), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
-            if (TraceCode)  emitComment("<- assign") ;
+
+			int vsize = var_size_of(tree);
+			if (vsize == 1)
+			{
+				emitRM("ST", get_reg(type), loc, get_stack_bottom(st_lookup_scope(tree)), "assign: store value", type);//dMem[reg[gp]+loc] =  reg[ac]		
+			}
+			else
+			{
+				// copy  writes from struct to another
+				// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(note in reverse) vsize bytes
+			}
+				if (TraceCode)  emitComment("<- assign") ;
             break; /* assign_k */
             
         case ReadK:
@@ -131,11 +141,14 @@ static void genStmt( TreeNode * tree,int scope)
 			if (scope == 0 && tree->type == Func) 
 			{
 				insertParam(tree->child[0], scope + 1);
+				loc = st_lookup(tree->attr.name);
+				// todo support the get_stack_top(scope),get_stack_bottom(scope)
+				emitRM("ST", pc, loc, get_stack_top(scope), "load the function adress");// dMem[reg[gp || fp ] + loc] = reg[pc];store the function body adress into loc
 				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
 				emitRO("MOV", fp, sp, 0, "push the fp");//reg[fp] = reg[sp]
-				emitRM("PUSH", ac1, 0, 0, "push the last fp");//dMem[reg[sp]--] = reg[ac1]
-				emitRM("PUSH", ac, 0, 0, "push the return adress");//  assume the caller sotre the return adress reg[pc] in reg[ac];  dMem[reg[sp]--] = return adress;
-                
+
+				emitRM("PUSH", ac1, sp, 0, "push the last fp");//dMem[reg[sp]--] = ac1 
+				emitRM("PUSH", ac, sp, 0, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
 				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
 				
                 //todo support return value
@@ -144,11 +157,12 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
 				emitRO("return", 0, 0, 0, "return to adress : reg[fp]+1");// execute reg[pc] = reg[ac]
 			
-				deleteNode(tree, scope);
+				deleteLocalVar(tree->child[1], scope + 1);
+				deleteNode(tree->child[0], scope + 1);
 			}
-			else if (scope > 0 )
+			else if (scope > 0 && tree->type != Func)//local function
 			{
-				insertNode(tree,scope );// declare the local variable
+				insertNode(tree, scope);
 			}
 			break;
         default:
@@ -195,11 +209,13 @@ static void genExp( TreeNode * tree,int scope)
             if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
 		case FuncallK:
-			/*first:  step:push the paramter into the stack
-			  second: jump to the function body, store the stack bottom, and push the return address to reg[ac]
-			  third:  generate the function body stmt_sequence.
-              last :  assueme the return value will be stored in the tmpstack,
-			*/
+
+			//push the paramter into the stack
+
+
+			//jump to the function body
+			loc = st_lookup(tree->attr.name);
+			emitRM("LDA", pc, loc, get_stack_bottom(scope), "ujp to the function body");
 			break;
 		
 		
