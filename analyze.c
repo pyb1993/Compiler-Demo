@@ -17,7 +17,7 @@ static int stack_offset = 0;
 static int g_scope_depth = 0; //  0 is global scope,1 is the first child scope
 
 /* 
-   a global 
+ todo : convert the tranverse to more flexible ; similar to cgen!!!
  */
 
 static void checkNode(TreeNode * t);
@@ -184,11 +184,13 @@ void buildSymtab(TreeNode * syntaxTree)
 }
 
 
-int var_size_of(TreeNode* tree){
+int var_size_of(TreeNode* tree)
+{
 	Type type = tree->type;
 	if (is_relative_type(type,LInteger)) return 1;
 	if (is_relative_type(type, LFloat)) return 1;
-	if (is_relative_type(type, LStruct)){
+	if (is_relative_type(type, LStruct))
+    {
 		VarType * vartype = st_get_var_type_info(tree->attr.name);
 		assert(!"undefined struct size");
 		return 0;

@@ -30,7 +30,7 @@ static int get_reg(Type type)
 	{
 		return fac;
 	}
-	else if (is_relative_type(type, LInteger) || is_relative_type(type, LBoolean)) 
+	else if (is_relative_type(type, LInteger) || is_relative_type(type, LBoolean))
 	{
 		return ac;
 	}
@@ -45,6 +45,30 @@ static int get_reg1(Type type)
 {
 	return get_reg(type) + 1;
 }
+/*get the current env's stack*/
+static int get_stack_bottom(int scope)
+{
+    assert(scope >= 0 );
+    if(scope == 0) return gp;
+    else return fp;
+}
+
+// delete all local variable from the stmtseq
+static void deleteLocalVar(TreeNode * tree, int scope)
+{
+    if(scope > 0) return;
+    TreeNode * t = tree;
+    while (t != NULL)
+    {
+        switch (t->kind.stmt)
+        {
+            case DeclareK:
+                st_delete(t->attr.name);
+                break;
+        }
+    }
+}
+
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -52,7 +76,7 @@ static void genStmt( TreeNode * tree,int scope)
     TreeNode * p1, * p2, * p3;
     int savedLoc1,savedLoc2,currentLoc;
     int loc;
-	TokenType type;
+	Type type;
     switch (tree->kind.stmt)
 	{            
         case IfK :
@@ -103,23 +127,31 @@ static void genStmt( TreeNode * tree,int scope)
         case AssignK:
             if (TraceCode) emitComment("-> assign");
 			cGen(tree->child[0],scope + 1);// load value in register ac or fac 
-			type = st_lookup_type(tree->attr.name);
-			emitRO("MOV", get_reg(type), get_reg(tree->child[0]->converted_type), 0, "move register reg(s) tp reg(r)");
+			
             loc = st_lookup(tree->attr.name);// get the memory location of identifier
+            int var_stack_bottom = get_stack_bottom(st_lookup_scope(tree->attr.name));
 
-			int vsize = var_size_of(tree);
-			if (vsize == 1)
+			if (tree->kind.exp != FuncallK)
 			{
-				emitRM("ST", get_reg(type), loc, get_stack_bottom(st_lookup_scope(tree)), "assign: store value", type);//dMem[reg[gp]+loc] =  reg[ac]		
+                // deal with the integer or float
+                type = st_lookup_type(tree->attr.name);
+                emitRO("MOV", get_reg(type), get_reg(tree->child[0]->converted_type), 0, "move register reg(s) tp reg(r)");
+				emitRM("ST", get_reg(type), loc, var_stack_bottom, "assign: store value");//dMem[reg[gp]+loc] =  reg[ac]
 			}
 			else
 			{
 				// copy  writes from struct to another
-				// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(note in reverse) vsize bytes
+				// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
+                int vsize = var_size_of(tree);
+                while (vsize-- > 0)
+                {
+                    // move bytes tmpOffset to dMem[ac]
+                    emitRM("LD", ac, ++tmpOffset, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+                    emitRM("ST", ac, loc,var_stack_bottom,"copy bytes ");
+                }
 			}
-				if (TraceCode)  emitComment("<- assign") ;
+				if (TraceCode)  emitComment("<- assign");
             break; /* assign_k */
-            
         case ReadK:
             loc = st_lookup(tree->attr.name);
 			type = st_lookup_type(tree->attr.name);
@@ -143,7 +175,7 @@ static void genStmt( TreeNode * tree,int scope)
 				insertParam(tree->child[0], scope + 1);
 				loc = st_lookup(tree->attr.name);
 				// todo support the get_stack_top(scope),get_stack_bottom(scope)
-				emitRM("ST", pc, loc, get_stack_top(scope), "load the function adress");// dMem[reg[gp || fp ] + loc] = reg[pc];store the function body adress into loc
+				emitRM("ST", pc, loc, get_stack_bottom(scope), "load the function adress");// dMem[reg[gp || fp ] + loc] = reg[pc];store the function body adress into loc
 				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
 				emitRO("MOV", fp, sp, 0, "push the fp");//reg[fp] = reg[sp]
 
