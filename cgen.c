@@ -56,8 +56,8 @@ static int get_stack_bottom(int scope)
 // delete all local variable from the stmtseq
 static void deleteLocalVar(TreeNode * tree, int scope)
 {
+	TreeNode * t = tree;
     if(scope > 0) return;
-    TreeNode * t = tree;
     while (t != NULL)
     {
         switch (t->kind.stmt)
@@ -177,17 +177,17 @@ static void genStmt( TreeNode * tree,int scope)
 				// todo support the get_stack_top(scope),get_stack_bottom(scope)
 				emitRM("ST", pc, loc, get_stack_bottom(scope), "load the function adress");// dMem[reg[gp || fp ] + loc] = reg[pc];store the function body adress into loc
 				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
-				emitRO("MOV", fp, sp, 0, "push the fp");//reg[fp] = reg[sp]
+				emitRO("MOV", fp, sp, 0, "store the fp");//reg[fp] = reg[sp]
 
-				emitRM("PUSH", ac1, sp, 0, "push the last fp");//dMem[reg[sp]--] = ac1 
-				emitRM("PUSH", ac, sp, 0, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
+				emitRM("PUSH", ac, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
+				emitRM("PUSH", ac, 0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
 				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
 				
                 //todo support return value
-				emitRM("LD", ac, -1, fp, "store the return adress");//reg[ac] = dMem[reg[fp]-1](return adress)
+				//todo this should be moved to return node
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
-				emitRO("return", 0, 0, 0, "return to adress : reg[fp]+1");// execute reg[pc] = reg[ac]
+				emitRO("return", 0, -1, sp, "return to adress : reg[fp]+1");// execute reg[pc] = return adress
 			
 				deleteLocalVar(tree->child[1], scope + 1);
 				deleteNode(tree->child[0], scope + 1);
@@ -243,7 +243,6 @@ static void genExp( TreeNode * tree,int scope)
 		case FuncallK:
 
 			//push the paramter into the stack
-
 
 			//jump to the function body
 			loc = st_lookup(tree->attr.name);

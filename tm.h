@@ -19,7 +19,7 @@ typedef enum {
 	opHALT,    /* RR     halt, operands are ignored */
 	opIN,      /* RR     read into reg(r); s and t are ignored */
 	opOUT,     /* RR     write from reg(r), s and t are ignored */
-	opMOV,     /*RR move register from one to another*/
+	opMOV,     /* RR	 move register from one to another*/
 	opADD,    /* RR     reg(r) = reg(s)+reg(t) */
 	opSUB,    /* RR     reg(r) = reg(s)-reg(t) */
 	opMUL,    /* RR     reg(r) = reg(s)*reg(t) */
@@ -29,6 +29,7 @@ typedef enum {
 	/* RM instructions */
 	opLD,      /* RM     reg(r) = mem(d+reg(s)) */
 	opST,      /* RM     mem(d+reg(s)) = reg(r) */
+	opPUSH,    /* RR	 push registr to dMem[reg[sp]--]	*/
 	opRMLim,   /* Limit of RM opcodes */
 
 	/* RA instructions */
@@ -40,6 +41,7 @@ typedef enum {
 	opJGE,     /* RA     if reg(r)>=0 then reg(7) = d+reg(s) */
 	opJEQ,     /* RA     if reg(r)==0 then reg(7) = d+reg(s) */
 	opJNE,     /* RA     if reg(r)!=0 then reg(7) = d+reg(s) */
+	opRETUEN,  /* RA     reg[pc] = dMem[a]; */
 	opRALim    /* Limit of RA opcodes */
 } OPCODE;
 

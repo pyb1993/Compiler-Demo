@@ -207,6 +207,7 @@ TreeNode * funcall_exp(void)
  TreeNode * param_pass(void)
 {
     TreeNode * next;
+	TreeNode * t;
 	if (token == VOID || token == RPAREN)
 	{
 		if (token == VOID) match(VOID);
@@ -214,8 +215,8 @@ TreeNode * funcall_exp(void)
 		return NULL;
 	}
 
-	TreeNode *t = parseOneExp();// parse first param, why deal with it specifically? because I need to return t
-	TreeNode *next = t;
+	t = parseOneExp();// parse first param, why deal with it specifically? because I need to return t
+	next = t;
 
 	while (token != RPAREN)
 	{

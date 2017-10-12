@@ -1,6 +1,8 @@
 void f()
 {
 	int a
+	a = 1
 	int b
-	out a
+	write a
 }
+

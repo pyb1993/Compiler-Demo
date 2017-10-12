@@ -26,7 +26,7 @@
 /* MAXRESERVED = the number of reserved words */
 #define MAXRESERVED 20
 #define MEMUNITSCALE 4      // the bytes of mem unit 
-
+#define NOTFOUND    (404 * 404)
 typedef enum
 /* book-keeping tokens */
 {

@@ -35,10 +35,10 @@ int reg[NO_REGS];
 char * opCodeTab[]
 = { "HALT", "IN", "OUT","MOV","ADD", "SUB", "MUL", "DIV", "????",
 /* RR opcodes */
-"LD", "ST", "????", /* RM opcodes */
-"LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "????"
+"LD", "ST","PUSH","????", /* RM opcodes */
+"LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????"
 /* RA opcodes */
-};
+   };
 
 char * stepResultTab[] = 
 { "OK", "Halted", "Instruction Memory Fault",
@@ -96,7 +96,6 @@ static STEPRESULT operand(int r, int s, int t, char op);
 static STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op);
 
 static STEPRESULT do_operand_int(int r, int lhs, int rhs, char op);
-
 
 int opClass(int c)
 {

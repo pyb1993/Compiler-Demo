@@ -17,13 +17,12 @@ int EchoSource = TRUE;
 int TraceScan = TRUE;
 int TraceParse = TRUE;
 int TraceAnalyze = TRUE;
-int TraceCode = FALSE;
+int TraceCode = TRUE;
 int Error = FALSE;
 int done;
 
-
-int main(){
-
+int main()
+{
 	char *filename = "pyb_example.p";
 	source = fopen(filename, "r");
 	listing = stdout;
@@ -79,5 +78,4 @@ int main(){
 	float f = *(float *)(&d);
 #endif
 	return 0;
-
 }
