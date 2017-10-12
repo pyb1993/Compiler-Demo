@@ -1,8 +1,14 @@
+
+int a
+a = 100
 void f()
 {
-	int a
-	a = 1
-	int b
-	write a
+	write a + 20
+}
+
+void main()
+{
+	f()
+
 }
 

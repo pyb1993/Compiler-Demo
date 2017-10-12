@@ -41,7 +41,7 @@ typedef enum {
 	opJGE,     /* RA     if reg(r)>=0 then reg(7) = d+reg(s) */
 	opJEQ,     /* RA     if reg(r)==0 then reg(7) = d+reg(s) */
 	opJNE,     /* RA     if reg(r)!=0 then reg(7) = d+reg(s) */
-	opRETUEN,  /* RA     reg[pc] = dMem[a]; */
+	opRETURN,  /* RA     reg[pc] = dMem[a]; */
 	opRALim    /* Limit of RA opcodes */
 } OPCODE;
 

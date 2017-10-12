@@ -121,6 +121,7 @@ BucketList del_from_list(BucketList list, char * name){
 }
 
 void free_node(BucketList l){
+	free_type(l->var_type);
 	free(l);
 }
 
@@ -159,6 +160,8 @@ VarType* st_get_var_type_info(char * key)
 	assert(l != NULL);
 	return l->var_type;
 }
+
+
 
 bool is_duplicate_var(char * name, int depth)
 {
@@ -208,3 +211,13 @@ void printSymTab(FILE * listing)
      
     }
 } /* printSymTab */
+
+void setFunctionAdress(char * name,int adress){
+	BucketList l = st_get_node(name);
+	l->memloc = adress;
+}
+
+int getFunctionAdress(char * name){
+	return st_lookup(name);
+
+}

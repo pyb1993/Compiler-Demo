@@ -257,7 +257,7 @@ int readInstructions(FILE *pgm)
 	dMem[1] = GP_ADRESS;
 	dMem[2] = FIRST_FP;
 	
-	for (loc = 1; loc < DADDR_SIZE; loc++)
+	for (loc = 3; loc < DADDR_SIZE; loc++)
 		dMem[loc] = 0;
 	for (loc = 0; loc < IADDR_SIZE; loc++)
 	{
@@ -355,12 +355,20 @@ int readInstructions(FILE *pgm)
 /********************************************/
 STEPRESULT stepTM(void)
 {
+
 	INSTRUCTION currentinstruction;
 	int pc_pos;
 	int r, s, t, m;
 	int ok;
 
 	pc_pos = reg[PC_REG];
+
+	printf("run ins:%d\n", pc_pos);
+	if (pc_pos == 9)
+	{
+		int a = 100;;
+	}
+
 	if ((pc_pos < 0) || (pc_pos > IADDR_SIZE))
 		return srIMEM_ERR;
 	reg[PC_REG] = pc_pos + 1;
@@ -440,6 +448,7 @@ STEPRESULT stepTM(void)
 		/*deal  with the conversion of different format*/
 		convert(s,r);// s -> r
 		break;
+			
 	case opADD:  operand(r, s, t, '+'); break;
 	case opSUB:  operand(r, s, t, '-');  break;
 	case opMUL:  operand(r, s, t, '*'); break;
@@ -452,7 +461,10 @@ STEPRESULT stepTM(void)
 		/*************** RM instructions ********************/
 	case opLD:    reg[r] = dMem[m];  break;
 	case opST:    dMem[m] = reg[r];  break;// no need to convert float,integer
-
+	case opPUSH:  
+		dMem[m] = reg[r];
+		reg[s]--;
+		break;
 		/*************** RA instructions ********************/
 	case opLDA:    reg[r] = m; break;
 	case opLDC:    reg[r] = currentinstruction.iarg2;
@@ -462,7 +474,7 @@ STEPRESULT stepTM(void)
 	case opJGE:    if (reg[r] >= 0) reg[PC_REG] = m; break;
 	case opJEQ:    if (reg[r] == 0) reg[PC_REG] = m; break;
 	case opJNE:    if (reg[r] != 0) reg[PC_REG] = m; break;
-
+	case opRETURN: reg[PC_REG] = dMem[m];	break;
 		/* end of legal instructions */
 	} /* case */
 	return srOKAY;
@@ -712,13 +724,17 @@ int doCommand(void)
 			flt = flt_from_reg(reg1);
 			reg[reg2] = flt;
 			break;
+		default:
+			reg[reg2] = reg[reg1];
+			break;
 		}
 
 	}
 
 
 
- int same_reg_type(int reg1, int reg2){
+ int same_reg_type(int reg1, int reg2)
+{
 	return reg_type(reg1) == reg_type(reg2);
 }
 

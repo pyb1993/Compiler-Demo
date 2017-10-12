@@ -173,13 +173,15 @@ static void genStmt( TreeNode * tree,int scope)
 			if (scope == 0 && tree->type == Func) 
 			{
 				insertParam(tree->child[0], scope + 1);
-				loc = st_lookup(tree->attr.name);
-				// todo support the get_stack_top(scope),get_stack_bottom(scope)
-				emitRM("ST", pc, loc, get_stack_bottom(scope), "load the function adress");// dMem[reg[gp || fp ] + loc] = reg[pc];store the function body adress into loc
-				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
-				emitRO("MOV", fp, sp, 0, "store the fp");//reg[fp] = reg[sp]
+				
+				// load function adress
+				setFunctionAdress(tree->attr.name, emitSkip(0));
+				emitComment("enter the function");
+				// assume the caller  move return adress in reg[ac]
+				emitRO("MOV", ac1,fp,0,"store the caller fp temporarily");// store the caller fp
+				emitRO("MOV", fp, sp, 0, "exchang the stack(context)");//reg[fp] = reg[sp]
 
-				emitRM("PUSH", ac, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
+				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
 				emitRM("PUSH", ac, 0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
 				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
 				
@@ -187,8 +189,9 @@ static void genStmt( TreeNode * tree,int scope)
 				//todo this should be moved to return node
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
-				emitRO("return", 0, -1, sp, "return to adress : reg[fp]+1");// execute reg[pc] = return adress
-			
+				emitRO("RETURN", 0, -1, sp, "return to adress : reg[fp]+1");// execute reg[pc] = return adress
+				emitComment("leave the function");
+
 				deleteLocalVar(tree->child[1], scope + 1);
 				deleteNode(tree->child[0], scope + 1);
 			}
@@ -227,7 +230,7 @@ static void genExp( TreeNode * tree,int scope)
 				 emitLDCF("LDC", fac, float_num, 0, "load float const");// reg[ac] = tree->ttr.val.integer
 				break;
 			default:
-				emitComment("BUG in ConstK,unknwon expression type");
+				assert(!"BUG in ConstK,unknwon expression type");
 				break;
 			}
             if (TraceCode)  emitComment("<- Const") ;
@@ -236,19 +239,19 @@ static void genExp( TreeNode * tree,int scope)
         case IdK :
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-			emitRM("LD", get_reg(tree->type), loc, gp, "load id value");// reg[ac] = Mem[reg[gp] + loc]
+			emitRM("LD", get_reg(tree->type), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]
 			emitRO("MOV", get_reg(type), get_reg(tree->type), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
             if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
 		case FuncallK:
 
-			//push the paramter into the stack
+			//todo :push the paramter into the stack
 
 			//jump to the function body
-			loc = st_lookup(tree->attr.name);
-			emitRM("LDA", pc, loc, get_stack_bottom(scope), "ujp to the function body");
+			emitRM("LDA", ac, 1, pc, "store the return adress");
+			loc  = getFunctionAdress(tree->attr.name);
+			emitRM("LDC", pc, loc, 0, "ujp to the function body");
 			break;
-		
 		
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
@@ -366,17 +369,24 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     emitRM("ST",ac,0,ac,"clear location 0");// dMem[reg[ac] + 0] = reg[ac]
 	
 	emitRM("LD", gp, 1, ac, "load gp adress from location 1");
-	emitRM("ST", ac, 1, ac, "clear location 2");
+	emitRM("ST", ac, 1, ac, "clear location 1");
 
 	emitRM("LD", fp, 2, ac, "load first fp from location 2");
 	emitRM("LD", sp, 2, ac, "load first sp from location 2");
-	emitRM("ST", ac, 2, ac, "clear location 3");
-
+	emitRM("ST", ac, 2, ac, "clear location 2");
     emitComment("End of standard prelude.");
-    /* generate code for TINY program */
-    cGen(syntaxTree,0);
-    /* finish */
-    emitComment("End of execution.");
-    emitRO("HALT",0,0,0,"");
+	int currentLoc = emitSkip(2);// skip two,the first real instruction must be the main call
+	/* generate code for TINY program */
+	cGen(syntaxTree,0);
+	
+	int endLoc = emitSkip(0);
+	emitBackup(currentLoc);
+	emitComment("call main function");
+	int adress = getFunctionAdress("main");
+	emitRM("LDC", ac, endLoc,0, "store the return adress");
+	emitRM("LDC", pc, adress, 0, "ujp to the function body");
+	emitRestore();
+	emitRO("HALT", 0, 0, 0, "");// finish
+
 }
 

@@ -344,5 +344,6 @@ static void set_convertd_type(TreeNode * t, TokenType type){
 static void gen_converted_type(TreeNode * tree)
 {
 	Type _is_float = is_float(tree);
+	if (_is_float < LRBOUND) _is_float += LRBOUND + 1;
 	set_convertd_type(tree, _is_float);
 }

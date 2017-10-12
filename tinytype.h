@@ -45,6 +45,7 @@ bool is_relative_type(Type a, Type b);
 bool can_convert(Type a, Type b);
 VarType * new_type(TreeNode * tree);
 FuncType new_func_type(TreeNode * tree);
+void	free_type(VarType *);
 ParamNode * new_param_node(TreeNode * tree);
 
 #endif /* tinytype_h */

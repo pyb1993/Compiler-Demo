@@ -11,5 +11,6 @@ VarType* st_get_var_type_info(char * key);
 int st_lookup(char * name); /*   Function st_lookup returns the memory location of a variable or -1 if not found*/
 bool is_duplicate_var(char * name, int depth);
 void printSymTab(FILE * listing);
-
+void setFunctionAdress(char * name,int adress);
+int getFunctionAdress(char * name);
 #endif

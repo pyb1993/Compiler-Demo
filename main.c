@@ -55,14 +55,14 @@ int main()
 	fclose(code);
 #endif
 
-#if 0
+#if 1
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
 
-#if 0
+#if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{
