@@ -10,43 +10,48 @@
 * End of standard prelude.
 * -> assign
 * -> Const
-  9:    LDC  0,100(0) 	load integer const
-* <- Const
- 10:     ST  0,0(5) 	assign: store value
+  9:    LDC  9,100.000000(0) * <- Const
+ 10:     ST  9,0(5) 	assign: store value
 * <- assign
 * enter the function
  11:    MOV  1,2,0 	store the caller fp temporarily
  12:    MOV  2,3,0 	exchang the stack(context)
  13:   PUSH  1,0(3) 	push the caller fp
  14:   PUSH  0,0(3) 	push the return adress
+* -> assign
+* -> Const
+ 15:    LDC  0,100(0) 	load integer const
+* <- Const
+ 16:    MOV  9,0,0 	move register reg(s) tp reg(r)
+ 17:     ST  9,-2(2) 	assign: store value
+* <- assign
 * -> Op
 * -> Id
- 15:     LD  0,0(5) 	load id value
+ 18:     LD  9,-2(2) 	load id value
 * <- Id
- 16:     ST  0,0(6) 	op: push left
+ 19:     ST  9,0(6) 	op: push left
 * -> Const
- 17:    LDC  0,20(0) 	load integer const
-* <- Const
- 18:     LD  1,0(6) 	op: load left
- 19:    ADD  0,1,0 	op +
+ 20:    LDC  9,20.754299(0) * <- Const
+ 21:     LD  10,0(6) 	op: load left
+ 22:    ADD  9,10,9 	op +
 * <- Op
- 20:    OUT  0,0,0 	output value in register[ac]
- 21:    MOV  3,2,0 	restore the caller sp
- 22:     LD  2,0(2) 	resotre the caller fp
- 23:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 23:    OUT  9,0,0 	output value in register[ac]
+ 24:    MOV  3,2,0 	restore the caller sp
+ 25:     LD  2,0(2) 	resotre the caller fp
+ 26:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * leave the function
 * enter the function
- 24:    MOV  1,2,0 	store the caller fp temporarily
- 25:    MOV  2,3,0 	exchang the stack(context)
- 26:   PUSH  1,0(3) 	push the caller fp
- 27:   PUSH  0,0(3) 	push the return adress
- 28:    LDA  0,1(7) 	store the return adress
- 29:    LDC  7,11(0) 	ujp to the function body
- 30:    MOV  3,2,0 	restore the caller sp
- 31:     LD  2,0(2) 	resotre the caller fp
- 32:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 27:    MOV  1,2,0 	store the caller fp temporarily
+ 28:    MOV  2,3,0 	exchang the stack(context)
+ 29:   PUSH  1,0(3) 	push the caller fp
+ 30:   PUSH  0,0(3) 	push the return adress
+ 31:    LDA  0,1(7) 	store the return adress
+ 32:    LDC  7,11(0) 	ujp to the function body
+ 33:    MOV  3,2,0 	restore the caller sp
+ 34:     LD  2,0(2) 	resotre the caller fp
+ 35:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * leave the function
 * call main function
-  7:    LDC  0,33(0) 	store the return adress
-  8:    LDC  7,24(0) 	ujp to the function body
- 33:   HALT  0,0,0 	
+  7:    LDC  0,36(0) 	store the return adress
+  8:    LDC  7,27(0) 	ujp to the function body
+ 36:   HALT  0,0,0 	

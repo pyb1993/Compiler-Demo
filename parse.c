@@ -267,7 +267,6 @@ static TreeNode* paramK_stmt(void)
 		next = next->sibling;
 	}
 	match(RPAREN);
-	int a = (1,2,4);
 	return t;
 }
 
@@ -276,7 +275,7 @@ static TreeNode* paramK_stmt(void)
 TreeNode* parseOneVar()
 {
 	TreeNode * t = declare_stmt();
-	t->kind.exp = ParamK;
+	t->kind.stmt = ParamK;
 	if (token != RPAREN) { match(COMMA); }
 	return t;
 }
@@ -304,8 +303,8 @@ TreeNode * idStartStmt()
 	}
 	else
 	{
-		syntaxError("unexpected token -> ");
-		return ;
+		syntaxError("idStartStmt,unexpected token -> ");
+		return NULL;
 	}
 }
 

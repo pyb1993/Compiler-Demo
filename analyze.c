@@ -52,11 +52,6 @@ static void typeError(TreeNode * t, char * message)
 }
 
 
-/* nullProc is a do-nothing procedure to
- * generate preorder-only or postorder-only
- * traversals from traverse
- */
-static void nullProc(TreeNode * t) { }
 
 /* Procedure insertNode inserts
  * identifiers stored in t into
@@ -64,7 +59,7 @@ static void nullProc(TreeNode * t) { }
  */
 
 /*insert the param */
-int insertParam(TreeNode * t,int scope_depth)
+void insertParam(TreeNode * t,int scope_depth)
 {
 	_insertParam(t,scope_depth);
 	stack_offset = -2;
@@ -76,7 +71,7 @@ int insertParam(TreeNode * t,int scope_depth)
 	if (t == NULL) return 0;
 	type = type_from_basic(t->type);
 	int var_size = var_size_of(t);
-	int size = insertParam(t->sibling,scope_depth) + var_size;// offset of param in reverse
+	int size = _insertParam(t->sibling,scope_depth) + var_size;// offset of param in reverse
 	
 	// convert to the DeclareK temporarily to insert it as the declare node	
 	if (is_duplicate_var(t->attr.name,scope_depth))
@@ -142,6 +137,8 @@ int insertParam(TreeNode * t,int scope_depth)
 					printf("local variable stack offset %s %d\n",t->attr.name,stack_offset+var_szie);
 				}
                 break;
+            default:
+                break;
         }
             break;
         case ExpK:
@@ -170,6 +167,8 @@ void deleteNode(TreeNode * t,int scope_depth)
 			deleteParam(t->child[0]);
 		}
 		break;
+     default:
+            break;
 	}
 }
 
@@ -195,11 +194,11 @@ int var_size_of(TreeNode* tree)
 	if (is_relative_type(type, LFloat)) return 1;
 	if (is_relative_type(type, LStruct))
     {
-		VarType * vartype = st_get_var_type_info(tree->attr.name);
 		assert(!"undefined struct size");
 		return 0;
 	}
 	assert(!"undefined type size");
+    return 0;
 }
 
 
@@ -331,7 +330,7 @@ static Type is_float(TreeNode * t)
 	return RInteger;
 }
 
-static void set_convertd_type(TreeNode * t, TokenType type){
+static void set_convertd_type(TreeNode * t, Type type){
 	if (t == NULL) return;
 
 	t->converted_type = type;
@@ -341,7 +340,7 @@ static void set_convertd_type(TreeNode * t, TokenType type){
 }
 
 
-static void gen_converted_type(TreeNode * tree)
+ void gen_converted_type(TreeNode * tree)
 {
 	Type _is_float = is_float(tree);
 	if (_is_float < LRBOUND) _is_float += LRBOUND + 1;

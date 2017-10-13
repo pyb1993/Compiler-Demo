@@ -8,12 +8,12 @@
 /****************************************************/
 
 #include "globals.h"
-#include "analyze.h"
 #include "symtable.h"
 #include "code.h"
 #include "cgen.h"
 #include "tinytype.h"
 #include "assert.h"
+#include "analyze.h"
 
 /* tmpOffset is the memory offset for temps
  It is decremented each time a temp is
@@ -64,6 +64,8 @@ static void deleteLocalVar(TreeNode * tree, int scope)
         {
             case DeclareK:
                 st_delete(t->attr.name);
+                break;
+            default:
                 break;
         }
     }
@@ -173,7 +175,6 @@ static void genStmt( TreeNode * tree,int scope)
 			if (scope == 0 && tree->type == Func) 
 			{
 				insertParam(tree->child[0], scope + 1);
-
 				// load function adress
 				setFunctionAdress(tree->attr.name, emitSkip(0));
 				emitComment("enter the function");
@@ -358,7 +359,6 @@ static void cGen( TreeNode * tree,int scope)
  */
 void codeGen(TreeNode * syntaxTree, char * codefile)
 { 
-	TokenType type = syntaxTree->type;
 	char * s = malloc(strlen(codefile)+7);
     strcpy(s,"File: ");
     strcat(s,codefile);

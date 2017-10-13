@@ -429,7 +429,7 @@ STEPRESULT stepTM(void)
 				reg[r] = flt_num;
 			}
 			else{
-				assert(!("undefined type", 1));
+				assert(!"undefined type");
 			}
 			if (!ok) printf("Illegal value\n");
 		} while (!ok);
@@ -437,11 +437,11 @@ STEPRESULT stepTM(void)
 
 	case opOUT:
 		if (same_reg_type(r, ac)) {
-			printf("OUT instruction prints: %d\n", reg[r]);
+			printf("OUT instruction prints int: %d\n", reg[r]);
 		}
 		else if (same_reg_type(r, fac)) {
 			flt_num = flt_from_reg(r);
-			printf("OUT instruction prints: %f\n", flt_num);
+			printf("OUT instruction prints float: %f\n", flt_num);
 		}
 		break;
 	case opMOV:	 
@@ -671,7 +671,6 @@ int doCommand(void)
 
    STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op){
 	  operand_proc(op, int_from_flt);
-	  int x = int_from_flt(5.0 / 3.0);
   }
 
    STEPRESULT do_operand_int(int r, int lhs, int rhs, char op){
@@ -696,7 +695,11 @@ int doCommand(void)
 		   flt_t = flt_from_reg(t);
 		   return do_operand_flt(r, flt_s, flt_t, op);
 		   break;
-	   }
+	   default:
+               assert(!"undefined type for operand");
+               return  srHALT;
+               break;
+       }
 
 }
 

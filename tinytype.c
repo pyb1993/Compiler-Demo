@@ -34,10 +34,10 @@ VarType * new_type(TreeNode * tree){
 		t->typeinfo.ftype = new_func_type(tree);
 		break;
 	case LStruct:
-		assert(("not implemented struct", 1));
+		assert("not implemented struct");
 		break;
 	default:
-		assert(("not implemented int or other", 1));
+		assert("not implemented int or other");
 		break;
 	}
 	return t;
@@ -75,7 +75,7 @@ int integer_from_node(TreeNode * t){
 		case RInteger:
 			return t->attr.val.integer;
 		default:
-			assert(!("not defined such conversion",1));
+			assert(!"not defined such conversion");
 			return 0;
 			break;
 	}
@@ -94,17 +94,19 @@ float float_from_node(TreeNode * t)
 	case RInteger:
 		return t->attr.val.integer;
 	default:
-		assert(!("not defined such conversion",1));
+		assert(!"not defined such conversion");
 		return 0;
 		break;
 	}
 }
 
+int my_abs(Type a,Type b){return a > b ? a - b : b - a;}
+
 bool is_relative_type(Type a, Type b)
 {
 	if (a == b)
 		return true;
-	else if (abs(b - a) == LRBOUND + 1)
+	else if (my_abs(a,b) == LRBOUND + 1)
 		return true;
 
 	return false;

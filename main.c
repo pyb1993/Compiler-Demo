@@ -3,6 +3,7 @@
 #include "scan.h"
 #include "parse.h"
 #include "analyze.h"
+#include "cgen.h"
 #include "util.h"
 #include "tm.h"
 
@@ -46,7 +47,7 @@ int main()
 
 #if 1
 	/**compute the length of filename before .tm **/
-	int len = strcspn(filename, ".");
+	int len = (int)strcspn(filename, ".");
 	char * codeFile = (char *)calloc(len+4,sizeof(char));
 	strncpy(codeFile, filename, len);
 	strcat(codeFile, ".tm");
@@ -71,11 +72,6 @@ int main()
 	printf("Simulation done.\n");
 	fclose(code);
 
-	float a = 100;
-	unsigned char* b = (unsigned char*)&a;
-	printf("%02X %02X %02X %02X", b[0], b[1], b[2], b[3]);
-	int d = *(int *)(b);
-	float f = *(float *)(&d);
 #endif
 	return 0;
 }

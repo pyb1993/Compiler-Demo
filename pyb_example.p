@@ -1,9 +1,19 @@
+/
+    *
+    support the function skip!!!!!!
+    *
 
-int a
-a = 100
+/
+
+
+
+float a
+a = 100.0
 void f()
 {
-	write a + 20
+    float a
+    a = 100
+	write a + 20.7543
 }
 
 void main()

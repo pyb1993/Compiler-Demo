@@ -4,6 +4,7 @@
 #include "symtable.h"
 #include "tinytype.h"
 #include "assert.h"
+
 /* SIZE is the size of the hash table */
 #define SIZE 211
 
@@ -80,7 +81,7 @@ BucketList insert_into_list(BucketList list,BucketList inserted)
 		return inserted;
 	}
 
-	while (p->next != NULL && strcmp(p->next,inserted->name) != 0){ p = p->next;}
+	while (p->next != NULL && strcmp(p->next->name,inserted->name) != 0){ p = p->next;}
 	inserted->next = p->next;
 	p->next = inserted;
 	return list;
@@ -144,6 +145,8 @@ Type st_lookup_type(char * name)
 	assert(l != NULL);
 	if (l->var_type->typekind == BTYPE) return l->var_type->typeinfo.btype;
 	if (l->var_type->typekind == FUNTYPE) return l->var_type->typeinfo.ftype.return_type;
+    assert(!("unimplemented type to return"));
+    return  ErrorType;
 }
 
 int st_lookup_scope(char * name)
