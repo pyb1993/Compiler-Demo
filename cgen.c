@@ -174,8 +174,8 @@ static void genStmt( TreeNode * tree,int scope)
 			{
 				insertParam(tree->child[0], scope + 1);
 				loc = st_lookup(tree->attr.name);
-				// todo support the get_stack_top(scope),get_stack_bottom(scope)
-				emitRM("ST", pc, loc, get_stack_bottom(scope), "load the function adress");// dMem[reg[gp || fp ] + loc] = reg[pc];store the function body adress into loc
+			
+				emitRM("ST", pc, loc, get_stack_bottom(scope), "load the function adress");//dMem[reg[gp || fp ] + loc] = reg[pc]; store the function body adress into loc
 				emitRO("MOV", ac1, pc, 0, "store return adress");//reg[ac1] = reg[fp]
 				emitRO("MOV", fp, sp, 0, "push the fp");//reg[fp] = reg[sp]
 
@@ -249,7 +249,6 @@ static void genExp( TreeNode * tree,int scope)
 			loc = st_lookup(tree->attr.name);
 			emitRM("LDA", pc, loc, get_stack_bottom(scope), "ujp to the function body");
 			break;
-		
 		
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
