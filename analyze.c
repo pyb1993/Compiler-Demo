@@ -64,7 +64,8 @@ static void nullProc(TreeNode * t) { }
  */
 
 /*insert the param */
-int insertParam(TreeNode * t,int scope_depth){
+int insertParam(TreeNode * t,int scope_depth)
+{
 	_insertParam(t,scope_depth);
 	stack_offset = -2;
 }
@@ -134,7 +135,7 @@ int insertParam(TreeNode * t,int scope_depth){
                 }
 				else // local variable
 				{
-					int var_szie = var_size_of(t->type);
+					int var_szie = var_size_of(t);
 					type = type_from_basic(t->type);
 					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope, type);
 					stack_offset -= var_szie;
@@ -144,7 +145,7 @@ int insertParam(TreeNode * t,int scope_depth){
         }
             break;
         case ExpK:
-			if (t->kind.exp == IdK || t->kind.exp == FuncallK && st_lookup(t->attr.name) == -1)
+			if ((t->kind.exp == IdK || t->kind.exp == FuncallK) && st_lookup(t->attr.name) == NOTFOUND)
 				defineError(t,"undefined variable");
             break;
     }
@@ -153,6 +154,9 @@ int insertParam(TreeNode * t,int scope_depth){
 /*notice one thing: delete param list after function body,not imediately!*/
 void deleteNode(TreeNode * t,int scope_depth)
 {
+	if (t == NULL){
+		return;
+	}
 	if (t->nodekind != StmtK) return;
 	switch (t->kind.stmt)
 	{
@@ -340,5 +344,6 @@ static void set_convertd_type(TreeNode * t, TokenType type){
 static void gen_converted_type(TreeNode * tree)
 {
 	Type _is_float = is_float(tree);
+	if (_is_float < LRBOUND) _is_float += LRBOUND + 1;
 	set_convertd_type(tree, _is_float);
 }

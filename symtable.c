@@ -121,6 +121,7 @@ BucketList del_from_list(BucketList list, char * name){
 }
 
 void free_node(BucketList l){
+	free_type(l->var_type);
 	free(l);
 }
 
@@ -130,7 +131,7 @@ void free_node(BucketList l){
 int st_lookup ( char * name )
 {  
 	BucketList l = st_get_node(name);
-	return (l == NULL) ? -1 : l->memloc;
+	return (l == NULL) ? NOTFOUND : l->memloc;
 }
 
 /*
@@ -145,7 +146,8 @@ Type st_lookup_type(char * name)
 	if (l->var_type->typekind == FUNTYPE) return l->var_type->typeinfo.ftype.return_type;
 }
 
-int st_lookup_scope(char * name){
+int st_lookup_scope(char * name)
+{
 	BucketList l = st_get_node(name);
 	return l->scope_depth;
 }
@@ -158,6 +160,8 @@ VarType* st_get_var_type_info(char * key)
 	assert(l != NULL);
 	return l->var_type;
 }
+
+
 
 bool is_duplicate_var(char * name, int depth)
 {
@@ -207,3 +211,13 @@ void printSymTab(FILE * listing)
      
     }
 } /* printSymTab */
+
+void setFunctionAdress(char * name,int adress){
+	BucketList l = st_get_node(name);
+	l->memloc = adress;
+}
+
+int getFunctionAdress(char * name){
+	return st_lookup(name);
+
+}

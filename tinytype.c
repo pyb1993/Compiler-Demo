@@ -44,7 +44,8 @@ VarType * new_type(TreeNode * tree){
 }
 
 /*return the func_type, which is consisted of paramNode and return type*/
-FuncType new_func_type(TreeNode * tree){
+FuncType new_func_type(TreeNode * tree)
+{
 	FuncType ftype;
 	ftype.return_type = tree->return_type;
 	ftype.params = new_param_node(tree->child[0]);
@@ -127,4 +128,15 @@ bool can_convert(Type a, Type b)
 	}
 
 	return false;
+}
+
+void free_type(VarType * t)
+{
+	if (t->typekind == BTYPE){
+		free(t);
+	}
+	else {
+		printf("MEMORY LEAKED!!!!!!!!!!!!!!!!,NOT IMPLEMENTED!\n");
+	}
+
 }

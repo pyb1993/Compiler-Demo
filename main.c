@@ -17,13 +17,12 @@ int EchoSource = TRUE;
 int TraceScan = TRUE;
 int TraceParse = TRUE;
 int TraceAnalyze = TRUE;
-int TraceCode = FALSE;
+int TraceCode = TRUE;
 int Error = FALSE;
 int done;
 
-
-int main(){
-
+int main()
+{
 	char *filename = "pyb_example.p";
 	source = fopen(filename, "r");
 	listing = stdout;
@@ -56,14 +55,14 @@ int main(){
 	fclose(code);
 #endif
 
-#if 0
+#if 1
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
 
-#if 0
+#if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{
@@ -79,5 +78,4 @@ int main(){
 	float f = *(float *)(&d);
 #endif
 	return 0;
-
 }
