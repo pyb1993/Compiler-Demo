@@ -30,16 +30,17 @@ static TreeNode * read_stmt(void);
 static TreeNode * write_stmt(void);
 static TreeNode * declare_stmt(void);
 static TreeNode * break_stmt(void);
+static TreeNode * return_stmt(void);
 static TreeNode * exp(void);
 static TreeNode * simple_exp(void);
 static TreeNode * term(void);
 static TreeNode * factor(void);
+
 //help function
 static TreeNode * parseOneVar();
 static TreeNode * parseOneExp();
 static TreeNode * param_pass(void);// parse function call params
 static TreeNode * paramK_stmt(void);// parse function def params
-
 static TreeNode * idStartStmt();
 static void       initTokens();
 static TokenType  currentToken();
@@ -52,8 +53,14 @@ static void syntaxError(char * message)
 	Error = TRUE;
 }
 
+static TokenType tryNextToken()
+{
+	return token_array[pos + 1];
+}
+
 static void match(TokenType expected)
 {
+	
 	if (token == expected) {
 		token = currentToken();
 	}
@@ -64,6 +71,9 @@ static void match(TokenType expected)
 		printToken(expected,"");
 		fprintf(listing, "      ");
 	}
+
+	while (token == LINEEND && token != ENDFILE) { token = currentToken(); } // skip the remain empty line
+
 }
 
 bool match_possible_lbracket()
@@ -118,6 +128,7 @@ TreeNode * statement(void)
 	case IF: t = if_stmt(); break;
 	case WHILE: t = while_stmt(); break;
     case BREAK: t = break_stmt();break;
+	case RETURN:t = return_stmt(); break;
 	case ID: t = idStartStmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
@@ -126,8 +137,11 @@ TreeNode * statement(void)
 	case VOID:
 		t = declare_stmt();
 		break;
+	case LINEEND: // ignore it
+		break;
 	case RBRACKET:// a empty statment
 		break;
+
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
 		token = currentToken();
@@ -180,6 +194,25 @@ TreeNode * break_stmt(void)
     TreeNode * t = newStmtNode(BreakK);
     match(BREAK);
     return t;
+}
+
+// return / return x;
+TreeNode * return_stmt(void)
+{
+	TreeNode * t = newStmtNode(ReturnK);
+	TokenType next = tryNextToken();
+	match(RETURN);
+
+	if (next == LINEEND)
+	{
+		t->child[0] = NULL;
+	}
+	else
+	{
+		t->child[0] = exp();
+	}
+
+	return t;
 }
 
 TreeNode * assign_stmt(void)
@@ -303,15 +336,15 @@ TreeNode * idStartStmt()
 	}
 	else
 	{
-		syntaxError("idStartStmt,unexpected token -> ");
-		return NULL;
+		unGetToken();
+	    return exp();
 	}
 }
 
  void unGetToken()
 {
-	 pos--;
-	 token = token_array[pos];
+	 token = token_array[--pos];
+	 while (token == LINEEND && pos > 0) { token = token_array[--pos]; }
 	 int i = 0;
 	 
 	 char * str = token_string_array[pos];
@@ -322,7 +355,6 @@ TreeNode * idStartStmt()
  TokenType  currentToken()
  {
 	 int i = 0;
-	
 	 char * str = token_string_array[++pos];
 	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
 	 
@@ -338,11 +370,19 @@ TreeNode * idStartStmt()
 										}while(0)\
 
 	 int i = 0;
+//	 TokenType tok = getToken();
+//	 while (tok == LINEEND && tok != ENDFILE) { tok = getToken();}// skip the first empty lines
+//	 addToken(tok, copyString(tokenString));
+
 	 TokenType tok = getToken();
-	 addToken(tok, copyString(tokenString));
+	 while (tok == LINEEND && tok != ENDFILE) tok = getToken();// skip the first token
+	 addToken(tok, copyString(tokenString));// 
+
 	 while (tok != ENDFILE)
 	 {
+		 TokenType last_tok = tok;
 		 tok = getToken();
+		 if (tok == last_tok && last_tok == LINEEND) continue;
 		 addToken(tok, copyString(tokenString));
 	 }
 
@@ -362,14 +402,14 @@ TreeNode* declare_stmt(void)
       // define a variable; eg: int value;
       case INT:
             match(INT);
-			t->type = LInteger;
+			t->type = Integer;
             t->attr.name = copyString(tokenString);
             match(ID);
 			func_dec = (token == LPAREN);
             break;
 	  case FLOAT:
 		  match(FLOAT);
-		  t->type = LFloat;
+		  t->type = Float;
 		  t->attr.name = copyString(tokenString);
 		  match(ID);
 		  func_dec = (token == LPAREN);
@@ -455,17 +495,24 @@ TreeNode * term(void)
 TreeNode * factor(void)
 {
 	TreeNode * t = NULL;
-	switch (token) {
+	switch (token) 
+	{
+	case NEG:
+		match(NEG);
+		t = newExpNode(SingleOpK);
+		t->attr.op = NEG;
+		t->child[0] = exp();
+		t->type = t->child[0]->type;
 	case NUM:
 		t = newExpNode(ConstK);
 		t->attr.val.integer = atoi(tokenString);
-		t->type = RInteger;
+		t->type = Integer;
 		match(NUM);
 		break;
     case FlOATNUM:
             t = newExpNode(ConstK);
 			t->attr.val.flt = atof(tokenString);
-			t->type = RFloat;
+			t->type = Float;
 			match(FlOATNUM);
             break;
 	case ID:

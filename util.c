@@ -45,7 +45,9 @@ void printToken(TokenType token, const char* tokenString)
         case FLOAT:fprintf(listing, "float\n "); break;
 		case VOID:fprintf(listing, "void\n "); break;
         case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
-        case ENDFILE: fprintf(listing, "EOF\n"); break;
+		case RETURN:fprintf(listing, "RETURN statement\n");
+		case LINEEND:fprintf(listing,"\n"); break;
+		case ENDFILE: fprintf(listing, "EOF\n"); break;
         case NUM:
             fprintf(listing,
                     "NUM, val= %s\n", tokenString);
@@ -184,7 +186,9 @@ void printTree(TreeNode * tree)
 				case BreakK:
                     fprintf(listing, "Break \n");
                     break;
-    
+				case ReturnK:
+					fprintf(listing, "Return \n");
+					break;
                 default:
                     fprintf(listing, "Unknown StmtNode kind %d\n",tree->nodekind);
                     break;
@@ -199,10 +203,10 @@ void printTree(TreeNode * tree)
                     break;
                 case ConstK:
                     switch (tree->type) {
-                        case RInteger:
+                        case Integer:
                             fprintf(listing, "Const: %d\n", tree->attr.val.integer);
                             break;
-                        case RFloat:
+                        case Float:
                             fprintf(listing, "Const: %f\n", tree->attr.val.flt);
                             break;
                         default:

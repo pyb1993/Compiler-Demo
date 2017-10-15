@@ -1,24 +1,13 @@
-/
-    *
-    support the function skip!!!!!!
-    *
-
-/
-
-
-
-float a
-a = 100.0
-void f()
+int f(int n)
 {
-    float a
-    a = 100
-	write a + 20.7543
+
 }
 
 void main()
 {
-	f()
+	int n
+	n = 1
+	write f(n-1)
+	write f(10 + 1.9)
 
 }
-

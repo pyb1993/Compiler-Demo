@@ -41,7 +41,6 @@ typedef struct _VarType
 struct _VarType * type_from_basic(Type type);
 int integer_from_node(TreeNode * t);
 float float_from_node(TreeNode * t);
-bool is_relative_type(Type a, Type b);
 bool can_convert(Type a, Type b);
 VarType * new_type(TreeNode * tree);
 FuncType new_func_type(TreeNode * tree);

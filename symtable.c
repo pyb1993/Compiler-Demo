@@ -121,7 +121,8 @@ BucketList del_from_list(BucketList list, char * name){
 	return list;
 }
 
-void free_node(BucketList l){
+void free_node(BucketList l)
+{
 	free_type(l->var_type);
 	free(l);
 }
@@ -217,6 +218,7 @@ void printSymTab(FILE * listing)
 
 void setFunctionAdress(char * name,int adress){
 	BucketList l = st_get_node(name);
+	assert((l != NULL) || !"function should not be null");
 	l->memloc = adress;
 }
 

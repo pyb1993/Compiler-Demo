@@ -53,7 +53,7 @@ void emitRM( char * op, int r, int d, int s, char *c )
 } /* emitRM */
 
 void emitLDCF(char * op, int r, float d, int s, char *c){
-		fprintf(code, "%3d:  %5s  %d,%f(%d) ", emitLoc++, op, r, d, s);
+	fprintf(code, "%3d:  %5s  %d,%f(%d)\n ", emitLoc++, op, r, d, s);
 }
 
 

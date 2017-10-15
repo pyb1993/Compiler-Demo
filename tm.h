@@ -30,6 +30,7 @@ typedef enum {
 	opLD,      /* RM     reg(r) = mem(d+reg(s)) */
 	opST,      /* RM     mem(d+reg(s)) = reg(r) */
 	opPUSH,    /* RR	 push registr to dMem[reg[sp]--]	*/
+	opPOP,
 	opRMLim,   /* Limit of RM opcodes */
 
 	/* RA instructions */

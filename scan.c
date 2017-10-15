@@ -5,7 +5,7 @@
 /* states in scanner DFA */
 typedef enum
 {
-	START, INASSIGN, INCOMMENT, INMULCOMMENT,INNUM,INFLOATNUM,INID, OVER_OR_COMMENT,
+	START, INASSIGN, INCOMMENT, INMULCOMMENT, INNUM, INFLOATNUM, INID, OVER_OR_COMMENT,
 	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,IN_STR,
 	DONE
 }
@@ -14,6 +14,8 @@ StateType;
 
 /* BUFLEN = length of the input buffer for
 source code lines */
+#define setStateMinus() do{currentToken = MINUS; ungetNextChar(); state = DONE;} while (0)
+
 #define BUFLEN 256
 
 static char lineBuf[BUFLEN]; /* holds the current line */
@@ -46,12 +48,27 @@ static int getNextChar(void)
 	else return lineBuf[linepos++];
 }
 
+static bool checkPreBlank(int pre_line_pos)
+{
+	pre_line_pos -= 3;//skip the c and -
+	while (pre_line_pos >= 0 && isblank(lineBuf[pre_line_pos]))
+	{
+		pre_line_pos--;
+	}
+	return pre_line_pos < 0;
+}
+
+static bool isAplhaUnderscore(char ch)
+{
+	return isalpha(ch) || ch == '_';
+}
 /* ungetNextChar backtracks one character
 in lineBuf */
 static void ungetNextChar(void)
 {
 	if (!EOF_flag) linepos--;
 }
+
 
 //将读入的tokenstring退出一格,比如说用在退出//的第一个/上面
 static void ungetTokenstring(int *tokenstringindex)
@@ -66,7 +83,7 @@ static struct
 	TokenType tok;
 } reservedWords[MAXRESERVED]
 = { { "if", IF }, { "else", ELSE }, { "end", END },
-    { "while", WHILE },{"break",BREAK}, { "until", UNTIL }, { "read", READ },
+  { "while", WHILE }, { "break", BREAK }, {"return", RETURN}, { "until", UNTIL }, { "read", READ },
 	{ "write", WRITE }, { "int", INT }, { "float", FLOAT }, {"void",VOID},{"def", FUN} 
   };
 
@@ -109,8 +126,14 @@ TokenType getToken(void)
 				state = INID;
 			else if (c == '=')
 				state = INASSIGN_OR_EQ;
-			else if ((c == ' ') || (c == '\t') || (c == '\n'))
+			else if ((c == ' ') || (c == '\t'))
 				save = FALSE;
+			else if (c == '\n')
+			{
+				save = FALSE;
+				state = DONE;
+				currentToken = LINEEND;
+			}
 			else if (c == '-')
 			{
 				state = MINUS_OR_NEG;
@@ -205,6 +228,7 @@ TokenType getToken(void)
 				state = INFLOATNUM;
 			}
 			break;
+
 		case INFLOATNUM:
 			if (!isdigit(c))
 			{
@@ -215,24 +239,31 @@ TokenType getToken(void)
 			}
 			break;
 		case INID:
-			if (!(isalnum(c) || c == '_' || c == '?')){ /* backup in the input */
+		
+			if (!(isAplhaUnderscore(c))){ /* backup in the input */
 				ungetNextChar();
 				save = FALSE;
-				state = DONE;
 				currentToken = ID;
+				state = DONE;
 			}
 			break;
+
 			// - or -100
 		case MINUS_OR_NEG:
-			if (isdigit(c)){
-				state = INNUM;
+			if (isdigit(c))
+			{
+				if (checkPreBlank(linepos)) { state = INNUM;}// -1
+				else setStateMinus(); // n-1 || n   -   1 || n   -1 
 			}
-			else{
-				ungetNextChar();
-				currentToken = MINUS;
-				state = DONE;
+			else if (isAplhaUnderscore(c))
+			{
+				if (checkPreBlank(linepos)){ currentToken = NEG;state = DONE; }// -x || -   x
+				else  setStateMinus(); //n-x || n -x || n - x
 			}
-
+			else
+			{
+				 fprintf(listing, "Scanner Error: -%c", c);
+			}
 			break;
 		case OVER_OR_COMMENT:
 			if (c == '/'){
@@ -307,8 +338,11 @@ TokenType getToken(void)
 			break;
 		}
 		if ((save) && (tokenStringIndex <= MAXTOKENLEN))
+		{
 			tokenString[tokenStringIndex++] = (char)c;
-		if (state == DONE)
+			if (c == '\n') ungetNextChar();// to return LINEND
+		}
+			if (state == DONE)
 		{
 			tokenString[tokenStringIndex] = '\0';
 			if (currentToken == ID)
@@ -321,5 +355,8 @@ TokenType getToken(void)
 	}
 	return currentToken;
 } /* end getToken */
+
+
+
 
 

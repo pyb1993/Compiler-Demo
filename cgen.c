@@ -15,61 +15,26 @@
 #include "assert.h"
 #include "analyze.h"
 
+
 /* tmpOffset is the memory offset for temps
  It is decremented each time a temp is
  stored, and incremeted when loaded again
  */
-static int tmpOffset = 0;
+static int label_table[1024];//label table
+
+static int  genLabel();
+static void addLabel();// add label to the labelTabel
+int look_label(int label);// find the label representing the adress
+
 /* prototype for internal recursive code generator */
 static void cGen (TreeNode * tree,int scope);
-
 /*function used to get the relative register  */
-static int get_reg(Type type)
-{
-	if (type == LFloat || type == RFloat)
-	{
-		return fac;
-	}
-	else if (is_relative_type(type, LInteger) || is_relative_type(type, LBoolean))
-	{
-		return ac;
-	}
-	else
-	{
-		assert(!"get reg is not implemented for other type");
-		return 0;
-	}
-}
-
-static int get_reg1(Type type)
-{
-	return get_reg(type) + 1;
-}
+static int get_reg(Type type);
+static int get_reg1(Type type);
 /*get the current env's stack*/
-static int get_stack_bottom(int scope)
-{
-    assert(scope >= 0 );
-    if(scope == 0) return gp;
-    else return fp;
-}
-
+static int get_stack_bottom(int scope);
 // delete all local variable from the stmtseq
-static void deleteLocalVar(TreeNode * tree, int scope)
-{
-	TreeNode * t = tree;
-    if(scope > 0) return;
-    while (t != NULL)
-    {
-        switch (t->kind.stmt)
-        {
-            case DeclareK:
-                st_delete(t->attr.name);
-                break;
-            default:
-                break;
-        }
-    }
-}
+static void deleteLocalVar(TreeNode * tree, int scope);
 
 
 /* Procedure genStmt generates code at a statement node */
@@ -129,30 +94,25 @@ static void genStmt( TreeNode * tree,int scope)
         case AssignK:
             if (TraceCode) emitComment("-> assign");
 			cGen(tree->child[0],scope + 1);// load value in register ac or fac 
-			
-            loc = st_lookup(tree->attr.name);// get the memory location of identifier
-            int var_stack_bottom = get_stack_bottom(st_lookup_scope(tree->attr.name));
 
-			if (tree->kind.exp != FuncallK)
-			{
-                // deal with the integer or float
-                type = st_lookup_type(tree->attr.name);
-                emitRO("MOV", get_reg(type), get_reg(tree->child[0]->converted_type), 0, "move register reg(s) tp reg(r)");
-				emitRM("ST", get_reg(type), loc, var_stack_bottom, "assign: store value");//dMem[reg[gp]+loc] =  reg[ac]
-			}
-			else
-			{
-				// copy  writes from struct to another
-				// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
-                int vsize = var_size_of(tree);
-                while (vsize-- > 0)
-                {
-                    // move bytes tmpOffset to dMem[ac]
-                    emitRM("LD", ac, ++tmpOffset, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-                    emitRM("ST", ac, loc,var_stack_bottom,"copy bytes ");
-                }
-			}
-				if (TraceCode)  emitComment("<- assign");
+			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
+			type = st_lookup_type(tree->attr.name);
+			Type exp_type = tree->child[0]->converted_type;
+			int vsize = var_size_of(tree);
+			int target_reg = get_reg(type);
+			int origin_reg = get_reg(exp_type);
+
+			loc = st_lookup(tree->attr.name);// get the memory location of identifier
+			int var_stack_bottom = get_stack_bottom(st_lookup_scope(tree->attr.name));
+            while (vsize-- > 0)
+            {
+                // move bytes tmpOffset to dMem[ac]
+                emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+				emitRO("MOV", target_reg, origin_reg, 0, "move register ");
+				emitRM("ST", target_reg, loc,var_stack_bottom,"copy bytes ");
+            }
+			
+			if (TraceCode)  emitComment("<- assign");
             break; /* assign_k */
         case ReadK:
             loc = st_lookup(tree->attr.name);
@@ -164,26 +124,49 @@ static void genStmt( TreeNode * tree,int scope)
     
 		case WriteK:
             /* generate code for expression to write */
-			cGen(tree->child[0], scope + 1);
+			cGen(tree->child[0], scope);
 			type = tree->child[0]->type;
-			/* now output it */
-            emitRO("OUT",get_reg(type),0,0,"output value in register[ac]");
+			emitRM("POP", get_reg(type), 0, mp,"move result to register");
+            emitRO("OUT",get_reg(type),0,0,"output value in register[ac / fac]");
             break;
+		case ReturnK:
+			if (tree->child[0] != NULL) 
+			{ 
+				cGen(tree->child[0], scope);
+				// now the result is in the ac or fac or tmpOffset according to the type 
+				char * current_function = "f";
+				Type ctype = tree->child[0]->converted_type;
+				Type return_type = st_lookup_type(current_function);
+				assert(ctype != Struct);
+				
+				// convert the type!
+				// todo : construct the function copy_tmpOffset_to_register(origin_type,target_type)
+				emitRM("POP", get_reg(ctype), 0, mp, "op: POP left");
+				emitRO("MOV", get_reg(return_type), get_reg(ctype), 0, "move register reg(s) tp reg(r)");
+				emitRM("PUSH", get_reg(return_type), 0, mp, "op: push left");
+			}
+			//todo // support label, so the function can retrun directly
+			emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
+			emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
+			emitRO("RETURN", 0, -1, sp, "return to the caller");
+			break;
 		
 		case DeclareK:
 			/*deal with the function  */
 			if (scope == 0 && tree->type == Func) 
 			{
 				insertParam(tree->child[0], scope + 1);
+				emitComment("function entry");
+				int skip_adress = emitSkip(1);
 				// load function adress
 				setFunctionAdress(tree->attr.name, emitSkip(0));
-				emitComment("enter the function");
 				// assume the caller  move return adress in reg[ac]
-				emitRO("MOV", ac1,fp,0,"store the caller fp temporarily");// store the caller fp
-				emitRO("MOV", fp, sp, 0, "exchang the stack(context)");//reg[fp] = reg[sp]
+				emitRO("MOV", ac1, fp, 0,"store the caller fp temporarily");// store the caller fp
+				emitRO("MOV", fp,  sp, 0, "exchang the stack(context)");//reg[fp] = reg[sp]
 
 				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
-				emitRM("PUSH", ac, 0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
+				emitRM("PUSH", ac,  0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
+				
 				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
 				
                 //todo support return value
@@ -191,14 +174,20 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
 				emitRO("RETURN", 0, -1, sp, "return to adress : reg[fp]+1");// execute reg[pc] = return adress
-				emitComment("leave the function");
-
+				emitComment("function end");
+				int leave_adress = emitSkip(0);
+				emitBackup(skip_adress);
+				emitRM_Abs("LDA",pc,leave_adress,"skip the function body");
+				emitRestore();
 				deleteLocalVar(tree->child[1], scope + 1);
 				deleteNode(tree->child[0], scope + 1);
 			}
-			else if (scope > 0 && tree->type != Func)//local function
+			else if (scope > 0 && tree->type != Func)//local variable
 			{
 				insertNode(tree, scope);
+				int varsize = var_size_of(tree);
+				assert((varsize == 1 || !"not implemented"));
+				emitRM("PUSH",0,0,sp,"stack expand");// todo support expand stack
 			}
 			break;
         default:
@@ -215,6 +204,7 @@ static void genExp( TreeNode * tree,int scope)
 	Type type = tree->converted_type;
 	int integer;
 	float float_num;
+	int origin_reg, target_reg;
 	switch (tree->kind.exp) 
 	{       
         case ConstK :
@@ -222,14 +212,16 @@ static void genExp( TreeNode * tree,int scope)
             /* gen code to load integer constant using LDC */
             switch (type) 
 			{
-			case RInteger:
+			case Integer:
 				 integer = integer_from_node(tree);
 				 emitRM("LDC", ac, integer, 0, "load integer const");// reg[ac] = tree->ttr.val.integer
-				break;
-			case RFloat:
+				 emitRM("PUSH", ac, 0, mp,"store exp");
+				 break;
+			case Float:
 				 float_num = float_from_node(tree);
 				 emitLDCF("LDC", fac, float_num, 0, "load float const");// reg[ac] = tree->ttr.val.integer
-				break;
+				 emitRM("PUSH", fac,0, mp, "store exp");
+				 break;
 			default:
 				assert(!"BUG in ConstK,unknwon expression type");
 				break;
@@ -242,47 +234,97 @@ static void genExp( TreeNode * tree,int scope)
             loc = st_lookup(tree->attr.name);
 			emitRM("LD", get_reg(tree->type), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]
 			emitRO("MOV", get_reg(type), get_reg(tree->type), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
-            if (TraceCode)  emitComment("<- Id") ;
+			emitRM("PUSH", get_reg(type), 0, mp, "store exp");
+
+			if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
 		case FuncallK:
-
-			//todo :push the paramter into the stack
-
-			//jump to the function body
+			//todo :tail recursion optimize
+			assert(tree->attr.name != NULL);
+			TreeNode *e = tree->child[0];
+			VarType  *ftype = st_get_var_type_info(tree->attr.name);
+			ParamNode *p = ftype->typeinfo.ftype.params;
+			while (p != NULL && e != NULL)
+			{
+				cGen(e,scope);
+				int exp_reg = get_reg(e->converted_type);
+				int par_reg = get_reg(p->type);
+				// todo support remove from memory to memory
+				emitRM("POP", exp_reg, 0, mp, "stack expand");
+				emitRO("MOV",par_reg, exp_reg,0, "");
+				emitRM("PUSH", par_reg, 0, sp, "stack expand");
+				p = p->next_param;
+				e = e->sibling;
+			}
+			assert(p == NULL && e == NULL);
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			loc  = getFunctionAdress(tree->attr.name);
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
+
+			// after gen the exp
+			// convert the type of return_type and converted_type
+			int origin_reg = get_reg(tree->type);
+			int target_reg = get_reg(tree->converted_type);
+			if (tree->type != Void && origin_reg != target_reg);
+			{
+				emitRM("POP",origin_reg,0,mp,"");
+				emitRO("MOV",target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
+				emitRM("PUSH", target_reg, 0, mp, "store exp");
+			}
 			break;
-		
+		case SingleOpK:
+			if (TraceCode) emitComment("->Single Op");
+			p1 = tree->child[0];
+			cGen(p1, scope);
+			origin_reg = get_reg(p1->converted_type);
+			int reg = get_reg(type);
+			emitRM("POP", origin_reg, 0, mp, "pop right");
+			emitRO("MOV", reg, origin_reg, 0, "convert type");
+
+			switch (p1->attr.op)
+			{
+				emitRO("NEG", reg, 0, 0, "single op (-)");// ac = ac1 op ac
+				emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]	
+			}
+			break;
+
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
             p2 = tree->child[1];
             /* gen code for ac = left arg */
             cGen(p1,scope);
-            /* gen code to push left operand */
-			emitRM("ST", get_reg(type), tmpOffset--, mp, "op: push left");
-            /* gen code for ac = right operand */
-			cGen(p2, scope + 1);
-			emitRM("LD", get_reg1(type), ++tmpOffset, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-            
-			int reg = get_reg(type);
+			cGen(p2, scope);
+			
+			origin_reg = get_reg(p1->converted_type);
+			int origin_reg1 = get_reg1(p2->converted_type);
+			reg = get_reg(type);
 			int reg1 = get_reg1(type);
+
+			emitRM("POP", origin_reg1,0,mp,"pop right");
+			emitRO("MOV", reg1, origin_reg1, 0, "convert type");
+			
+			emitRM("POP", origin_reg, 0, mp, "pop left");
+			emitRO("MOV", reg, origin_reg, 0, "convert type");
 
 			switch (tree->attr.op) 
 			{
                 case PLUS :
-					emitRO("ADD", reg,reg1, reg, "op +");// ac = ac1 op ac
+					emitRO("ADD", reg,reg, reg1, "op +");// ac = ac1 op ac
+					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
                     break;
                 case MINUS :
-					emitRO("SUB", reg, reg1, reg, "op -");
-                    break;
+					emitRO("SUB", reg, reg, reg1, "op -");
+					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
                 case TIMES :
-					emitRO("MUL", reg, reg1, reg, "op *");
-                    break;
+					emitRO("MUL", reg, reg, reg1, "op *");
+					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
                 case OVER :
-					emitRO("DIV", reg, reg1, reg, "op /");
-                    break;
+					emitRO("DIV", reg, reg, reg1, "op /");
+					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
                 case LT :
 				case GT :
 				case LE :
@@ -307,6 +349,7 @@ static void genExp( TreeNode * tree,int scope)
 					emitRM("LDC", ac, 0, ac, "false case");
 					emitRM("LDA", pc, 1, pc, "unconditional jmp");
 					emitRM("LDC", ac, 1, ac, "true case");
+					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 					break;
                 case EQ :
 					emitRO("SUB", reg, reg1, reg, "op ==, convertd_type");
@@ -314,7 +357,8 @@ static void genExp( TreeNode * tree,int scope)
 					emitRM("LDC", ac, 0, ac, "false case" );
 					emitRM("LDA", pc, 1, pc, "unconditional jmp");
 					emitRM("LDC", ac, 1, ac, "true case");
-                    break;
+					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
                 default:
                     emitComment("BUG: Unknown operator");
                     break;
@@ -363,7 +407,7 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     strcpy(s,"File: ");
     strcat(s,codefile);
     emitComment(s);
-    /* generate standard prelude */
+    /* generate st\andard prelude */
     emitComment("Standard prelude:");
     emitRM("LD",mp,0,ac,"load maxaddress from location 0");//reg[mp] = dMem[reg[ac]] 
     emitRM("ST",ac,0,ac,"clear location 0");// dMem[reg[ac] + 0] = reg[ac]
@@ -375,18 +419,78 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 	emitRM("LD", sp, 2, ac, "load first sp from location 2");
 	emitRM("ST", ac, 2, ac, "clear location 2");
     emitComment("End of standard prelude.");
-	int currentLoc = emitSkip(2);// skip two,the first real instruction must be the main call
 	/* generate code for TINY program */
 	cGen(syntaxTree,0);
 	
-	int endLoc = emitSkip(0);
-	emitBackup(currentLoc);
+	
 	emitComment("call main function");
 	int adress = getFunctionAdress("main");
+	int endLoc = emitSkip(0) + 2;
 	emitRM("LDC", ac, endLoc,0, "store the return adress");
 	emitRM("LDC", pc, adress, 0, "ujp to the function body");
-	emitRestore();
 	emitRO("HALT", 0, 0, 0, "");// finish
 
 }
 
+int genLabel(void)
+{
+	static label = 0;
+	return label++; 
+}
+
+void addLabel(int label,int pc_loc)
+{
+	label_table[label] = pc_loc;
+}
+
+int look_label(int label)
+{
+	return label_table[label];
+}
+
+int get_reg(Type type)
+{
+	if (type == Float)
+	{
+		return fac;
+	}
+	else if ((type == Integer) || (type == Boolean))
+	{
+		return ac;
+	}
+	else
+	{
+		assert(!"get reg is not implemented for other type");
+		return 0;
+	}
+}
+
+static int get_reg1(Type type)
+{
+	return get_reg(type) + 1;
+}
+
+int get_stack_bottom(int scope)
+{
+	assert(scope >= 0);
+	if (scope == 0) return gp;
+	else return fp;
+}
+
+// delete all local variable from the stmtseq
+void deleteLocalVar(TreeNode * tree, int scope)
+{
+	TreeNode * t = tree;
+	if (scope > 0) return;
+	while (t != NULL)
+	{
+		switch (t->kind.stmt)
+		{
+		case DeclareK:
+			st_delete(t->attr.name);
+			break;
+		default:
+			break;
+		}
+	}
+}

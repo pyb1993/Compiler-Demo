@@ -32,9 +32,9 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, ELSE,ELSIF, END, WHILE,BREAK,UNTIL, READ, WRITE,
+	IF, ELSE,ELSIF, END, WHILE,BREAK,RETURN,UNTIL, READ, WRITE,LINEEND,
 	/* multicharacter tokens */
-	ID, NUM, FlOATNUM,
+	ID,NEG, NUM, FlOATNUM,
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
 	LBRACKET, RBRACKET,STRING,
@@ -52,10 +52,10 @@ extern int lineno; /* source line number for listing */
 /**************************************************/
 
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK } StmtKind;
-typedef enum { OpK, ConstK, IdK,FuncallK } ExpKind;
+typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
+typedef enum { OpK,SingleOpK, ConstK, IdK,FuncallK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum {LBoolean,LInteger,LFloat,LStruct,LRBOUND,RBoolean,RInteger,RFloat,RStruct,Func,Void,ErrorType} Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+typedef enum { ErrorType, Void,Boolean, Integer, Float, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
 #define MAXCHILDREN 3
 

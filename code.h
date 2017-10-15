@@ -96,8 +96,6 @@ void emitRestore(void);
  */
 void emitRM_Abs( char *op, int r, int a, char * c);
 
-
-char* genLabel();
 /*
     the section 8.4 talked about how to use lab to control code
     we can pass the label as the parameter in function gencode

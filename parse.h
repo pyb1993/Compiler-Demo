@@ -15,6 +15,7 @@
 TreeNode * parse(void);
 /* function prototypes for recursive calls */
 bool match_possible_lbracket();
+bool is_line_end();// is the end of line?
 
 
 

@@ -15,7 +15,7 @@
 static int location = 0;
 static int stack_offset = 0; 
 static int g_scope_depth = 0; //  0 is global scope,1 is the first child scope
-
+static char * current_function = NULL;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
  */
@@ -26,6 +26,10 @@ static void traverse(TreeNode * t, void(*preProc) (TreeNode *,int ), void(*postP
 {
     if (t != NULL)
     {
+		if (t->nodekind == StmtK && t->kind.stmt == DeclareK && t->type == Func)
+		{
+			current_function = t->attr.name;
+		}
 		preProc(t, g_scope_depth);
         for (int i=0; i < MAXCHILDREN; i++)
         {
@@ -37,6 +41,10 @@ static void traverse(TreeNode * t, void(*preProc) (TreeNode *,int ), void(*postP
         postProc(t);
         traverse(t->sibling,preProc,postProc,postProc2);// sibling means the stmt_sequence
 		postProc2(t, g_scope_depth);
+		if (t->nodekind == StmtK && t->kind.stmt == DeclareK && t->type == Func)
+		{
+			current_function = NULL;
+		}
 	}
 }
 
@@ -135,6 +143,7 @@ void insertParam(TreeNode * t,int scope_depth)
 					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope, type);
 					stack_offset -= var_szie;
 					printf("local variable stack offset %s %d\n",t->attr.name,stack_offset+var_szie);
+				
 				}
                 break;
             default:
@@ -190,9 +199,9 @@ void buildSymtab(TreeNode * syntaxTree)
 int var_size_of(TreeNode* tree)
 {
 	Type type = tree->type;
-	if (is_relative_type(type,LInteger)) return 1;
-	if (is_relative_type(type, LFloat)) return 1;
-	if (is_relative_type(type, LStruct))
+	if (type == Integer) return 1;
+	if (type == Float) return 1;
+	if (type == Struct)
     {
 		assert(!"undefined struct size");
 		return 0;
@@ -216,15 +225,15 @@ int var_size_of(TreeNode* tree)
 		case OpK:
 		{
 			TokenType op = t->attr.op;
-			if (!can_convert(t->child[0]->type,RInteger) || !can_convert(t->child[1]->type,RInteger))
+			if (!can_convert(t->child[0]->type,Integer) || !can_convert(t->child[1]->type,Integer))
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
-				t->type = RBoolean;
-			else if (is_relative_type(t->child[0]->type, LFloat) ||
-					 is_relative_type(t->child[1]->type, LFloat))
-				t->type = RFloat;
+				t->type = Boolean;
+			else if ((t->child[0]->type == Float) ||
+					 (t->child[1]->type == Float))
+				t->type = Float;
 			else
-				t->type = RInteger;
+				t->type = Integer;
 			break;	
 		}
 
@@ -233,8 +242,7 @@ int var_size_of(TreeNode* tree)
 			break;
 
 		case FuncallK:
-			t->type = st_lookup_type(t->attr.name);// get function return type
-		
+			t->type = st_lookup_type(t->attr.name);// set the function return type
 			/*check the paramter type is legal*/
 			VarType *var_type = st_get_var_type_info(t->attr.name);
 			ParamNode *param_type_node = var_type->typeinfo.ftype.params;
@@ -264,21 +272,33 @@ int var_size_of(TreeNode* tree)
             switch (t->kind.stmt)
         { 
 			case IfK:
-                if (t->child[0]->type != RBoolean && t->child[0]->type != LBoolean)
+                if (t->child[0]->type != Boolean)
                     typeError(t->child[0],"if test is not Boolean");
                 break;
             case AssignK:
                 st_lookup(t->attr.name);
                 Type id_type = st_lookup_type(t->attr.name);
 				Type child_type = t->child[0]->type;
+				t->type = id_type;
 				if (!can_convert(child_type,id_type))
 				{
 					typeError(t->child[0], "assgin is not allowed for this two types");					
 				}
                 break;
+			case ReturnK:
+				assert(current_function != NULL || !"return sattement can only appear in function");
+				Type function_type = st_lookup_type(current_function);
+				Type return_exp_type = t->child[0] == NULL ? Void : t->child[0]->type;
+				if (!can_convert(return_exp_type, function_type))
+				{
+					typeError(t, "return type is not converted to funtion type");
+				}
+				//todo modify the tranverse format			
+				break;
             case RepeatK:
-                if (t->child[0]->type != RBoolean && t->child[0]->type != LBoolean)
-                    typeError(t->child[0],"repeat test is not Boolean");
+				if (t->child[0]->type != Boolean){
+					typeError(t->child[0], "repeat test is not Boolean");
+				}
                 break;
             default:
                 break;
@@ -302,8 +322,7 @@ int var_size_of(TreeNode* tree)
 /*assert the node is exp*/
 static Type is_float(TreeNode * t)
 {
-	if (t == NULL) return Void;
-	if (t->child[0] != NULL && t->child[0]->converted_type != Void) return t->child[0]->converted_type;
+	if (t == NULL) return ErrorType;
 	
 	switch (t->kind.exp)
 	{
@@ -316,18 +335,21 @@ static Type is_float(TreeNode * t)
 	case FuncallK:
 		return st_lookup_type(t->attr.name);
 		break;
-	default:
+	case OpK:
 		for (int i = 0; i < MAXCHILDREN; ++i)
 		{
-			if (is_float(t->child[i]) == RFloat)
+			if (is_float(t->child[i]) == Float)
 			{
-				return RFloat;
+				return Float;
 			}
 		}
+		return Integer;
+		break;
+	default:
+		assert(!"undefined exp !");
+		return ErrorType;
 		break;
 	}
-
-	return RInteger;
 }
 
 static void set_convertd_type(TreeNode * t, Type type){
@@ -343,6 +365,5 @@ static void set_convertd_type(TreeNode * t, Type type){
  void gen_converted_type(TreeNode * tree)
 {
 	Type _is_float = is_float(tree);
-	if (_is_float < LRBOUND) _is_float += LRBOUND + 1;
-	set_convertd_type(tree, _is_float);
+	set_convertd_type(tree, _is_float);	 
 }

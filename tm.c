@@ -35,7 +35,7 @@ int reg[NO_REGS];
 char * opCodeTab[]
 = { "HALT", "IN", "OUT","MOV","ADD", "SUB", "MUL", "DIV", "????",
 /* RR opcodes */
-"LD", "ST","PUSH","????", /* RM opcodes */
+"LD", "ST","PUSH","POP","????", /* RM opcodes */
 "LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????"
 /* RA opcodes */
    };
@@ -364,7 +364,7 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-	if (pc_pos == 9)
+	if (pc_pos == 45)
 	{
 		int a = 100;;
 	}
@@ -465,9 +465,12 @@ STEPRESULT stepTM(void)
 		dMem[m] = reg[r];
 		reg[s]--;
 		break;
+	case opPOP:
+		reg[r] = dMem[++reg[s]];
+		break;
 		/*************** RA instructions ********************/
 	case opLDA:    reg[r] = m; break;
-	case opLDC:    reg[r] = currentinstruction.iarg2;
+	case opLDC:    reg[r] = currentinstruction.iarg2; break;
 	case opJLT:    if (reg[r] <  0) reg[PC_REG] = m; break;
 	case opJLE:    if (reg[r] <= 0) reg[PC_REG] = m; break;
 	case opJGT:    if (reg[r] >  0) reg[PC_REG] = m; break;
@@ -703,8 +706,8 @@ int doCommand(void)
 
 }
 
-	 void convert(int reg1, int reg2)
-	{
+void convert(int reg1, int reg2)
+{
 		if (same_reg_type(reg1, reg2))
 		{
 			reg[reg2] = reg[reg1];

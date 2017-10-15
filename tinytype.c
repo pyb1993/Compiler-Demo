@@ -11,8 +11,7 @@ VarType * type_from_basic(Type type)
 	VarType * t;
 	switch (type)
 	{
-	case LStruct:
-	case RStruct:
+	case Struct:
 	case Func:
 		t = NULL;
 		assert((!"ERROR TYPE !!!"));
@@ -33,7 +32,7 @@ VarType * new_type(TreeNode * tree){
 		t->typekind = FUNTYPE;
 		t->typeinfo.ftype = new_func_type(tree);
 		break;
-	case LStruct:
+	case Struct:
 		assert("not implemented struct");
 		break;
 	default:
@@ -68,11 +67,9 @@ int integer_from_node(TreeNode * t){
 	
 	switch (t->type)
 	{
-		case LFloat:
-		case RFloat:
+		case Float:
 			return t->attr.val.flt;
-		case LInteger:
-		case RInteger:
+		case Integer:
 			return t->attr.val.integer;
 		default:
 			assert(!"not defined such conversion");
@@ -87,11 +84,9 @@ float float_from_node(TreeNode * t)
 
 	switch (t->type)
 	{
-	case LFloat:
-	case RFloat:
+	case Float:
 		return t->attr.val.flt;
-	case LInteger:
-	case RInteger:
+	case Integer:
 		return t->attr.val.integer;
 	default:
 		assert(!"not defined such conversion");
@@ -102,31 +97,22 @@ float float_from_node(TreeNode * t)
 
 int my_abs(Type a,Type b){return a > b ? a - b : b - a;}
 
-bool is_relative_type(Type a, Type b)
-{
-	if (a == b)
-		return true;
-	else if (my_abs(a,b) == LRBOUND + 1)
-		return true;
-
-	return false;
-}
 
 bool can_convert(Type a, Type b)
 {
-
-	if (is_relative_type(a, b)) return true;
-	if (a == LBoolean || a == RBoolean){
-		if (b == LInteger || b == RInteger) return true;
+	// todo : add a map to represent the function
+	if (a == b) return true;
+	if (a == Boolean ){
+		if (b == Integer) return true;
 	}
 
-	if (a == LInteger || a == RInteger) {
-		if (b == LBoolean || b == RBoolean) return true;
-		if (b == LFloat || b == RFloat) return true;
+	if (a == Integer) {
+		if (b == Boolean) return true;
+		if (b == Float) return true;
 	}
 
-	if (a == LFloat || a == RFloat){
-		if (b == LInteger || b == RInteger) return true;
+	if (a == Float){
+		if (b == Integer) return true;
 	}
 
 	return false;
