@@ -20,36 +20,18 @@ static char * current_function = NULL;
  todo : convert the tranverse to more flexible ; similar to cgen!!!
  */
 
-static void checkNode(TreeNode * t);
+static void checkNode(TreeNode * t,int scope);
+static void checkTree(TreeNode * t, int scope);
 
-static void traverse(TreeNode * t, void(*preProc) (TreeNode *,int ), void(*postProc) (TreeNode *), void(*postProc2) (TreeNode *,int))
+void insertNode(TreeNode * t, int scope);
+void insertTree(TreeNode * t, int scope);
+void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
+
+
+static void defineError(TreeNode * t ,char * msg)
 {
-    if (t != NULL)
-    {
-		if (t->nodekind == StmtK && t->kind.stmt == DeclareK && t->type == Func)
-		{
-			current_function = t->attr.name;
-		}
-		preProc(t, g_scope_depth);
-        for (int i=0; i < MAXCHILDREN; i++)
-        {
-
-			g_scope_depth++;
-            traverse(t->child[i],preProc,postProc,postProc2);
-			g_scope_depth--;
-		}
-        postProc(t);
-        traverse(t->sibling,preProc,postProc,postProc2);// sibling means the stmt_sequence
-		postProc2(t, g_scope_depth);
-		if (t->nodekind == StmtK && t->kind.stmt == DeclareK && t->type == Func)
-		{
-			current_function = NULL;
-		}
-	}
-}
-
-static void defineError(TreeNode * t ,char * msg){
     fprintf(listing,"Define error at line %d: %s\n",t->lineno,msg);
+	assert(!"Define error");
     Error = TRUE;
 }
 
@@ -58,8 +40,6 @@ static void typeError(TreeNode * t, char * message)
 	fprintf(listing, "id : %s,Type error at line %d: %s\n",t->attr.name, t->lineno, message);
 	Error = TRUE;
 }
-
-
 
 /* Procedure insertNode inserts
  * identifiers stored in t into
@@ -93,17 +73,23 @@ void insertParam(TreeNode * t,int scope_depth)
 	return size;
 }
 
- void deleteParam(TreeNode * t)
+
+ // delete all local variable from the stmtseq
+ void deleteVarOfField(TreeNode * tree, int scope)
  {
-	 stack_offset = 0;
-	 TreeNode * param = t;
-	 while (param != NULL)
+	 TreeNode * t = tree;
+	 if (scope == 0) return;
+	 while (t != NULL)
 	 {
-		 st_delete(param->attr.name);
-		 param = param->sibling;
+		 deleteVar(t, scope);
+		 t = t->sibling;
 	 }
  }
 
+ void insertTree(TreeNode * t,int scope)
+ {
+	 tranverseSeq(t,scope,insertNode);
+ }
 
  void insertNode( TreeNode * t,int scope)
 {
@@ -114,6 +100,7 @@ void insertParam(TreeNode * t,int scope_depth)
 	 case StmtK:
             switch (t->kind.stmt)
         {
+
             case DeclareK:
 				if (is_duplicate_var(t->attr.name,scope))
 				{
@@ -125,9 +112,15 @@ void insertParam(TreeNode * t,int scope_depth)
 					/*
 						todo :support local procedure
 					*/
+					current_function = t->attr.name;
 					type = new_type(t);// create the function type
 					st_insert(t->attr.name, t->lineno, location--, 1,scope, type);// function occupy 4 bytes
-					insertParam(t->child[0],scope+1);
+					insertParam(t->child[0],scope + 1);
+					insertTree(t->child[1], scope + 1);
+					checkTree(t->child[1], scope + 1);// check the fuction statement type
+					current_function = NULL;
+					deleteVarOfField(t->child[0], scope + 1);
+					deleteVarOfField(t->child[1], scope + 1);
 				}
 				else if (scope == 0) //global var
                 {   
@@ -143,7 +136,6 @@ void insertParam(TreeNode * t,int scope_depth)
 					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope, type);
 					stack_offset -= var_szie;
 					printf("local variable stack offset %s %d\n",t->attr.name,stack_offset+var_szie);
-				
 				}
                 break;
             default:
@@ -155,29 +147,18 @@ void insertParam(TreeNode * t,int scope_depth)
 				defineError(t,"undefined variable");
             break;
     }
+	 if (scope == 0 && t->nodekind == ) checkNode(t, scope);
 }
 
 /*notice one thing: delete param list after function body,not imediately!*/
-void deleteNode(TreeNode * t,int scope_depth)
+void deleteVar(TreeNode * t,int scope_depth)
 {
-	if (t == NULL){
-		return;
-	}
-	if (t->nodekind != StmtK) return;
-	switch (t->kind.stmt)
+	if (t == NULL){ return; }
+	if (t->nodekind != StmtK ||( t->kind.stmt != DeclareK && t->kind.stmt != ParamK)) return;
+
+	if (scope_depth > 0)
 	{
-	case DeclareK:
-		if (scope_depth > 0)
-		{
-			st_delete(t->attr.name);
-		}
-		if(t->type == Func)
-		{
-			deleteParam(t->child[0]);
-		}
-		break;
-     default:
-            break;
+		st_delete(t->attr.name);
 	}
 }
 
@@ -187,12 +168,7 @@ void deleteNode(TreeNode * t,int scope_depth)
  */
 void buildSymtab(TreeNode * syntaxTree)
 { 
-	g_scope_depth = 0;
-	traverse(syntaxTree,insertNode,checkNode,deleteNode);
-    if (TraceAnalyze)
-    { fprintf(listing,"\nSymbol table:\n\n");
-        printSymTab(listing);
-    }
+	insertTree(syntaxTree, 0);// insert node and check them
 }
 
 
@@ -211,19 +187,38 @@ int var_size_of(TreeNode* tree)
 }
 
 
-/* Procedure checkNode performs
- * type checking at a single tree node
- */
- void checkNode(TreeNode * t)
+
+void tranverseSeq(TreeNode * t,int scope,void(* func) (TreeNode * ,int ))
+{
+	while (t != NULL)
+	{
+		func(t, scope);
+		t = t->sibling;
+	}
+}
+
+void checkTree(TreeNode * t, int scope){
+	tranverseSeq(t, scope, checkNode);
+}
+
+ void checkNode(TreeNode * t,int scope)
 {
     switch (t->nodekind)
     {
 	 case ExpK:
-		gen_converted_type(t); // set the attribute converted_type 
+		 gen_converted_type(t); // set the attribute converted_type 
         switch (t->kind.exp)
 		{
+		case SingleOpK:
+			if (t->attr.op == NEG)
+			{
+				assert(t->type == Integer || t->type == Float);
+			}
+			break;
 		case OpK:
 		{
+			checkNode(t->child[0], scope);
+			checkNode(t->child[1], scope);
 			TokenType op = t->attr.op;
 			if (!can_convert(t->child[0]->type,Integer) || !can_convert(t->child[1]->type,Integer))
 				typeError(t, "Op applied to type beyond bool,integer,float");
@@ -266,17 +261,23 @@ int var_size_of(TreeNode* tree)
         default:
             break;
         }
+
         break;
         
 	case StmtK:
             switch (t->kind.stmt)
         { 
 			case IfK:
-                if (t->child[0]->type != Boolean)
-                    typeError(t->child[0],"if test is not Boolean");
+				if (t->child[0]->type != Boolean)
+					checkTree(t->child[0], scope + 1);
+					checkTree(t->child[1], scope + 1);
+					checkTree(t->child[2], scope + 1);
+					typeError(t->child[0], "if test is not Boolean");
                 break;
             case AssignK:
-                st_lookup(t->attr.name);
+				checkNode(t->child[0], scope);
+
+                assert( st_lookup(t->attr.name) != NOTFOUND);
                 Type id_type = st_lookup_type(t->attr.name);
 				Type child_type = t->child[0]->type;
 				t->type = id_type;
@@ -286,7 +287,8 @@ int var_size_of(TreeNode* tree)
 				}
                 break;
 			case ReturnK:
-				assert(current_function != NULL || !"return sattement can only appear in function");
+				assert(current_function != NULL);
+				checkNode(t->child[0],scope);
 				Type function_type = st_lookup_type(current_function);
 				Type return_exp_type = t->child[0] == NULL ? Void : t->child[0]->type;
 				if (!can_convert(return_exp_type, function_type))
@@ -295,12 +297,17 @@ int var_size_of(TreeNode* tree)
 				}
 				//todo modify the tranverse format			
 				break;
-            case RepeatK:
+			case RepeatK:
+				checkNode(t->child[0], scope + 1);
+				checkNode(t->child[1], scope + 1);
 				if (t->child[0]->type != Boolean){
 					typeError(t->child[0], "repeat test is not Boolean");
 				}
                 break;
-            default:
+			default:
+				for (int i = 0; i < MAXCHILDREN; ++i){
+					checkTree(t->child[i],scope + 1);
+				}
                 break;
         }
             break;
@@ -327,6 +334,9 @@ static Type is_float(TreeNode * t)
 	switch (t->kind.exp)
 	{
 	case ConstK:
+		return t->type;
+		break;
+	case SingleOpK:
 		return t->type;
 		break;
 	case IdK:
@@ -360,7 +370,6 @@ static void set_convertd_type(TreeNode * t, Type type){
 		set_convertd_type(t->child[i], type);
 	}
 }
-
 
  void gen_converted_type(TreeNode * tree)
 {

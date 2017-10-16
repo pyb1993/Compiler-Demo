@@ -33,7 +33,7 @@ int dMem[DADDR_SIZE];
 int reg[NO_REGS];
 
 char * opCodeTab[]
-= { "HALT", "IN", "OUT","MOV","ADD", "SUB", "MUL", "DIV", "????",
+= { "HALT", "IN", "OUT","MOV","NEG","ADD", "SUB", "MUL", "DIV", "????",
 /* RR opcodes */
 "LD", "ST","PUSH","POP","????", /* RM opcodes */
 "LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????"
@@ -96,6 +96,8 @@ static STEPRESULT operand(int r, int s, int t, char op);
 static STEPRESULT do_operand_flt(int r, float lhs, float rhs, char op);
 
 static STEPRESULT do_operand_int(int r, int lhs, int rhs, char op);
+
+static STEPRESULT do_neg_op(int r);
 
 int opClass(int c)
 {
@@ -448,6 +450,7 @@ STEPRESULT stepTM(void)
 		/*deal  with the conversion of different format*/
 		convert(s,r);// s -> r
 		break;
+	case opNEG:	 do_neg_op(r);break;
 			
 	case opADD:  operand(r, s, t, '+'); break;
 	case opSUB:  operand(r, s, t, '-');  break;
@@ -679,6 +682,25 @@ int doCommand(void)
    STEPRESULT do_operand_int(int r, int lhs, int rhs, char op){
 	  operand_proc(op, (int));
   }
+
+
+   STEPRESULT do_neg_op(int r)
+   {
+	   float flt;
+	   switch (r)
+	   {
+	   case ac:
+	   case ac1:
+		   reg[r] = -reg[r];
+		   break;
+	   case fac:
+	   case fac1:
+		   flt = flt_from_reg(r);
+		   reg[r] = int_from_flt(-flt);
+		   break;
+	   }
+	   return srOKAY;
+   }
 
     STEPRESULT operand(int r, int s, int t, char op)
    {

@@ -179,8 +179,8 @@ static void genStmt( TreeNode * tree,int scope)
 				emitBackup(skip_adress);
 				emitRM_Abs("LDA",pc,leave_adress,"skip the function body");
 				emitRestore();
-				deleteLocalVar(tree->child[1], scope + 1);
-				deleteNode(tree->child[0], scope + 1);
+				deleteVarOfField(tree->child[1], scope + 1);
+				deleteVarOfField (tree->child[0], scope + 1);
 			}
 			else if (scope > 0 && tree->type != Func)//local variable
 			{
@@ -477,20 +477,3 @@ int get_stack_bottom(int scope)
 	else return fp;
 }
 
-// delete all local variable from the stmtseq
-void deleteLocalVar(TreeNode * tree, int scope)
-{
-	TreeNode * t = tree;
-	if (scope > 0) return;
-	while (t != NULL)
-	{
-		switch (t->kind.stmt)
-		{
-		case DeclareK:
-			st_delete(t->attr.name);
-			break;
-		default:
-			break;
-		}
-	}
-}

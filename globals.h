@@ -37,7 +37,7 @@ typedef enum
 	ID,NEG, NUM, FlOATNUM,
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
-	LBRACKET, RBRACKET,STRING,
+	LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,
 	/*variable type*/
 	INT,FLOAT,VOID,FUN
 } TokenType;
@@ -46,7 +46,6 @@ extern FILE* source; /* source code text file */
 extern FILE* listing; /* listing output text file */
 extern FILE* code; /* code text file for TM simulator */
 extern int lineno; /* source line number for listing */
-
 /**************************************************/
 /***********   Syntax tree for parsing ************/
 /**************************************************/

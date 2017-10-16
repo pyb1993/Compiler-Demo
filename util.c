@@ -35,6 +35,7 @@ void printToken(TokenType token, const char* tokenString)
         case LPAREN: fprintf(listing, "(\n"); break;
         case RPAREN: fprintf(listing, ")\n"); break;
         case SEMI: fprintf(listing, ";\n"); break;
+		case NEG: fprintf(listing, "-\n"); break;
         case PLUS: fprintf(listing, "+\n"); break;
         case MINUS: fprintf(listing, "-\n"); break;
         case TIMES: fprintf(listing, "*\n"); break;
@@ -49,8 +50,9 @@ void printToken(TokenType token, const char* tokenString)
 		case LINEEND:fprintf(listing,"\n"); break;
 		case ENDFILE: fprintf(listing, "EOF\n"); break;
         case NUM:
+		case FlOATNUM:
             fprintf(listing,
-                    "NUM, val= %s\n", tokenString);
+                    "NUM/FLOATNUM, val= %s\n", tokenString);
             break;
         case ID:
             fprintf(listing,
@@ -196,7 +198,12 @@ void printTree(TreeNode * tree)
         }
         else if (tree->nodekind == ExpK)
         {
-            switch (tree->kind.exp) {
+            switch (tree->kind.exp) 
+			{
+				case SingleOpK:
+					fprintf(listing, "SingleOp: ");
+					printToken(tree->attr.op, "\0");
+					break;
                 case OpK:
                     fprintf(listing, "Op: ");
                     printToken(tree->attr.op, "\0");

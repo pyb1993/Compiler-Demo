@@ -349,8 +349,11 @@ TreeNode * idStartStmt()
 	 
 	 char * str = token_string_array[pos];
 	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
-
 }
+
+ int getLastTokenWithoutSkipLineEnd(){
+	 return token_array[pos - 1];
+ }
 
  TokenType  currentToken()
  {
@@ -497,12 +500,24 @@ TreeNode * factor(void)
 	TreeNode * t = NULL;
 	switch (token) 
 	{
-	case NEG:
-		match(NEG);
-		t = newExpNode(SingleOpK);
-		t->attr.op = NEG;
-		t->child[0] = exp();
-		t->type = t->child[0]->type;
+	case MINUS:
+		static_assert(1, "");
+		TokenType last_token = getLastTokenWithoutSkipLineEnd();
+		match(MINUS);
+		// the last token are part of exp; exp -
+		// so the minus is just substract!
+		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
+		{
+			t = exp();
+		}
+		else
+		{
+			t = newExpNode(SingleOpK);
+			t->child[0] = exp();
+			t->type = t->child[0]->type;			
+			t->attr.op = NEG;
+		}
+		break;
 	case NUM:
 		t = newExpNode(ConstK);
 		t->attr.val.integer = atoi(tokenString);

@@ -1,13 +1,12 @@
+int n
+n = 0.5
 int f(int n)
 {
-
+	return 1
 }
+
 
 void main()
 {
-	int n
-	n = 1
-	write f(n-1)
-	write f(10 + 1.9)
-
+	write f(1)
 }

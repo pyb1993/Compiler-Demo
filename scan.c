@@ -55,7 +55,7 @@ static bool checkPreBlank(int pre_line_pos)
 	{
 		pre_line_pos--;
 	}
-	return pre_line_pos < 0;
+	return pre_line_pos  ;
 }
 
 static bool isAplhaUnderscore(char ch)
@@ -136,7 +136,8 @@ TokenType getToken(void)
 			}
 			else if (c == '-')
 			{
-				state = MINUS_OR_NEG;
+				state = DONE;
+				currentToken = MINUS;
 			}
 			else if (c == '/')
 			{
@@ -250,7 +251,7 @@ TokenType getToken(void)
 
 			// - or -100
 		case MINUS_OR_NEG:
-			if (isdigit(c))
+		/*	if (isdigit(c))
 			{
 				if (checkPreBlank(linepos)) { state = INNUM;}// -1
 				else setStateMinus(); // n-1 || n   -   1 || n   -1 
@@ -264,7 +265,7 @@ TokenType getToken(void)
 			{
 				 fprintf(listing, "Scanner Error: -%c", c);
 			}
-			break;
+			break;*/
 		case OVER_OR_COMMENT:
 			if (c == '/'){
 				state = INCOMMENT;
