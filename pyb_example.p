@@ -1,12 +1,21 @@
-int n
-n = 0.5
-int f(int n)
+float n
+n = 10
+/*
+float f(int n)
 {
-	return 1
+	if (n <= 2)
+		return 1
+	else
+		return f(n-1)+f(n-2)
 }
-
+*/
+int f2(int a,int b)
+{
+return a * b
+}
 
 void main()
 {
-	write f(1)
+	write f2(2,4)	
 }
+

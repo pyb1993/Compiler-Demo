@@ -123,6 +123,7 @@ BucketList del_from_list(BucketList list, char * name){
 
 void free_node(BucketList l)
 {
+	assert(l != NULL);
 	free_type(l->var_type);
 	free(l);
 }

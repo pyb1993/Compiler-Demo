@@ -60,7 +60,8 @@ static bool checkPreBlank(int pre_line_pos)
 
 static bool isAplhaUnderscore(char ch)
 {
-	return isalpha(ch) || ch == '_';
+	
+	return isalpha(ch) || ch == '_' || (ch >= '0' && ch <= '9');
 }
 /* ungetNextChar backtracks one character
 in lineBuf */

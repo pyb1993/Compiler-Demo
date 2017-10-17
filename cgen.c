@@ -21,7 +21,7 @@
  stored, and incremeted when loaded again
  */
 static int label_table[1024];//label table
-
+static char * current_function = NULL;
 static int  genLabel();
 static void addLabel();// add label to the labelTabel
 int look_label(int label);// find the label representing the adress
@@ -34,8 +34,7 @@ static int get_reg1(Type type);
 /*get the current env's stack*/
 static int get_stack_bottom(int scope);
 // delete all local variable from the stmtseq
-static void deleteLocalVar(TreeNode * tree, int scope);
-
+static void pushParam(TreeNode * t);
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -61,6 +60,8 @@ static void genStmt( TreeNode * tree,int scope)
             emitComment("if: jump to end belongs here");
             currentLoc = emitSkip(0) ;
             emitBackup(savedLoc1) ;
+			// we know the condition value is used as bool, so conversion is uncessary
+			emitRM("POP", ac, 0, mp, "pop the condition value");
             emitRM_Abs("JEQ",ac,currentLoc,"if: jmp to else");
             emitRestore() ;
             /* recurse on else part */
@@ -134,7 +135,6 @@ static void genStmt( TreeNode * tree,int scope)
 			{ 
 				cGen(tree->child[0], scope);
 				// now the result is in the ac or fac or tmpOffset according to the type 
-				char * current_function = "f";
 				Type ctype = tree->child[0]->converted_type;
 				Type return_type = st_lookup_type(current_function);
 				assert(ctype != Struct);
@@ -157,6 +157,9 @@ static void genStmt( TreeNode * tree,int scope)
 			{
 				insertParam(tree->child[0], scope + 1);
 				emitComment("function entry");
+				char last_current = current_function;
+				current_function = tree->attr.name;
+
 				int skip_adress = emitSkip(1);
 				// load function adress
 				setFunctionAdress(tree->attr.name, emitSkip(0));
@@ -181,6 +184,7 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRestore();
 				deleteVarOfField(tree->child[1], scope + 1);
 				deleteVarOfField (tree->child[0], scope + 1);
+				current_function = last_current;
 			}
 			else if (scope > 0 && tree->type != Func)//local variable
 			{
@@ -244,21 +248,10 @@ static void genExp( TreeNode * tree,int scope)
 			TreeNode *e = tree->child[0];
 			VarType  *ftype = st_get_var_type_info(tree->attr.name);
 			ParamNode *p = ftype->typeinfo.ftype.params;
-			while (p != NULL && e != NULL)
-			{
-				cGen(e,scope);
-				int exp_reg = get_reg(e->converted_type);
-				int par_reg = get_reg(p->type);
-				// todo support remove from memory to memory
-				emitRM("POP", exp_reg, 0, mp, "stack expand");
-				emitRO("MOV",par_reg, exp_reg,0, "");
-				emitRM("PUSH", par_reg, 0, sp, "stack expand");
-				p = p->next_param;
-				e = e->sibling;
-			}
-			assert(p == NULL && e == NULL);
+			pushParam(e, p, scope + 1);
+
+			loc = getFunctionAdress(tree->attr.name);
 			emitRM("LDA", ac, 1, pc, "store the return adress");
-			loc  = getFunctionAdress(tree->attr.name);
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
 
 			// after gen the exp
@@ -334,12 +327,12 @@ static void genExp( TreeNode * tree,int scope)
 
 					if (op == LT || op == LE)
 					{
-						emitRO("SUB", reg, reg1, reg, "op <");
+						emitRO("SUB", reg, reg, reg1, "op <");
 						op_code[2] = (op == LT ? 'T' : 'E');
 					}
 					else
 					{
-						emitRO("SUB", reg, reg1, reg, "op <");
+						emitRO("SUB", reg, reg, reg1, "op <");
 						op_code[1] = 'G';
 						op_code[2] = (op == GT ? 'T' : 'E');
 					}
@@ -352,7 +345,7 @@ static void genExp( TreeNode * tree,int scope)
 					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 					break;
                 case EQ :
-					emitRO("SUB", reg, reg1, reg, "op ==, convertd_type");
+					emitRO("SUB", reg, reg, reg1, "op ==, convertd_type");
 					emitRM("JEQ", ac, 2, pc, "br if true");
 					emitRM("LDC", ac, 0, ac, "false case" );
 					emitRM("LDA", pc, 1, pc, "unconditional jmp");
@@ -476,4 +469,23 @@ int get_stack_bottom(int scope)
 	if (scope == 0) return gp;
 	else return fp;
 }
-
+// push param from right to left
+void pushParam(TreeNode * e,ParamNode * p,int scope)
+{
+	if (e != NULL)
+	{
+		pushParam(e->sibling, p->next_param, scope);
+	}
+	else{
+		assert(p == NULL);
+		return;
+	}
+	
+	cGen(e, scope);
+	int exp_reg = get_reg(e->converted_type);
+	int par_reg = get_reg(p->type);
+	// todo support remove from memory to memory
+	emitRM("POP", exp_reg, 0, mp, "pop exp ");
+	emitRO("MOV", par_reg, exp_reg, 0, "");
+	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
+}
