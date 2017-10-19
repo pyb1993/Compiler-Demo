@@ -498,11 +498,11 @@ TreeNode * term(void)
 TreeNode * factor(void)
 {
 	TreeNode * t = NULL;
+    TokenType last_token;
 	switch (token) 
 	{
 	case MINUS:
-		static_assert(1, "");
-		TokenType last_token = getLastTokenWithoutSkipLineEnd();
+        last_token = getLastTokenWithoutSkipLineEnd();
 		match(MINUS);
 		// the last token are part of exp; exp -
 		// so the minus is just substract!

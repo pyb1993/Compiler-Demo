@@ -34,7 +34,7 @@ static int get_reg1(Type type);
 /*get the current env's stack*/
 static int get_stack_bottom(int scope);
 // delete all local variable from the stmtseq
-static void pushParam(TreeNode * t);
+static void pushParam(TreeNode * t,ParamNode * p, int scope);
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -157,7 +157,7 @@ static void genStmt( TreeNode * tree,int scope)
 			{
 				insertParam(tree->child[0], scope + 1);
 				emitComment("function entry");
-				char last_current = current_function;
+				char * last_current = current_function;
 				current_function = tree->attr.name;
 
 				int skip_adress = emitSkip(1);
@@ -253,12 +253,12 @@ static void genExp( TreeNode * tree,int scope)
 			loc = getFunctionAdress(tree->attr.name);
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
-
+            now should pop the parameters
 			// after gen the exp
 			// convert the type of return_type and converted_type
-			int origin_reg = get_reg(tree->type);
-			int target_reg = get_reg(tree->converted_type);
-			if (tree->type != Void && origin_reg != target_reg);
+            origin_reg = get_reg(tree->type);
+            target_reg = get_reg(tree->converted_type);
+			if (tree->type != Void && origin_reg != target_reg)
 			{
 				emitRM("POP",origin_reg,0,mp,"");
 				emitRO("MOV",target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
@@ -270,14 +270,19 @@ static void genExp( TreeNode * tree,int scope)
 			p1 = tree->child[0];
 			cGen(p1, scope);
 			origin_reg = get_reg(p1->converted_type);
-			int reg = get_reg(type);
+            target_reg = get_reg(type);
 			emitRM("POP", origin_reg, 0, mp, "pop right");
-			emitRO("MOV", reg, origin_reg, 0, "convert type");
+			emitRO("MOV", target_reg, origin_reg, 0, "convert type");
 
 			switch (p1->attr.op)
 			{
-				emitRO("NEG", reg, 0, 0, "single op (-)");// ac = ac1 op ac
-				emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]	
+                case NEG:
+                    emitRO("NEG", target_reg, 0, 0, "single op (-)");// ac = ac1 op ac
+                    emitRM("PUSH", target_reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+                    break;
+                default:
+                    assert(!"not implemented single op");
+                    break;
 			}
 			break;
 
@@ -291,7 +296,7 @@ static void genExp( TreeNode * tree,int scope)
 			
 			origin_reg = get_reg(p1->converted_type);
 			int origin_reg1 = get_reg1(p2->converted_type);
-			reg = get_reg(type);
+			int reg = get_reg(type);
 			int reg1 = get_reg1(type);
 
 			emitRM("POP", origin_reg1,0,mp,"pop right");
@@ -427,7 +432,7 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 
 int genLabel(void)
 {
-	static label = 0;
+	static int label = 0;
 	return label++; 
 }
 
@@ -476,16 +481,19 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	{
 		pushParam(e->sibling, p->next_param, scope);
 	}
-	else{
+	else
+    {
 		assert(p == NULL);
 		return;
 	}
-	
-	cGen(e, scope);
-	int exp_reg = get_reg(e->converted_type);
+    printf("pos %d %d\n",emitSkip(0),e->attr.val.integer);
+	genExp(e, scope);// very important! cannot use cGen to avoid cGen generate exp list automatically
+
+    int exp_reg = get_reg(e->converted_type);
 	int par_reg = get_reg(p->type);
 	// todo support remove from memory to memory
 	emitRM("POP", exp_reg, 0, mp, "pop exp ");
 	emitRO("MOV", par_reg, exp_reg, 0, "");
 	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
+
 }

@@ -18,8 +18,8 @@ static int stack_offset = 0;
  todo : convert the tranverse to more flexible ; similar to cgen!!!
  */
 
-static void checkTree(TreeNode * t,int scope);
-static void checkNodeType(TreeNode * t, int scope);
+static void checkTree(TreeNode * t,char * curretn_function,int scope);
+static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
 
 void insertNode(TreeNode * t, int scope);
 void insertTree(TreeNode * t, int scope);
@@ -49,7 +49,7 @@ static void typeError(TreeNode * t, char * message)
  void insertParam(TreeNode * t,int scope_depth)
 {
 	VarType * type;
-	if (t == NULL) return 0;
+	if (t == NULL) return;
 	int offset = 0;
 	
 	while (t != NULL)
@@ -196,7 +196,6 @@ void checkTree(TreeNode * t,char * current_function, int scope)
 
 void checkNodeType(TreeNode * t,char * current_function, int scope)
 {
-	Type exp_type;
 	switch (t->nodekind)
 	{
 	case ExpK:
@@ -242,7 +241,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 					typeError(param_node, "parameter num doesn't match the function definition");
 					break;
 				}
-				∫Ø ˝»Î’∞”–¥Ì
 
 				checkNodeType(param_node, current_function, scope + 1);
 

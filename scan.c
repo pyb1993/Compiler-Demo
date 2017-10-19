@@ -35,7 +35,7 @@ static int getNextChar(void)
 		if (fgets(lineBuf, BUFLEN - 1, source))
 		{
 			if (EchoSource) fprintf(listing, "%4d: %s", lineno, lineBuf);
-			bufsize = strlen(lineBuf);
+			bufsize = (int)strlen(lineBuf);
 			linepos = 0;
 			return lineBuf[linepos++];
 		}
@@ -48,19 +48,8 @@ static int getNextChar(void)
 	else return lineBuf[linepos++];
 }
 
-static bool checkPreBlank(int pre_line_pos)
-{
-	pre_line_pos -= 3;//skip the c and -
-	while (pre_line_pos >= 0 && isblank(lineBuf[pre_line_pos]))
-	{
-		pre_line_pos--;
-	}
-	return pre_line_pos  ;
-}
-
 static bool isAplhaUnderscore(char ch)
 {
-	
 	return isalpha(ch) || ch == '_' || (ch >= '0' && ch <= '9');
 }
 /* ungetNextChar backtracks one character
