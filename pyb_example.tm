@@ -74,114 +74,148 @@
  48:   PUSH  0,0(3) 	push parameter into stack
  49:    LDA  0,1(7) 	store the return adress
  50:    LDC  7,13(0) 	ujp to the function body
+ 51:    LDA  3,1(3) 	pop parameters
 * -> Op
 * -> Id
- 51:     LD  0,1(2) 	load id value
- 52:   PUSH  0,0(6) 	store exp
+ 52:     LD  0,1(2) 	load id value
+ 53:   PUSH  0,0(6) 	store exp
 * <- Id
 * -> Const
- 53:    LDC  0,2(0) 	load integer const
- 54:   PUSH  0,0(6) 	store exp
+ 54:    LDC  0,2(0) 	load integer const
+ 55:   PUSH  0,0(6) 	store exp
 * <- Const
- 55:    POP  1,0(6) 	pop right
- 56:    POP  0,0(6) 	pop left
- 57:    SUB  0,0,1 	op -
- 58:   PUSH  0,0(6) 	op: load left
+ 56:    POP  1,0(6) 	pop right
+ 57:    POP  0,0(6) 	pop left
+ 58:    SUB  0,0,1 	op -
+ 59:   PUSH  0,0(6) 	op: load left
 * <- Op
- 59:    POP  0,0(6) 	pop exp 
- 60:   PUSH  0,0(3) 	push parameter into stack
- 61:    LDA  0,1(7) 	store the return adress
- 62:    LDC  7,13(0) 	ujp to the function body
- 63:    POP  10,0(6) 	pop right
- 64:    POP  9,0(6) 	pop left
- 65:    ADD  9,9,10 	op +
- 66:   PUSH  9,0(6) 	op: load left
+ 60:    POP  0,0(6) 	pop exp 
+ 61:   PUSH  0,0(3) 	push parameter into stack
+ 62:    LDA  0,1(7) 	store the return adress
+ 63:    LDC  7,13(0) 	ujp to the function body
+ 64:    LDA  3,1(3) 	pop parameters
+ 65:    POP  10,0(6) 	pop right
+ 66:    POP  9,0(6) 	pop left
+ 67:    ADD  9,9,10 	op +
+ 68:   PUSH  9,0(6) 	op: load left
 * <- Op
- 67:    POP  9,0(6) 	op: POP left
- 68:   PUSH  9,0(6) 	op: push left
- 69:    MOV  3,2,0 	restore the caller sp
- 70:     LD  2,0(2) 	resotre the caller fp
- 71:  RETURN  0,-1,3 	return to the caller
- 38:    LDA  7,33(7) 	jmp to end
+ 69:    POP  9,0(6) 	op: POP left
+ 70:   PUSH  9,0(6) 	op: push left
+ 71:    MOV  3,2,0 	restore the caller sp
+ 72:     LD  2,0(2) 	resotre the caller fp
+ 73:  RETURN  0,-1,3 	return to the caller
+ 38:    LDA  7,35(7) 	jmp to end
 * <- if
- 72:    MOV  3,2,0 	restore the caller sp
- 73:     LD  2,0(2) 	resotre the caller fp
- 74:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 74:    MOV  3,2,0 	restore the caller sp
+ 75:     LD  2,0(2) 	resotre the caller fp
+ 76:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
- 12:    LDA  7,62(7) 	skip the function body
+ 12:    LDA  7,64(7) 	skip the function body
 * function entry
- 76:    MOV  1,2,0 	store the caller fp temporarily
- 77:    MOV  2,3,0 	exchang the stack(context)
- 78:   PUSH  1,0(3) 	push the caller fp
- 79:   PUSH  0,0(3) 	push the return adress
+ 78:    MOV  1,2,0 	store the caller fp temporarily
+ 79:    MOV  2,3,0 	exchang the stack(context)
+ 80:   PUSH  1,0(3) 	push the caller fp
+ 81:   PUSH  0,0(3) 	push the return adress
+* -> Op
+* -> Op
 * -> Id
- 80:     LD  0,1(2) 	load id value
- 81:   PUSH  0,0(6) 	store exp
+ 82:     LD  0,1(2) 	load id value
+ 83:   PUSH  0,0(6) 	store exp
 * <- Id
- 82:    POP  0,0(6) 	move result to register
- 83:    OUT  0,0,0 	output value in register[ac / fac]
 * -> Id
  84:     LD  0,2(2) 	load id value
  85:   PUSH  0,0(6) 	store exp
 * <- Id
- 86:    POP  0,0(6) 	move result to register
- 87:    OUT  0,0,0 	output value in register[ac / fac]
-* -> Op
-* -> Id
- 88:     LD  0,1(2) 	load id value
- 89:   PUSH  0,0(6) 	store exp
-* <- Id
-* -> Id
- 90:     LD  0,2(2) 	load id value
- 91:   PUSH  0,0(6) 	store exp
-* <- Id
- 92:    POP  1,0(6) 	pop right
- 93:    POP  0,0(6) 	pop left
- 94:    MUL  0,0,1 	op *
- 95:   PUSH  0,0(6) 	op: load left
+ 86:    POP  1,0(6) 	pop right
+ 87:    POP  0,0(6) 	pop left
+ 88:    MUL  0,0,1 	op *
+ 89:   PUSH  0,0(6) 	op: load left
 * <- Op
- 96:    POP  0,0(6) 	op: POP left
- 97:   PUSH  0,0(6) 	op: push left
- 98:    MOV  3,2,0 	restore the caller sp
- 99:     LD  2,0(2) 	resotre the caller fp
-100:  RETURN  0,-1,3 	return to the caller
-101:    MOV  3,2,0 	restore the caller sp
-102:     LD  2,0(2) 	resotre the caller fp
-103:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+* -> Id
+ 90:     LD  9,3(2) 	load id value
+ 91:   PUSH  9,0(6) 	store exp
+* <- Id
+ 92:    POP  10,0(6) 	pop right
+ 93:    POP  0,0(6) 	pop left
+ 94:    MOV  9,0,0 	convert type
+ 95:    MUL  9,9,10 	op *
+ 96:   PUSH  9,0(6) 	op: load left
+* <- Op
+ 97:    POP  9,0(6) 	op: POP left
+ 98:   PUSH  9,0(6) 	op: push left
+ 99:    MOV  3,2,0 	restore the caller sp
+100:     LD  2,0(2) 	resotre the caller fp
+101:  RETURN  0,-1,3 	return to the caller
+102:    MOV  3,2,0 	restore the caller sp
+103:     LD  2,0(2) 	resotre the caller fp
+104:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
- 75:    LDA  7,28(7) 	skip the function body
+ 77:    LDA  7,27(7) 	skip the function body
 * function entry
-105:    MOV  1,2,0 	store the caller fp temporarily
-106:    MOV  2,3,0 	exchang the stack(context)
-107:   PUSH  1,0(3) 	push the caller fp
-108:   PUSH  0,0(3) 	push the return adress
+106:    MOV  1,2,0 	store the caller fp temporarily
+107:    MOV  2,3,0 	exchang the stack(context)
+108:   PUSH  1,0(3) 	push the caller fp
+109:   PUSH  0,0(3) 	push the return adress
 * -> Const
-109:    LDC  0,2(0) 	load integer const
-110:   PUSH  0,0(6) 	store exp
+110:    LDC  0,1(0) 	load integer const
+111:   PUSH  0,0(6) 	store exp
 * <- Const
-111:    POP  0,0(6) 	pop exp 
-112:   PUSH  0,0(3) 	push parameter into stack
+112:    POP  0,0(6) 	pop exp 
+113:    MOV  9,0,0 	
+114:   PUSH  9,0(3) 	push parameter into stack
 * -> Const
-113:    LDC  0,3(0) 	load integer const
-114:   PUSH  0,0(6) 	store exp
+115:    LDC  0,1(0) 	load integer const
+116:   PUSH  0,0(6) 	store exp
 * <- Const
-115:    POP  0,0(6) 	pop exp 
-116:   PUSH  0,0(3) 	push parameter into stack
-117:    LDA  0,1(7) 	store the return adress
-118:    LDC  7,13(0) 	ujp to the function body
-119:    POP  9,0(6) 	pop exp 
-120:    MOV  0,9,0 	
-121:   PUSH  0,0(3) 	push parameter into stack
-122:    LDA  0,1(7) 	store the return adress
-123:    LDC  7,76(0) 	ujp to the function body
-124:    POP  0,0(6) 	move result to register
-125:    OUT  0,0,0 	output value in register[ac / fac]
-126:    MOV  3,2,0 	restore the caller sp
-127:     LD  2,0(2) 	resotre the caller fp
-128:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+117:    POP  0,0(6) 	pop exp 
+118:   PUSH  0,0(3) 	push parameter into stack
+* -> Const
+119:    LDC  9,0.400000(0)
+ 120:   PUSH  9,0(6) 	store exp
+* <- Const
+121:    POP  9,0(6) 	pop exp 
+122:   PUSH  9,0(3) 	push parameter into stack
+* -> Const
+123:    LDC  0,4(0) 	load integer const
+124:   PUSH  0,0(6) 	store exp
+* <- Const
+125:    POP  0,0(6) 	pop exp 
+126:   PUSH  0,0(3) 	push parameter into stack
+127:    LDA  0,1(7) 	store the return adress
+128:    LDC  7,13(0) 	ujp to the function body
+129:    LDA  3,1(3) 	pop parameters
+130:    POP  9,0(6) 	pop exp 
+131:    MOV  0,9,0 	
+132:   PUSH  0,0(3) 	push parameter into stack
+* -> Const
+133:    LDC  0,4(0) 	load integer const
+134:   PUSH  0,0(6) 	store exp
+* <- Const
+135:    POP  0,0(6) 	pop exp 
+136:   PUSH  0,0(3) 	push parameter into stack
+137:    LDA  0,1(7) 	store the return adress
+138:    LDC  7,78(0) 	ujp to the function body
+139:    LDA  3,3(3) 	pop parameters
+140:    POP  9,0(6) 	pop exp 
+141:    MOV  0,9,0 	
+142:   PUSH  0,0(3) 	push parameter into stack
+143:    LDA  0,1(7) 	store the return adress
+144:    LDC  7,78(0) 	ujp to the function body
+145:    LDA  3,3(3) 	pop parameters
+146:    POP  9,0(6) 	pop exp 
+147:    MOV  0,9,0 	
+148:   PUSH  0,0(3) 	push parameter into stack
+149:    LDA  0,1(7) 	store the return adress
+150:    LDC  7,13(0) 	ujp to the function body
+151:    LDA  3,1(3) 	pop parameters
+152:    POP  9,0(6) 	move result to register
+153:    OUT  9,0,0 	output value in register[ac / fac]
+154:    MOV  3,2,0 	restore the caller sp
+155:     LD  2,0(2) 	resotre the caller fp
+156:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-104:    LDA  7,24(7) 	skip the function body
+105:    LDA  7,51(7) 	skip the function body
 * call main function
-129:    LDC  0,131(0) 	store the return adress
-130:    LDC  7,105(0) 	ujp to the function body
-131:   HALT  0,0,0 	
+157:    LDC  0,159(0) 	store the return adress
+158:    LDC  7,106(0) 	ujp to the function body
+159:   HALT  0,0,0 	

@@ -35,6 +35,7 @@ static int get_reg1(Type type);
 static int get_stack_bottom(int scope);
 // delete all local variable from the stmtseq
 static void pushParam(TreeNode * t,ParamNode * p, int scope);
+static void popParam(ParamNode * p);
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -253,8 +254,8 @@ static void genExp( TreeNode * tree,int scope)
 			loc = getFunctionAdress(tree->attr.name);
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
-            now should pop the parameters
 			// after gen the exp
+			popParam(p);
 			// convert the type of return_type and converted_type
             origin_reg = get_reg(tree->type);
             target_reg = get_reg(tree->converted_type);
@@ -496,4 +497,15 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	emitRO("MOV", par_reg, exp_reg, 0, "");
 	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
 
+}
+/*pop parameters*/
+void popParam(ParamNode * p)
+{
+	int param_size = 0;
+	while (p != NULL)
+	{
+		param_size += 1;
+		p = p->next_param;
+	}
+	emitRM("LDA",sp, param_size, sp, "pop parameters");
 }

@@ -8,15 +8,13 @@ float f(int n)
 		return f(n-1)+f(n-2)
 }
 
-int f2(int a,int b)
+float f2(int a,int b,float c)
 {
-    write a
-    write b
-    return a * b
+    return a * b * c
 }
 
 void main()
 {
-	write f2(f(3),2)
+	write f(f2(f2(4,f(4),0.4),1,1))
 }
 
