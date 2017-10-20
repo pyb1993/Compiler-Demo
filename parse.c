@@ -37,6 +37,7 @@ static TreeNode * term(void);
 static TreeNode * factor(void);
 
 //help function
+static TreeNode * getPointerLevel(void);
 static TreeNode * parseOneVar();
 static TreeNode * parseOneExp();
 static TreeNode * param_pass(void);// parse function call params
@@ -399,37 +400,43 @@ TreeNode* declare_stmt(void)
 
 	/*switch case token type */
     TreeNode* t = newStmtNode(DeclareK);
-	bool func_dec = FALSE;
+    bool is_pointer = (tryNextToken() == TIMES);
+    bool func_dec = FALSE;
+    
     switch(token)
     {
       // define a variable; eg: int value;
       case INT:
             match(INT);
 			t->type = Integer;
-            t->attr.name = copyString(tokenString);
-            match(ID);
-			func_dec = (token == LPAREN);
             break;
 	  case FLOAT:
-		  match(FLOAT);
+          match(FLOAT);
 		  t->type = Float;
-		  t->attr.name = copyString(tokenString);
-		  match(ID);
-		  func_dec = (token == LPAREN);
 		  break;
 	  case VOID:
-		  match(VOID);
-		  t->type = Void;
-		  t->attr.name = copyString(tokenString);
-		  func_dec = TRUE;
-		  match(ID);
+          match(VOID);
+          t->type = Void;
 		  break;
       default:
             t->type = ErrorType;
             syntaxError("undefined type");
-            match(ID);
             break;
     }
+    
+
+    if (is_pointer)
+    {
+        t->typeinfo.plevel = getPointerLevel();
+    
+    
+    }
+    
+    t->attr.name = copyString(tokenString);
+    match(ID);
+    func_dec = (token == LPAREN);
+    
+
 
 	if (func_dec)
 	{

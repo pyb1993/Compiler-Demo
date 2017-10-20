@@ -54,7 +54,8 @@ typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
 typedef enum { OpK,SingleOpK, ConstK, IdK,FuncallK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { ErrorType, Void,Boolean, Integer, Float, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+
 
 #define MAXCHILDREN 3
 
@@ -74,10 +75,18 @@ typedef struct treeNode
 			char *str;
 		} val;// constk should contain one of three values
 	} attr;
-    Type type;
-	Type return_type; // used only for the return type
-	Type converted_type;
-
+    
+    int plevel;// pointer level
+    Type type; // if type is not the elementary type;
+	Type return_type; // used only for the return type of function || pointer_type
+	Type converted_type; // used for exp
+    
+    struct PointerType
+    {
+        Type typekind;
+        int plevel;
+        char * sname;
+    } pointer_to;
 } TreeNode;
 
 
