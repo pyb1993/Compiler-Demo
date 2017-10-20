@@ -7,6 +7,7 @@
 /****************************************************/
 
 #include "globals.h"
+#include "tinytype.h"
 #include "util.h"
 
 /* Procedure printToken prints a token
@@ -101,8 +102,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->nodekind = ExpK;
         t->kind.exp = kind;
         t->lineno = lineno;
-        t->type = Void;
-		t->type = Void;
+		t->type = createTypeFromBasic(Void);
     }
     return t;
 }
@@ -209,7 +209,7 @@ void printTree(TreeNode * tree)
                     printToken(tree->attr.op, "\0");
                     break;
                 case ConstK:
-                    switch (tree->type) {
+                    switch (getBasicType(tree->type)) {
                         case Integer:
                             fprintf(listing, "Const: %d\n", tree->attr.val.integer);
                             break;

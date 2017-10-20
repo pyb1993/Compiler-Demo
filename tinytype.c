@@ -1,45 +1,18 @@
 
 #include "tinytype.h"
 #include "assert.h"
-/*
- to compare type a and type b is identical
- */
+
+#define MAXTYPENUM  100
+static FuncType FTypeCollection[MAXTYPENUM];
+static StructType STypeCollection[MAXTYPENUM];
 
 
-VarType * type_from_basic(Type type)
+static int getIndexOfFType(char *key);
+
+void initTypeCollection()
 {
-	VarType * t;
-	switch (type)
-	{
-	case Struct:
-	case Func:
-		t = NULL;
-		assert((!"ERROR TYPE !!!"));
-		break;
-	default:
-		t = (VarType *)malloc(sizeof(VarType));
-		t->typekind = BTYPE;
-		t->typeinfo.btype = type;
-		break;
-	}
-	return t;
-}
-
-VarType * new_type(TreeNode * tree){
-	VarType * t = (VarType *)malloc(sizeof(VarType));
-	switch (tree->type){
-	case Func:
-		t->typekind = FUNTYPE;
-		t->typeinfo.ftype = new_func_type(tree);
-		break;
-	case Struct:
-		assert("not implemented struct");
-		break;
-	default:
-		assert("not implemented int or other");
-		break;
-	}
-	return t;
+	for (int i = 0; i < MAXTYPENUM; ++i){ FTypeCollection[i].name = NULL;}
+	for (int i = 0; i < MAXTYPENUM; ++i){ STypeCollection[i].name = NULL; }
 }
 
 /*return the func_type, which is consisted of paramNode and return type*/
@@ -48,7 +21,30 @@ FuncType new_func_type(TreeNode * tree)
 	FuncType ftype;
 	ftype.return_type = tree->return_type;
 	ftype.params = new_param_node(tree->child[0]);
+	ftype.name = tree->attr.name;
 	return ftype;
+}
+
+Type getBasicType(TypeInfo typeinfo)
+{
+	return  typeinfo.typekind;
+}
+
+TypeInfo createTypeFromBasic(Type basic)
+{
+	TypeInfo typeinfo;
+	switch (basic)
+	{
+	case Integer:
+	case Float:
+	case Boolean:
+	case Void:
+	case Func:
+		typeinfo.typekind = basic;
+		return typeinfo;
+		break;	
+	}
+	assert(!"unknown basic type");
 }
 
 ParamNode * new_param_node(TreeNode * tree)
@@ -65,10 +61,10 @@ ParamNode * new_param_node(TreeNode * tree)
 
 int integer_from_node(TreeNode * t){
 	
-	switch (t->type)
+	switch (t->type.typekind)
 	{
 		case Float:
-			return t->attr.val.flt;
+			return (int)t->attr.val.flt;
 		case Integer:
 			return t->attr.val.integer;
 		default:
@@ -82,12 +78,12 @@ int integer_from_node(TreeNode * t){
 float float_from_node(TreeNode * t)
 {
 
-	switch (t->type)
+	switch (t->type.typekind)
 	{
 	case Float:
 		return t->attr.val.flt;
 	case Integer:
-		return t->attr.val.integer;
+		return (float)t->attr.val.integer;
 	default:
 		assert(!"not defined such conversion");
 		return 0;
@@ -95,36 +91,76 @@ float float_from_node(TreeNode * t)
 	}
 }
 
-int my_abs(Type a,Type b){return a > b ? a - b : b - a;}
-
-
-bool can_convert(Type a, Type b)
+bool can_convert(TypeInfo a_type, TypeInfo b_type)
 {
 	// todo : add a map to represent the function
-	if (a == b) return true;
-	if (a == Boolean ){
-		if (b == Integer) return true;
-	}
+	Type a = getBasicType(a_type);
+	Type b = getBasicType(b_type);
 
-	if (a == Integer) {
+	switch (a)
+	{
+	case Boolean:
+		return a == b || b == Integer;
+	case Integer:
 		if (b == Boolean) return true;
 		if (b == Float) return true;
-	}
-
-	if (a == Float){
+	case Float:
 		if (b == Integer) return true;
+	case Pointer:
+		return a_type.plevel == b_type.plevel;
+	case Struct:
+		assert(0);
+		return false;
+		break;
+	default:
+		assert(!"unknown type");
+		return false;
+		break;
 	}
-
-	return false;
 }
 
-void free_type(VarType * t)
-{
-	if (t->typekind == BTYPE){
-		free(t);
-	}
-	else {
-		printf("MEMORY LEAKED!!!!!!!!!!!!!!!!,NOT IMPLEMENTED!\n");
-	}
 
+
+bool is_basic_type(TypeInfo typeinfo, Type btype) 
+{
+	return typeinfo.typekind == btype;
+}
+
+int getIndexOfFType(char *key)
+{
+	assert(key != NULL);
+	for (int i = MAXTYPENUM - 1; i >= 0; --i)
+	{
+		
+		if (FTypeCollection[i].name != NULL && strcmp(key, FTypeCollection[i].name) == 0)
+			return i;
+	}
+	assert(!"FUNCTION TYPE MISSED!");
+}
+
+ FuncType getFunctionType(char * key)
+{
+	int i = getIndexOfFType(key);
+	return FTypeCollection[i];
+}
+
+void addFunctionType(char * key,FuncType ftype)
+{
+	for (int i = 0; i < MAXTYPENUM; ++i)
+	{
+		if (FTypeCollection[i].name != NULL) 
+			continue;
+		else
+		{
+			FTypeCollection[i] = ftype;
+			return;
+		}
+	}
+	assert(!"FUNCTION OVER THE MAX NUM");
+}
+
+void deleteFuncType (char * key)
+{
+	int i = getIndexOfFType(key);
+	FTypeCollection[i].name = NULL;
 }

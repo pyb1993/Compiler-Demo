@@ -6,6 +6,7 @@
 /****************************************************/
 
 #include "globals.h"
+#include "tinytype.h"
 #include "util.h"
 #include "scan.h"
 #include "parse.h"
@@ -408,18 +409,18 @@ TreeNode* declare_stmt(void)
       // define a variable; eg: int value;
       case INT:
             match(INT);
-			t->type = Integer;
+			t->type = createTypeFromBasic(Integer);
             break;
 	  case FLOAT:
           match(FLOAT);
-		  t->type = Float;
+		  t->type = createTypeFromBasic(Float);
 		  break;
 	  case VOID:
           match(VOID);
-          t->type = Void;
+		  t->type = createTypeFromBasic(Void);
 		  break;
       default:
-            t->type = ErrorType;
+		  t->type = createTypeFromBasic(ErrorType);
             syntaxError("undefined type");
             break;
     }
@@ -427,11 +428,11 @@ TreeNode* declare_stmt(void)
 
     if (is_pointer)
     {
-        t->typeinfo.plevel = getPointerLevel();
     
     
     }
     
+
     t->attr.name = copyString(tokenString);
     match(ID);
     func_dec = (token == LPAREN);
@@ -441,7 +442,7 @@ TreeNode* declare_stmt(void)
 	if (func_dec)
 	{
 		t->return_type = t->type;//define the return type;
-		t->type = Func;
+		t->type = createTypeFromBasic(Func);
 		t->child[0] = paramK_stmt();
 		match(LBRACKET);
 		t->child[1] = stmt_sequence();
@@ -528,13 +529,13 @@ TreeNode * factor(void)
 	case NUM:
 		t = newExpNode(ConstK);
 		t->attr.val.integer = atoi(tokenString);
-		t->type = Integer;
+		t->type = createTypeFromBasic(Integer);
 		match(NUM);
 		break;
     case FlOATNUM:
             t = newExpNode(ConstK);
 			t->attr.val.flt = atof(tokenString);
-			t->type = Float;
+			t->type = createTypeFromBasic(Float);
 			match(FlOATNUM);
             break;
 	case ID:

@@ -59,6 +59,14 @@ typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Struct, Func } T
 
 #define MAXCHILDREN 3
 
+typedef struct _TypeInfo
+{
+	Type typekind;
+	Type pointKind;// Integer,Float,Boolean,Struct
+	int plevel;
+	char * sname;
+} TypeInfo;
+
 typedef struct treeNode
 {
 	struct treeNode * child[MAXCHILDREN];
@@ -77,20 +85,10 @@ typedef struct treeNode
 	} attr;
     
     int plevel;// pointer level
-    Type type; // if type is not the elementary type;
-	Type return_type; // used only for the return type of function || pointer_type
-	Type converted_type; // used for exp
-    
-    struct PointerType
-    {
-        Type typekind;
-        int plevel;
-        char * sname;
-    } pointer_to;
+    TypeInfo type; // if type is not the elementary type;
+	TypeInfo return_type; // used only for the return type of function || pointer_type
+	TypeInfo converted_type; // used for exp
 } TreeNode;
-
-
-
 
 
 /**************************************************/
