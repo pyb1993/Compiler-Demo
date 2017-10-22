@@ -8,6 +8,12 @@
 #include "tm.h"
 
 
+struct test{
+
+	int a;
+	int b;
+};
+
 int lineno = 0;
 FILE * source;
 FILE * listing;
@@ -37,7 +43,7 @@ int main()
 
 	TreeNode *t = parse();
 	printTree(t);
-	#if 0
+	#if 1
 		if (!Error)
 		{
 			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
@@ -46,7 +52,7 @@ int main()
 		}
 	#endif
 
-#if 0
+#if 1
 	/**compute the length of filename before .tm **/
 	int len = (int)strcspn(filename, ".");
 	char * codeFile = (char *)calloc(len+4,sizeof(char));
@@ -56,14 +62,14 @@ int main()
 	codeGen(t,codeFile);
 	fclose(code);
 #endif
-#if 0
+#if 1
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
 
-#if 0
+#if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{

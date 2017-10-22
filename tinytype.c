@@ -39,6 +39,7 @@ TypeInfo createTypeFromBasic(Type basic)
 	case Float:
 	case Boolean:
 	case Void:
+	case Pointer:
 	case Func:
 		typeinfo.typekind = basic;
 		return typeinfo;
@@ -105,10 +106,16 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 	case Integer:
 		if (b == Boolean) return true;
 		if (b == Float) return true;
+		break;
 	case Float:
 		if (b == Integer) return true;
+		break;
 	case Pointer:
-		return a_type.plevel == b_type.plevel;
+		if (b != Pointer) return false;
+		if (a_type.plevel != b_type.plevel) return false;
+		if (!can_convert(createTypeFromBasic(a_type.pointKind), createTypeFromBasic(b_type.pointKind))) return false;
+		return true;
+		break;
 	case Struct:
 		assert(0);
 		return false;

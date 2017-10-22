@@ -47,6 +47,7 @@ static TreeNode * idStartStmt();
 static void       initTokens();
 static TokenType  currentToken();
 static void		  unGetToken();
+static void matchWithoutSkipLineEnd(TokenType tok);
 
 static void syntaxError(char * message)
 {
@@ -140,10 +141,13 @@ TreeNode * statement(void)
 		t = declare_stmt();
 		break;
 	case LINEEND: // ignore it
+		match(LINEEND);
 		break;
 	case RBRACKET:// a empty statment
 		break;
-
+	case TIMES:// *p = xxx
+		t = assign_stmt();
+		break;
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
 		token = currentToken();
@@ -220,9 +224,12 @@ TreeNode * return_stmt(void)
 TreeNode * assign_stmt(void)
 {
 	TreeNode * t = newStmtNode(AssignK);
-	if ((t != NULL) && (token == ID))
-		t->attr.name = copyString(tokenString);
-	match(ID);
+	if ((t != NULL) && (token == ID)){
+		t->attr.name = copyString(tokenString);	match(ID);
+	}
+	else if (token == TIMES){ 
+		t->child[1] = exp();
+	}
 	match(ASSIGN);
 	if (t != NULL) t->child[0] = exp();
 	return t;
@@ -343,6 +350,8 @@ TreeNode * idStartStmt()
 	}
 }
 
+
+
  void unGetToken()
 {
 	 token = token_array[--pos];
@@ -353,9 +362,25 @@ TreeNode * idStartStmt()
 	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
 }
 
- int getLastTokenWithoutSkipLineEnd(){
+ TokenType getLastTokenWithoutSkipLineEnd()
+ {
 	 return token_array[pos - 1];
  }
+
+ void matchWithoutSkipLineEnd(TokenType expected)
+ {
+	 if (token == expected){
+		 token = currentToken();
+	 }
+	 else {
+		 syntaxError("unexpected token -> ");
+		 printToken(token, tokenString);
+		 syntaxError("the required toke should be");
+		 printToken(expected, "");
+		 fprintf(listing, "      ");
+	 }
+ }
+
 
  TokenType  currentToken()
  {
@@ -452,14 +477,15 @@ TreeNode* declare_stmt(void)
 TreeNode * exp(void)
 {
 	TreeNode * t = simple_exp();
-	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE)) {
+	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE)) 
+	{
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) {
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
 		}
-		match(token);
+		matchWithoutSkipLineEnd(token);
 		if (t != NULL)
 			t->child[1] = simple_exp();
 	}
@@ -477,7 +503,7 @@ TreeNode * simple_exp(void)
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
-			match(token);
+			matchWithoutSkipLineEnd(token);
 			t->child[1] = term();//
 		}
 	}
@@ -495,7 +521,7 @@ TreeNode * term(void)
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
-			match(token);
+			matchWithoutSkipLineEnd(token);
 			p->child[1] = factor();
 		}
 	}
@@ -510,7 +536,7 @@ TreeNode * factor(void)
 	{
 	case MINUS:
         last_token = getLastTokenWithoutSkipLineEnd();
-		match(MINUS);
+		matchWithoutSkipLineEnd(MINUS);
 		// the last token are part of exp; exp -
 		// so the minus is just substract!
 		// todo remove this to help function
@@ -526,9 +552,9 @@ TreeNode * factor(void)
 			t->attr.op = NEG;
 		}
 		break;
-	case BITAND:
+	case TIMES:
 		last_token = getLastTokenWithoutSkipLineEnd();
-		match(BITAND);
+		matchWithoutSkipLineEnd(TIMES);
 		// the last token are part of exp; exp -
 		// so the minus is just substract!
 		// todo remove this to help function
@@ -540,7 +566,23 @@ TreeNode * factor(void)
 		{
 			t = newExpNode(SingleOpK);
 			t->child[0] = exp();
-			t->type = t->child[0]->type;
+			t->attr.op = UNREF;
+		}
+		break;
+	case BITAND:
+		last_token = getLastTokenWithoutSkipLineEnd();
+		matchWithoutSkipLineEnd(BITAND);
+		// the last token are part of exp; exp -
+		// so the minus is just substract!
+		// todo remove this to help function
+		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
+		{
+			t = exp();
+		}
+		else
+		{
+			t = newExpNode(SingleOpK);
+			t->child[0] = exp();
 			t->attr.op = ADRESS;
 		}
 		break;
@@ -548,18 +590,18 @@ TreeNode * factor(void)
 		t = newExpNode(ConstK);
 		t->attr.val.integer = atoi(tokenString);
 		t->type = createTypeFromBasic(Integer);
-		match(NUM);
+		matchWithoutSkipLineEnd(NUM);
 		break;
     case FlOATNUM:
             t = newExpNode(ConstK);
 			t->attr.val.flt = atof(tokenString);
 			t->type = createTypeFromBasic(Float);
-			match(FlOATNUM);
+			matchWithoutSkipLineEnd(FlOATNUM);
             break;
 	case ID:
 		// todo, support assignment exp
 		// todo, remove code to other
-		match(ID);
+		matchWithoutSkipLineEnd(ID);
 		if (token == LPAREN)
 		{
 			unGetToken();
@@ -570,14 +612,14 @@ TreeNode * factor(void)
 			unGetToken();
 			t = newExpNode(IdK);
 			t->attr.name = copyString(tokenString);
-			match(ID);
+			matchWithoutSkipLineEnd(ID);
 		}
 		break;
 	case LPAREN:
 		// todo support comma expression, backup the pos, and restore!!!
-		match(LPAREN);
+		matchWithoutSkipLineEnd(LPAREN);
 		t = exp();
-		match(RPAREN);
+		matchWithoutSkipLineEnd(RPAREN);
 		break;
 	default:
 		syntaxError("unexpected token -> ");

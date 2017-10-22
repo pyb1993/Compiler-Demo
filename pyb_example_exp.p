@@ -46,6 +46,7 @@ void main()
 
 /*
 to do list
+1.0 support local function: need to add the stack_depth
 1.1 check the assign,read,write
 1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token

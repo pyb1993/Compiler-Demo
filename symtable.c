@@ -143,7 +143,6 @@ TypeInfo st_lookup_type(char * name)
 {
 	BucketList l = st_get_node(name);
 	assert(l != NULL);
-	assert(l->var_type.typekind == Integer || l->var_type.typekind == Float || l->var_type.typekind == Func);
 	return l->var_type;
 }
 
@@ -170,8 +169,7 @@ static BucketList st_get_node(char * name)
 {
 	int h = hash(name);
 	BucketList l = hashTable[h];
-	while ((l != NULL) && (strcmp(name, l->name) != 0))
-		l = l->next;
+	while ((l != NULL) && (strcmp(name, l->name) != 0)) l = l->next;
 	return l;
 }
 
