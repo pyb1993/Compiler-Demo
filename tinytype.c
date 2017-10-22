@@ -106,8 +106,10 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 	case Integer:
 		if (b == Boolean) return true;
 		if (b == Float) return true;
+		if (b == Integer) return true;
 		break;
 	case Float:
+		if (b == Float) return true;
 		if (b == Integer) return true;
 		break;
 	case Pointer:
@@ -125,6 +127,7 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		return false;
 		break;
 	}
+	return false;
 }
 
 

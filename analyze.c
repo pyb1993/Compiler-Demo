@@ -192,7 +192,7 @@ void checkTree(TreeNode * t,char * current_function, int scope)
 
 void checkNodeType(TreeNode * t,char * current_function, int scope)
 {
-	TreeNode * child1, child2;
+	TreeNode * child1;
 
 	switch (t->nodekind)
 	{
@@ -240,14 +240,40 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->converted_type = t->type;
 			return;// important! skip set_converted_type
 			break;
+		case AssignK:
+			// todo optimize bad smell
+			checkNodeType(t->child[0], current_function, scope);
+			checkNodeType(t->child[1], current_function, scope);
+			assert(t->child[0]->nodekind == ExpK && t->child[1]->nodekind == ExpK);
+			TypeInfo exp_type = t->child[1]->converted_type;
+			if (t->child[0]->kind.exp == IdK)
+			{
+				assert(st_lookup(t->child[0]->attr.name) != NOTFOUND);
+				TypeInfo id_type = st_lookup_type(t->child[0]->attr.name);
+				t->type = id_type;
+				if (!can_convert(exp_type, id_type))
+				{
+					assert(!"assgin is not allowed for this two types");
+				}
+			}
+			else
+			{
+				// *..p = xx
+				TreeNode * unref_child = t->child[0];
+				assert(unref_child->child[0] != NULL);
+				assert(can_convert(unref_child->type, exp_type));
+			}
+			break;
 		case OpK:
 		{
-			checkNodeType(t->child[0],current_function,scope);
-			checkNodeType(t->child[1],current_function,scope);
+			checkNodeType(t->child[0], current_function, scope);
+			checkNodeType(t->child[1], current_function, scope);
+			// todo optimize bad smell
 			TokenType op = t->attr.op;
+			
 			if (   !can_convert(t->child[0]->type, createTypeFromBasic(Integer)) ||
 				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer))
-			   )
+			       )
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
 				t->type = createTypeFromBasic(Boolean);
@@ -318,29 +344,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			{
 				typeError(t, "return type is not converted to funtion type");
 			}
-			break;
-		case AssignK:
-			checkNodeType(t->child[0],current_function, scope);
-			TypeInfo exp_type = t->child[0]->converted_type;
-
-			if (t->child[1] == NULL)
-			{
-				assert(st_lookup(t->attr.name) != NOTFOUND);
-				TypeInfo id_type = st_lookup_type(t->attr.name);
-				t->type = id_type;
-				if (!can_convert(exp_type, id_type))
-				{
-					typeError(t->child[0], "assgin is not allowed for this two types");
-				}
-			}
-			else{
-			// *..p = xx
-				TreeNode * unref_child = t->child[1];
-				checkNodeType(unref_child, current_function, scope);
-				assert(unref_child->child[0] != NULL);
-				assert(can_convert(unref_child->type, exp_type));
-			}
-			break;			
+			break;		
 		case RepeatK:
 			checkNodeType(t->child[0],current_function, scope + 1);
 			checkNodeType(t->child[1],current_function, scope + 1);
@@ -351,7 +355,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 		case WriteK:
 			checkNodeType(t->child[0],current_function,scope);
-			exp_type = t->child[0]->converted_type;
+			TypeInfo exp_type = t->child[0]->converted_type;
 			assert(can_convert(exp_type, createTypeFromBasic(Integer)) || 
 				   is_basic_type(exp_type,Pointer) || "can only write bool,integer,float");
 			break;
@@ -410,6 +414,7 @@ static TypeInfo get_converted_type(TreeNode * t)
 		assert(!is_basic_type(return_type, Void));
 		return return_type;
 		break;
+	case AssignK:
 	case OpK:
 		for (int i = 0; i < 2; ++i)
 		{

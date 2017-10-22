@@ -171,10 +171,6 @@ void printTree(TreeNode * tree)
                 case RepeatK:
                     fprintf(listing, "While\n");
                     break;
-                case AssignK:
-                    if(tree->child[1] ==NULL)fprintf(listing, "Assign to: %s\n", tree->attr.name);
-					else fprintf(listing, "Assign to unref exp\n");
-                    break;
                 case ReadK:
                     fprintf(listing, "Read: %s\n", tree->attr.name);
                     break;
@@ -210,6 +206,10 @@ void printTree(TreeNode * tree)
                     fprintf(listing, "Op: ");
                     printToken(tree->attr.op, "\0");
                     break;
+				case AssignK:
+					if (tree->child[1] == NULL)fprintf(listing, "Assign to: %s\n", tree->attr.name);
+					else fprintf(listing, "Assign to unref exp\n");
+					break;
                 case ConstK:
                     switch (getBasicType(tree->type)) {
                         case Integer:

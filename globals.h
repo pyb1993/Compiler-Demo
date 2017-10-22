@@ -51,8 +51,8 @@ extern int lineno; /* source line number for listing */
 /**************************************************/
 
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
-typedef enum { OpK,SingleOpK, ConstK, IdK,FuncallK } ExpKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
+typedef enum { AssignK, OpK, SingleOpK, ConstK, IdK, FuncallK } ExpKind;
 /* ExpType is used for type checking */
 typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 

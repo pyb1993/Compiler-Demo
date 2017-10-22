@@ -92,53 +92,7 @@ static void genStmt( TreeNode * tree,int scope)
             emitRestore();
             if (TraceCode)  emitComment("<- repeat") ;
             break; /* repeat */
-        
-        case AssignK:
-            if (TraceCode) emitComment("-> assign");
-			cGen(tree->child[0],scope );// load value in register ac or fac 
-
-			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
-			// todo optimize the code :bad smell
-			TypeInfo exp_type = tree->child[0]->converted_type;
-
-
-			int origin_reg = get_reg(getBasicType(exp_type));
-			int vsize = 1;
-			if (tree->child[1] == NULL)
-			{
-				type = st_lookup_type(tree->attr.name);
-				int target_reg = get_reg(getBasicType(type));
-
-				vsize = var_size_of(tree);
-				loc = st_lookup(tree->attr.name);// get the memory location of identifier
-				int var_stack_bottom = get_stack_bottom(st_lookup_scope(tree->attr.name));
-				while (vsize-- > 0)
-				{
-					// move bytes tmpOffset to dMem[ac]
-					// todo optimize
-					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
-					emitRM("ST", target_reg, loc++, var_stack_bottom, "copy bytes ");
-				}
-			}
-			else
-			{
-				/*  *..p = ffff */
-				TreeNode * unref = tree->child[1];
-				type = unref->type;
-				int target_reg = get_reg(getBasicType(type));
-				vsize = var_size_of(unref);
-				cGen(unref->child[0], scope);
-				emitRM("POP", ac1, 0, mp, "POP the adress of referenced");
-				for (loc = 0; loc < vsize; ++loc)
-				{
-					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
-					emitRM("ST", target_reg, loc, ac1, "copy bytes ");
-				}
-			}
-			if (TraceCode)  emitComment("<- assign");
-            break; /* assign_k */
+                  
         case ReadK:
             loc = st_lookup(tree->attr.name);
 			type = st_lookup_type(tree->attr.name);
@@ -336,7 +290,52 @@ static void genExp( TreeNode * tree,int scope)
                     break;
 			}
 			break;
+		case AssignK:
+			if (TraceCode) emitComment("-> assign");
+			cGen(tree->child[1], scope);// load value in register ac or fac 
+			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
+			// todo optimize the code :bad smell
+			TypeInfo exp_type = tree->child[0]->converted_type;
 
+
+			int origin_reg = get_reg(getBasicType(exp_type));
+			int vsize = 1;
+			if (tree->child[0]->kind.exp == IdK)
+			{
+				char * name = tree->child[0]->attr.name;
+				type = st_lookup_type(name);
+				int target_reg = get_reg(getBasicType(type));
+
+				vsize = var_size_of(tree);
+				loc = st_lookup(name);// get the memory location of identifier
+				int var_stack_bottom = get_stack_bottom(st_lookup_scope(name));
+				while (vsize-- > 0)
+				{
+					// move bytes tmpOffset to dMem[ac]
+					// todo optimize
+					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
+					emitRM("ST", target_reg, loc++, var_stack_bottom, "copy bytes ");
+				}
+			}
+			else
+			{
+				/*  *..p = ffff */
+				TreeNode * unref = tree->child[0];
+				type = unref->type;
+				int target_reg = get_reg(getBasicType(type));
+				vsize = var_size_of(unref);
+				cGen(unref->child[0], scope);
+				emitRM("POP", ac1, 0, mp, "POP the adress of referenced");
+				for (loc = 0; loc < vsize; ++loc)
+				{
+					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
+					emitRM("ST", target_reg, loc, ac1, "copy bytes ");
+				}
+			}
+			if (TraceCode)  emitComment("<- assign");
+			break; /* assign_k */
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
