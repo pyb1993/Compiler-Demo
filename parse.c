@@ -401,8 +401,6 @@ TreeNode* declare_stmt(void)
 
 	/*switch case token type */
     TreeNode* t = newStmtNode(DeclareK);
-    bool is_pointer = (tryNextToken() == TIMES);
-    bool func_dec = FALSE;
     
     switch(token)
     {
@@ -420,25 +418,25 @@ TreeNode* declare_stmt(void)
 		  t->type = createTypeFromBasic(Void);
 		  break;
       default:
+		  match(token);
 		  t->type = createTypeFromBasic(ErrorType);
-            syntaxError("undefined type");
-            break;
+          syntaxError("undefined type");
+          break;
     }
     
-
+	bool is_pointer = (token == TIMES);
     if (is_pointer)
     {
-    
-    
+		t->type.pointKind = t->type.typekind;
+		t->type.typekind = Pointer;
+		t->type.plevel = 0;
+		while (token == TIMES) { t->type.plevel += 1; match(TIMES);}
     }
     
-
     t->attr.name = copyString(tokenString);
     match(ID);
-    func_dec = (token == LPAREN);
-    
 
-
+    bool func_dec = (token == LPAREN);
 	if (func_dec)
 	{
 		t->return_type = t->type;//define the return type;
@@ -489,10 +487,11 @@ TreeNode * simple_exp(void)
 TreeNode * term(void)
 {
 	TreeNode * t = factor();
-	while ((token == TIMES) || (token == OVER))
+	while ((token == TIMES) || (token == OVER) || (token == ADRESS))
 	{
 		TreeNode * p = newExpNode(OpK);
-		if (p != NULL) {
+		if (p != NULL) 
+		{
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
@@ -514,6 +513,7 @@ TreeNode * factor(void)
 		match(MINUS);
 		// the last token are part of exp; exp -
 		// so the minus is just substract!
+		// todo remove this to help function
 		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
 		{
 			t = exp();
@@ -524,6 +524,24 @@ TreeNode * factor(void)
 			t->child[0] = exp();
 			t->type = t->child[0]->type;			
 			t->attr.op = NEG;
+		}
+		break;
+	case BITAND:
+		last_token = getLastTokenWithoutSkipLineEnd();
+		match(BITAND);
+		// the last token are part of exp; exp -
+		// so the minus is just substract!
+		// todo remove this to help function
+		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
+		{
+			t = exp();
+		}
+		else
+		{
+			t = newExpNode(SingleOpK);
+			t->child[0] = exp();
+			t->type = t->child[0]->type;
+			t->attr.op = ADRESS;
 		}
 		break;
 	case NUM:

@@ -47,6 +47,7 @@ TypeInfo createTypeFromBasic(Type basic)
 	assert(!"unknown basic type");
 }
 
+
 ParamNode * new_param_node(TreeNode * tree)
 {
 	ParamNode * current;

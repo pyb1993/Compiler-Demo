@@ -59,7 +59,6 @@ static void ungetNextChar(void)
 	if (!EOF_flag) linepos--;
 }
 
-
 //将读入的tokenstring退出一格,比如说用在退出//的第一个/上面
 static void ungetTokenstring(int *tokenstringindex)
 {
@@ -128,6 +127,11 @@ TokenType getToken(void)
 			{
 				state = DONE;
 				currentToken = MINUS;
+			}
+			else if (c == '&')
+			{
+				state = DONE;
+				currentToken = BITAND;
 			}
 			else if (c == '/')
 			{

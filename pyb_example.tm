@@ -147,123 +147,19 @@
 101:   PUSH  9,0(6) 	op: load left
 * <- Op
 102:    POP  9,0(6) 	op: POP left
-103:   PUSH  9,0(6) 	op: push left
-104:    MOV  3,2,0 	restore the caller sp
-105:     LD  2,0(2) 	resotre the caller fp
-106:  RETURN  0,-1,3 	return to the caller
-107:    MOV  3,2,0 	restore the caller sp
-108:     LD  2,0(2) 	resotre the caller fp
-109:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+103:    MOV  0,9,0 	move register reg(s) tp reg(r)
+104:   PUSH  0,0(6) 	op: push left
+105:    MOV  3,2,0 	restore the caller sp
+106:     LD  2,0(2) 	resotre the caller fp
+107:  RETURN  0,-1,3 	return to the caller
+108:    MOV  3,2,0 	restore the caller sp
+109:     LD  2,0(2) 	resotre the caller fp
+110:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
- 81:    LDA  7,28(7) 	skip the function body
+ 81:    LDA  7,29(7) 	skip the function body
 * function entry
-111:    MOV  1,2,0 	store the caller fp temporarily
-112:    MOV  2,3,0 	exchang the stack(context)
-113:   PUSH  1,0(3) 	push the caller fp
-114:   PUSH  0,0(3) 	push the return adress
+112:    MOV  1,2,0 	store the caller fp temporarily
+113:    MOV  2,3,0 	exchang the stack(context)
+114:   PUSH  1,0(3) 	push the caller fp
+115:   PUSH  0,0(3) 	push the return adress
 * -> Const
-115:    LDC  0,1(0) 	load integer const
-116:   PUSH  0,0(6) 	store exp
-* <- Const
-117:    POP  0,0(6) 	pop exp 
-118:    MOV  9,0,0 	
-119:   PUSH  9,0(3) 	push parameter into stack
-* -> Const
-120:    LDC  0,1(0) 	load integer const
-121:   PUSH  0,0(6) 	store exp
-* <- Const
-122:    POP  0,0(6) 	pop exp 
-123:   PUSH  0,0(3) 	push parameter into stack
-* -> Const
-124:    LDC  9,0.400000(0)
- 125:   PUSH  9,0(6) 	store exp
-* <- Const
-126:    POP  9,0(6) 	pop exp 
-127:   PUSH  9,0(3) 	push parameter into stack
-* -> Const
-128:    LDC  9,4.000000(0)
- 129:   PUSH  9,0(6) 	store exp
-* <- Const
-130:    POP  9,0(6) 	pop exp 
-131:    MOV  0,9,0 	
-132:   PUSH  0,0(3) 	push parameter into stack
-133:    LDA  0,1(7) 	store the return adress
-134:    LDC  7,13(0) 	ujp to the function body
-135:    LDA  3,1(3) 	pop parameters
-136:    POP  9,0(6) 	pop exp 
-137:    MOV  0,9,0 	
-138:   PUSH  0,0(3) 	push parameter into stack
-* -> Const
-139:    LDC  9,4.000000(0)
- 140:   PUSH  9,0(6) 	store exp
-* <- Const
-141:    POP  9,0(6) 	pop exp 
-142:    MOV  0,9,0 	
-143:   PUSH  0,0(3) 	push parameter into stack
-144:    LDA  0,1(7) 	store the return adress
-145:    LDC  7,82(0) 	ujp to the function body
-146:    LDA  3,3(3) 	pop parameters
-147:    POP  9,0(6) 	pop exp 
-148:    MOV  0,9,0 	
-149:   PUSH  0,0(3) 	push parameter into stack
-150:    LDA  0,1(7) 	store the return adress
-151:    LDC  7,82(0) 	ujp to the function body
-152:    LDA  3,3(3) 	pop parameters
-153:    POP  9,0(6) 	pop exp 
-154:    MOV  0,9,0 	
-155:   PUSH  0,0(3) 	push parameter into stack
-156:    LDA  0,1(7) 	store the return adress
-157:    LDC  7,13(0) 	ujp to the function body
-158:    LDA  3,1(3) 	pop parameters
-159:    POP  9,0(6) 	move result to register
-160:    OUT  9,0,0 	output value in register[ac / fac]
-* -> Op
-* -> Const
-161:    LDC  9,8.000000(0)
- 162:   PUSH  9,0(6) 	store exp
-* <- Const
-163:    POP  9,0(6) 	pop exp 
-164:    MOV  0,9,0 	
-165:   PUSH  0,0(3) 	push parameter into stack
-166:    LDA  0,1(7) 	store the return adress
-167:    LDC  7,13(0) 	ujp to the function body
-168:    LDA  3,1(3) 	pop parameters
-* -> Const
-169:    LDC  0,6(0) 	load integer const
-170:   PUSH  0,0(6) 	store exp
-* <- Const
-171:    POP  0,0(6) 	pop exp 
-172:    MOV  9,0,0 	
-173:   PUSH  9,0(3) 	push parameter into stack
-* -> Const
-174:    LDC  0,2(0) 	load integer const
-175:   PUSH  0,0(6) 	store exp
-* <- Const
-176:    POP  0,0(6) 	pop exp 
-177:   PUSH  0,0(3) 	push parameter into stack
-* -> Const
-178:    LDC  9,1.000000(0)
- 179:   PUSH  9,0(6) 	store exp
-* <- Const
-180:    POP  9,0(6) 	pop exp 
-181:    MOV  0,9,0 	
-182:   PUSH  0,0(3) 	push parameter into stack
-183:    LDA  0,1(7) 	store the return adress
-184:    LDC  7,82(0) 	ujp to the function body
-185:    LDA  3,3(3) 	pop parameters
-186:    POP  10,0(6) 	pop right
-187:    POP  9,0(6) 	pop left
-188:    ADD  9,9,10 	op +
-189:   PUSH  9,0(6) 	op: load left
-* <- Op
-190:    POP  9,0(6) 	move result to register
-191:    OUT  9,0,0 	output value in register[ac / fac]
-192:    MOV  3,2,0 	restore the caller sp
-193:     LD  2,0(2) 	resotre the caller fp
-194:  RETURN  0,-1,3 	return to adress : reg[fp]+1
-* function end
-110:    LDA  7,84(7) 	skip the function body
-* call main function
-195:    LDC  0,197(0) 	store the return adress
-196:    LDC  7,111(0) 	ujp to the function body
-197:   HALT  0,0,0 	

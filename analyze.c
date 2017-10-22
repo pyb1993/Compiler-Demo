@@ -204,6 +204,10 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			{
 				assert(t->type.typekind == Integer || t->type.typekind == Float);
 			}
+			else if (t->attr.op == ADRESS)
+			{
+				assert(t->child[0]->kind.exp == IdK);
+			}
 			break;
 		case OpK:
 		{

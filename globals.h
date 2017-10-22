@@ -34,9 +34,9 @@ typedef enum
 	/* reserved words */
 	IF, ELSE,ELSIF, END, WHILE,BREAK,RETURN,UNTIL, READ, WRITE,LINEEND,
 	/* multicharacter tokens */
-	ID,NEG, NUM, FlOATNUM,
+	ID,NEG,ADRESS, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
 	LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,
 	/*variable type*/
 	INT,FLOAT,VOID,FUN
@@ -84,7 +84,6 @@ typedef struct treeNode
 		} val;// constk should contain one of three values
 	} attr;
     
-    int plevel;// pointer level
     TypeInfo type; // if type is not the elementary type;
 	TypeInfo return_type; // used only for the return type of function || pointer_type
 	TypeInfo converted_type; // used for exp

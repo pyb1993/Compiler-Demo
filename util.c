@@ -37,6 +37,7 @@ void printToken(TokenType token, const char* tokenString)
         case RPAREN: fprintf(listing, ")\n"); break;
         case SEMI: fprintf(listing, ";\n"); break;
 		case NEG: fprintf(listing, "-\n"); break;
+		case ADRESS: fprintf(listing, "&\n"); break;
         case PLUS: fprintf(listing, "+\n"); break;
         case MINUS: fprintf(listing, "-\n"); break;
         case TIMES: fprintf(listing, "*\n"); break;

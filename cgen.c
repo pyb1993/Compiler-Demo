@@ -272,19 +272,28 @@ static void genExp( TreeNode * tree,int scope)
 		case SingleOpK:
 			if (TraceCode) emitComment("->Single Op");
 			p1 = tree->child[0];
-			cGen(p1, scope);
-			origin_reg = get_reg(getBasicType(p1->converted_type));
-			target_reg = get_reg(getBasicType(type));
-			emitRM("POP", origin_reg, 0, mp, "pop right");
-			emitRO("MOV", target_reg, origin_reg, 0, "convert type");
+			// todo optimize following code. bad smell
+			if (p1->attr.op != ADRESS)
+			{
+				cGen(p1, scope);
+				origin_reg = get_reg(getBasicType(p1->converted_type));
+				target_reg = get_reg(getBasicType(type));
+				emitRM("POP", origin_reg, 0, mp, "pop right");
+				emitRO("MOV", target_reg, origin_reg, 0, "convert type");
+			}
 
 			switch (p1->attr.op)
 			{
                 case NEG:
-                    emitRO("NEG", target_reg, 0, 0, "single op (-)");// ac = ac1 op ac
+                    emitRO("NEG", target_reg, 0, 0, "single op (-)");// fac = -fac || ac = -ac
                     emitRM("PUSH", target_reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
                     break;
-                default:
+				case ADRESS:
+					loc = st_lookup(p1->attr.name);
+					emitRO("LDA", ac, loc, get_stack_bottom(scope),"LDA the var adress");
+					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
+				default:
                     assert(!"not implemented single op");
                     break;
 			}
