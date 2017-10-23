@@ -44,6 +44,35 @@ void main()
 
 */
 
+
+/*
+
+void f(float *x,float *y)
+{
+	
+	if(*x < *y)
+		*x  = -*y
+	else
+		*y = -*x
+		
+}
+
+void main()
+{
+	int x 
+	int y
+	x = 1
+	y = 2
+	f(&x,&y)
+	write x
+	write y
+
+}
+
+
+
+*/
+
 /*
 to do list
 1.0 support local function: need to add the stack_depth
@@ -55,6 +84,8 @@ to do list
 2. implement break
 3. implement !,and,or
 5  implement array
+6  support three value expression
+6  support switch case
 6  implement struct
 7  implement Pointer
 8  define variable

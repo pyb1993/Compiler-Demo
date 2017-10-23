@@ -35,7 +35,7 @@ static void defineError(TreeNode * t ,char * msg)
 
 static void typeError(TreeNode * t, char * message)
 {
-	fprintf(listing, "id : %s,Type error at line %d: %s\n",t->attr.name, t->lineno, message);
+	fprintf(listing, "Type error at line %d: %s\n", t->lineno, message);
 	Error = TRUE;
 }
 
@@ -49,7 +49,7 @@ static void typeError(TreeNode * t, char * message)
  void insertParam(TreeNode * t,int scope_depth)
 {
 	if (t == NULL) return;
-	int offset = 0;	
+	int offset = 1;	
 	while (t != NULL)
 	{	
 		if (is_duplicate_var(t->attr.name, scope_depth)){
@@ -57,8 +57,8 @@ static void typeError(TreeNode * t, char * message)
 		}
 
 		int var_size = var_size_of(t);
-		offset += var_size;
 		st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type);
+		offset += var_size;
 		printf("stack offset %s %d \n", t->attr.name, offset);
 		t = t->sibling;
 	}
@@ -205,7 +205,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(child1,current_function,scope);
 			if (t->attr.op == NEG)
 			{
-				assert(t->type.typekind == Integer || t->type.typekind == Float);
+				t->type = child1->type;
+				assert(can_convert(child1->converted_type,createTypeFromBasic(Integer)));
 			}
 			else if (t->attr.op == ADRESS)
 			{
@@ -263,16 +264,18 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				assert(unref_child->child[0] != NULL);
 				assert(can_convert(unref_child->type, exp_type));
 			}
+			t->converted_type = t->type;
 			break;
 		case OpK:
-		{
 			checkNodeType(t->child[0], current_function, scope);
 			checkNodeType(t->child[1], current_function, scope);
 			// todo optimize bad smell
 			TokenType op = t->attr.op;
 			
 			if (   !can_convert(t->child[0]->type, createTypeFromBasic(Integer)) ||
-				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer))
+				   !can_convert(t->child[0]->type, createTypeFromBasic(Pointer)) ||
+				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer)) ||
+				   !can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
 			       )
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
@@ -281,12 +284,16 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				     (is_basic_type(t->child[1]->type, Float))
 					 )
 				t->type = createTypeFromBasic(Float);
-			else
+			else{
 				t->type = createTypeFromBasic(Integer);
+			}
+
+			gen_converted_type(t); // set the attribute converted_type 
 			break;
-		}
+
 		case IdK:
 			t->type = st_lookup_type(t->attr.name);
+			t->converted_type = t->type;
 			break;
 
 		case FuncallK:
@@ -308,17 +315,21 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 				if (!can_convert(param_type_node->type, param_node->converted_type))
 				{
-					typeError(param_node, "parameter cannot match the function definition");
+					assert(param_node, "parameter cannot match the function definition");
 					break;
 				}
 				param_type_node = param_type_node->next_param;
 				param_node = param_node->sibling;
 			}
+			t->converted_type = t->type;
+			break;
+		case ConstK:
+			t->converted_type = t->type;
 			break;
 		default:
+			assert(0);
 			break;
 		}
-		gen_converted_type(t); // set the attribute converted_type 
 		break;
 
 	case StmtK:
@@ -361,6 +372,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 	
 		case DeclareK:
+			stack_offset = -2;
 			if (is_basic_type(t->type,Func))
 			{
 				/*
@@ -411,7 +423,6 @@ static TypeInfo get_converted_type(TreeNode * t)
 		assert(t->attr.name != NULL);
 		FuncType ftype = getFunctionType(t->attr.name);
 		TypeInfo return_type = ftype.return_type;
-		assert(!is_basic_type(return_type, Void));
 		return return_type;
 		break;
 	case AssignK:
@@ -432,20 +443,20 @@ static TypeInfo get_converted_type(TreeNode * t)
 	}
 }
 
-static void set_convertd_type(TreeNode * t, TypeInfo type){
+static void set_convertd_type(TreeNode * t, TypeInfo type)
+{
 	if (t == NULL) return;
 
 	t->converted_type = type;
-	for (int i = 0; i < MAXCHILDREN; ++i){
-		set_convertd_type(t->child[i], type);
+	for (int i = 0; i < MAXCHILDREN; ++i)
+	{
+		if (t->kind.exp == OpK)
+			set_convertd_type(t->child[i], type);
 	}
 }
 
  void gen_converted_type(TreeNode * tree)
 {
-	
 	TypeInfo converted_type = get_converted_type(tree);
 	set_convertd_type(tree, converted_type);
-	assert(!is_basic_type(converted_type,Void));
-
- }
+}

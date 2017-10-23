@@ -552,8 +552,7 @@ TreeNode * factor(void)
 		else
 		{
 			t = newExpNode(SingleOpK);
-			t->child[0] = compare_exp();
-			t->type = t->child[0]->type;			
+			t->child[0] = factor();
 			t->attr.op = NEG;
 		}
 		break;
@@ -570,7 +569,7 @@ TreeNode * factor(void)
 		else
 		{
 			t = newExpNode(SingleOpK);
-			t->child[0] = simple_exp();
+			t->child[0] = factor();
 			t->attr.op = UNREF;
 		}
 		break;

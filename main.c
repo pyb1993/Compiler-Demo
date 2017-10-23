@@ -77,8 +77,7 @@ int main()
 	} while (!done);
 	printf("Simulation done.\n");
 	fclose(code);
-	struct test * s;
-	int *p;
+
 #endif
 	return 0;
 }

@@ -238,13 +238,17 @@ static void genExp( TreeNode * tree,int scope)
 			// after gen the exp
 			popParam(p);
 			// convert the type of return_type and converted_type
-			origin_reg = get_reg(getBasicType(tree->type));
-			target_reg = get_reg(getBasicType(tree->converted_type));
-			if (!is_basic_type(tree->type,Void) && origin_reg != target_reg)
+			
+			if (!is_basic_type(tree->type,Void) )
 			{
-				emitRM("POP",origin_reg,0,mp,"");
-				emitRO("MOV",target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
-				emitRM("PUSH", target_reg, 0, mp, "store exp");
+				origin_reg = get_reg(getBasicType(tree->type));
+				target_reg = get_reg(getBasicType(tree->converted_type));
+				if (origin_reg != target_reg) 
+				{
+					emitRM("POP", origin_reg, 0, mp, "");
+					emitRO("MOV", target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
+					emitRM("PUSH", target_reg, 0, mp, "store exp");
+				}
 			}
 			break;
 		case SingleOpK:
@@ -273,6 +277,7 @@ static void genExp( TreeNode * tree,int scope)
 					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 					break;
 				case UNREF:
+					// todo remove the bad smell
 					assert(p1 != NULL);
 					cGen(p1, scope);
 					emitRM("POP",ac,0,mp,"pop the adress");
@@ -280,9 +285,17 @@ static void genExp( TreeNode * tree,int scope)
 					int var_stack_bottom = get_stack_bottom(scope);
 					for (loc = 0; loc < vsize;++loc)
 					{
+						Type ptype = p1->converted_type.pointKind;
+						if ((ptype == Integer) || (ptype == Float)){
+							target_reg = get_reg1(ptype);
+						}
+						else{
+							target_reg = ac1;
+						}
+						
 						// todo optimize : move memory to memory
-						emitRM("LD", ac1, loc, ac, "load bytes");//
-						emitRM("PUSH", ac1,0, mp, "push bytes ");
+						emitRM("LD", target_reg, loc, ac, "load bytes");//
+						emitRM("PUSH", target_reg,0, mp, "push bytes ");
 					}
 					break;
 				default:
@@ -295,7 +308,7 @@ static void genExp( TreeNode * tree,int scope)
 			cGen(tree->child[1], scope);// load value in register ac or fac 
 			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
 			// todo optimize the code :bad smell
-			TypeInfo exp_type = tree->child[0]->converted_type;
+			TypeInfo exp_type = tree->child[1]->converted_type;
 
 
 			int origin_reg = get_reg(getBasicType(exp_type));
@@ -536,7 +549,6 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 		assert(p == NULL);
 		return;
 	}
-    printf("pos %d %d\n",emitSkip(0),e->attr.val.integer);
 	genExp(e, scope);// very important! cannot use cGen to avoid cGen generate exp list automatically
 
 	int exp_reg = get_reg(getBasicType(e->converted_type));
