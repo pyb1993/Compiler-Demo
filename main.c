@@ -41,9 +41,10 @@ int main()
 		exit(1);
 	}
 
-	TreeNode *t = parse();
-	printTree(t);
-	#if 1
+	 TreeNode *t = parse();
+	 printf("%d", var_size_of(t));
+	// printTree(t);
+	#if 0
 		if (!Error)
 		{
 			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
@@ -52,7 +53,7 @@ int main()
 		}
 	#endif
 
-#if 1
+#if 0
 	/**compute the length of filename before .tm **/
 	int len = (int)strcspn(filename, ".");
 	char * codeFile = (char *)calloc(len+4,sizeof(char));
@@ -62,14 +63,14 @@ int main()
 	codeGen(t,codeFile);
 	fclose(code);
 #endif
-#if 1
+#if 0
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
 
-#if 1
+#if 0
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{

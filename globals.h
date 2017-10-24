@@ -54,17 +54,32 @@ typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
 typedef enum { AssignK, OpK, SingleOpK, ConstK, IdK, FuncallK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
 
 #define MAXCHILDREN 3
+struct _dimension;
+typedef struct _dimension
+{
+	int dim; // used for array
+	struct _dimension * next_dim;
+} DimensionList;
+
+
+typedef struct _ArrayType
+{
+	struct _TypeInfo* ele_type;
+	DimensionList *dimension;
+} ArrayType;
+
 
 typedef struct _TypeInfo
 {
 	Type typekind;
-	Type pointKind;// Integer,Float,Boolean,Struct
+	Type pointKind; // Integer,Float,Boolean,Struct
+	ArrayType array_type;
 	int plevel;
-	char * sname;
+	char *sname;
 } TypeInfo;
 
 typedef struct treeNode

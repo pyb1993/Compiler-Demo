@@ -44,6 +44,8 @@ void printToken(TokenType token, const char* tokenString)
         case OVER: fprintf(listing, "/\n"); break;
         case LBRACKET:fprintf(listing, "{\n"); break;
         case RBRACKET:fprintf(listing, "\n}"); break;
+		case LSQUARE:fprintf(listing, "[\n"); break;
+		case RSQUARE:fprintf(listing, "]\n"); break;
         case INT:fprintf(listing, "int\n "); break;
         case FLOAT:fprintf(listing, "float\n "); break;
 		case VOID:fprintf(listing, "void\n "); break;

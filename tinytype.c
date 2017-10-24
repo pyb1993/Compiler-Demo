@@ -175,3 +175,11 @@ void deleteFuncType (char * key)
 	int i = getIndexOfFType(key);
 	FTypeCollection[i].name = NULL;
 }
+
+void lookupTypefromName(char * name)
+{
+	if (strcmp(name, "int") == 0)	return Integer;
+	if (strcmp(name, "float") == 0) return Float;
+	assert(!"struct is not allowded");
+	return Void;
+}

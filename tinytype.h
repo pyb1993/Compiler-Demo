@@ -43,4 +43,5 @@ TypeInfo createTypeFromBasic(Type basic);
 void addFunctionType(char * key, FuncType ftype);
 void deleteFuncType(char * key);
 void initTypeCollection();
+void lookupTypefromName(char * name);
 #endif /* tinytype_h */

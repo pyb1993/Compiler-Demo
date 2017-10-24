@@ -164,19 +164,31 @@ void buildSymtab(TreeNode * syntaxTree)
 }
 
 // todo optimize : convert tree to type
-int var_size_of(TreeNode* tree)
+int var_size_of_type(TypeInfo vtype)
 {
-	Type type = tree->type.typekind;
+	Type type = getBasicType(vtype);
 	if (type == Integer) return 1;
 	if (type == Float) return 1;
 	if (type == Pointer) return 1;
+	if (type == Array)
+	{
+		int ele_num = 1;
+		int ele_size = var_size_of_type(*(vtype.array_type.ele_type));
+		DimensionList * dimension = vtype.array_type.dimension;
+		while (dimension != NULL) { ele_num *= dimension->dim; dimension = dimension->next_dim; }
+		return ele_num * ele_size;
+	}
 	if (type == Struct)
-    {
+	{
 		assert(!"undefined struct size");
 		return 0;
 	}
 	assert(!"undefined type size");
-    return 0;
+	return 0;
+}
+int var_size_of(TreeNode* tree)
+{
+	return var_size_of_type(tree->type);
 }
 
 

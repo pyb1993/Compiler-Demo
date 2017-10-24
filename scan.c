@@ -133,6 +133,7 @@ TokenType getToken(void)
 				state = DONE;
 				currentToken = BITAND;
 			}
+		
 			else if (c == '/')
 			{
 				state = OVER_OR_COMMENT;
@@ -175,6 +176,12 @@ TokenType getToken(void)
 					break;
 				case '}':
 					currentToken = RBRACKET;
+					break;
+				case '[':
+					currentToken = LSQUARE;
+					break;
+				case ']':
+					currentToken = RSQUARE;
 					break;
 				case ';':
 					currentToken = SEMI;

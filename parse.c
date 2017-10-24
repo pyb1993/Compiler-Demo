@@ -9,6 +9,7 @@
 #include "tinytype.h"
 #include "util.h"
 #include "scan.h"
+#include "assert.h"
 #include "parse.h"
 /*
 	todo: solve the ugly implementation!!!
@@ -49,6 +50,9 @@ static TokenType  currentToken();
 static void		  unGetToken();
 static void matchWithoutSkipLineEnd(TokenType tok);
 static void skipLineEnd();
+static ArrayType parseArrayType(TypeInfo eleType);
+
+
 static void syntaxError(char * message)
 {
 	fprintf(listing, "\n>>> ");
@@ -63,20 +67,9 @@ static TokenType tryNextToken()
 
 static void match(TokenType expected)
 {
-	
-	if (token == expected) {
-		token = currentToken();
-	}
-	else {
-		syntaxError("unexpected token -> ");
-		printToken(token, tokenString);
-		syntaxError("the required toke should be");
-		printToken(expected,"");
-		fprintf(listing, "      ");
-	}
-
+	assert(token == expected);
+	token = currentToken();
 	while (token == LINEEND && token != ENDFILE) { token = currentToken(); } // skip the remain empty line
-
 }
 
 bool match_possible_lbracket()
@@ -435,6 +428,8 @@ TreeNode* declare_stmt(void)
           syntaxError("undefined type");
           break;
     }
+
+
     
 	bool is_pointer = (token == TIMES);
     if (is_pointer)
@@ -447,6 +442,14 @@ TreeNode* declare_stmt(void)
     
     t->attr.name = copyString(tokenString);
     match(ID);
+
+	// deal with array
+	if (token == LSQUARE)
+	{
+		TypeInfo ele_type = t->type;
+		t->type.typekind = Array;
+		t->type.array_type	= parseArrayType(ele_type);
+	}
 
     bool func_dec = (token == LPAREN);
 	if (func_dec)
@@ -645,4 +648,35 @@ TreeNode * parse(void)
 	if (token != ENDFILE)
 		syntaxError("Code ends before file\n");
 	return t;
+}
+
+ArrayType parseArrayType(TypeInfo element_type)
+{
+	ArrayType atype;
+	atype.ele_type = (TypeInfo *)malloc(sizeof(TypeInfo));
+	*atype.ele_type = element_type;
+
+	// todo remove bad smell
+	int dimension = 0;
+	DimensionList * origin_dimension = (DimensionList *) malloc(sizeof(DimensionList));
+	DimensionList * dim_node = origin_dimension;
+	match(LSQUARE);
+	dim_node->dim = atoi(tokenString);
+	match(NUM);
+	match(RSQUARE);
+	// deal with remain dimension
+	while (token == LSQUARE)
+	{	
+		match(LSQUARE);
+		dim_node->next_dim = (DimensionList *)malloc(sizeof(DimensionList));
+		dim_node = dim_node->next_dim;
+		dim_node->dim = atoi(tokenString);
+		assert(dim_node->dim > 0);
+		match(NUM);
+		match(RSQUARE);
+	}
+
+	dim_node->next_dim = NULL;
+	atype.dimension = origin_dimension;
+	return atype;
 }
