@@ -3,14 +3,15 @@
 #include "globals.h"
 #include "tinytype.h"
 /* st_insert insert token name, lineno and memory location */
-void st_insert(char * name, int lineno, int loc, int size,int depth,struct _VarType * type);
+void st_insert(char * name, int lineno, int loc, int size,int depth,TypeInfo type);
 void st_delete(char * name);
-Type st_lookup_type(char * name);
+TypeInfo st_lookup_type(char * name);
+Type getBasicType(TypeInfo typeinfo);
 int  st_lookup_scope(char * name);
-VarType* st_get_var_type_info(char * key);
 int st_lookup(char * name); /*   Function st_lookup returns the memory location of a variable or -1 if not found*/
-bool is_duplicate_var(char * name, int depth);
 void printSymTab(FILE * listing);
 void setFunctionAdress(char * name,int adress);
 int getFunctionAdress(char * name);
+bool is_duplicate_var(char * name, int depth);
+bool is_basic_type(TypeInfo type,Type btype);
 #endif

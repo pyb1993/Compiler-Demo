@@ -43,7 +43,7 @@ static void genStmt( TreeNode * tree,int scope)
     TreeNode * p1, * p2, * p3;
     int savedLoc1,savedLoc2,currentLoc;
     int loc;
-	Type type;
+	TypeInfo type;
     switch (tree->kind.stmt)
 	{            
         case IfK :
@@ -80,10 +80,10 @@ static void genStmt( TreeNode * tree,int scope)
 			p2 = tree->child[1] ;
             emitComment("repeat: jump after body comes back here");
 			savedLoc2 = emitSkip(0);
-			cGen(p1,scope+1);// create code for test
+			cGen(p1,scope + 1);// create code for test
 			savedLoc1 = emitSkip(1);
 			/* generate code for body */
-			cGen(p2,scope+1);
+			cGen(p2,scope + 1);
 			currentLoc = emitSkip(0);
 			emitRM("LDA", pc, (savedLoc2 - (currentLoc + 1)), pc, "unconditional jmp");
 			currentLoc = emitSkip(0);
@@ -92,59 +92,36 @@ static void genStmt( TreeNode * tree,int scope)
             emitRestore();
             if (TraceCode)  emitComment("<- repeat") ;
             break; /* repeat */
-        
-        case AssignK:
-            if (TraceCode) emitComment("-> assign");
-			cGen(tree->child[0],scope + 1);// load value in register ac or fac 
-
-			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
-			type = st_lookup_type(tree->attr.name);
-			Type exp_type = tree->child[0]->converted_type;
-			int vsize = var_size_of(tree);
-			int target_reg = get_reg(type);
-			int origin_reg = get_reg(exp_type);
-
-			loc = st_lookup(tree->attr.name);// get the memory location of identifier
-			int var_stack_bottom = get_stack_bottom(st_lookup_scope(tree->attr.name));
-            while (vsize-- > 0)
-            {
-                // move bytes tmpOffset to dMem[ac]
-                emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-				emitRO("MOV", target_reg, origin_reg, 0, "move register ");
-				emitRM("ST", target_reg, loc,var_stack_bottom,"copy bytes ");
-            }
-			
-			if (TraceCode)  emitComment("<- assign");
-            break; /* assign_k */
+                  
         case ReadK:
             loc = st_lookup(tree->attr.name);
 			type = st_lookup_type(tree->attr.name);
 			//todo, optimize follow code. DRY
-			emitRO("IN", get_reg(type), 0, 0, "read integer/float value");
-			emitRM("ST", get_reg(type), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
+			emitRO("IN", get_reg(getBasicType(type)), 0, 0, "read integer/float value");
+			emitRM("ST", get_reg(getBasicType(type)), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
 			break;
     
 		case WriteK:
             /* generate code for expression to write */
 			cGen(tree->child[0], scope);
 			type = tree->child[0]->type;
-			emitRM("POP", get_reg(type), 0, mp,"move result to register");
-            emitRO("OUT",get_reg(type),0,0,"output value in register[ac / fac]");
+			emitRM("POP", get_reg(getBasicType(type)), 0, mp, "move result to register");
+			emitRO("OUT", get_reg(getBasicType(type)), 0, 0, "output value in register[ac / fac]");
             break;
 		case ReturnK:
 			if (tree->child[0] != NULL) 
 			{ 
 				cGen(tree->child[0], scope);
 				// now the result is in the ac or fac or tmpOffset according to the type 
-				Type ctype = tree->child[0]->converted_type;
-				Type return_type = st_lookup_type(current_function);
-				assert(ctype != Struct);
+				TypeInfo ctype = tree->child[0]->converted_type;
+				TypeInfo return_type = getFunctionType(current_function).return_type;
+				assert(ctype.typekind != Struct);
 				
 				// convert the type!
 				// todo : construct the function copy_tmpOffset_to_register(origin_type,target_type)
-				emitRM("POP", get_reg(ctype), 0, mp, "op: POP left");
-				emitRO("MOV", get_reg(return_type), get_reg(ctype), 0, "move register reg(s) tp reg(r)");
-				emitRM("PUSH", get_reg(return_type), 0, mp, "op: push left");
+				emitRM("POP", get_reg(getBasicType(ctype)), 0, mp, "op: POP left");
+				emitRO("MOV", get_reg(getBasicType(return_type)), get_reg(getBasicType(ctype)), 0, "move register reg(s) tp reg(r)");
+				emitRM("PUSH", get_reg(getBasicType(return_type)), 0, mp, "op: push left");
 			}
 			//todo // support label, so the function can retrun directly
 			emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
@@ -154,10 +131,11 @@ static void genStmt( TreeNode * tree,int scope)
 		
 		case DeclareK:
 			/*deal with the function  */
-			if (scope == 0 && tree->type == Func) 
+			if (scope == 0 && is_basic_type(tree->type,Func)) 
 			{
-				insertParam(tree->child[0], scope + 1);
 				emitComment("function entry");
+				insertParam(tree->child[0], scope + 1);
+				addFunctionType(tree->attr.name, new_func_type(tree));
 				char * last_current = current_function;
 				current_function = tree->attr.name;
 
@@ -185,9 +163,10 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRestore();
 				deleteVarOfField(tree->child[1], scope + 1);
 				deleteVarOfField (tree->child[0], scope + 1);
+				deleteFuncType(tree->attr.name);
 				current_function = last_current;
 			}
-			else if (scope > 0 && tree->type != Func)//local variable
+			else if (scope > 0 && !is_basic_type(tree->type,Func))//local variable
 			{
 				insertNode(tree, scope);
 				int varsize = var_size_of(tree);
@@ -206,7 +185,7 @@ static void genExp( TreeNode * tree,int scope)
 	int loc;
 	TokenType op;
     TreeNode * p1, * p2;
-	Type type = tree->converted_type;
+	TypeInfo type = tree->converted_type;
 	int integer;
 	float float_num;
 	int origin_reg, target_reg;
@@ -215,7 +194,7 @@ static void genExp( TreeNode * tree,int scope)
         case ConstK :
             if (TraceCode) emitComment("-> Const") ;
             /* gen code to load integer constant using LDC */
-            switch (type) 
+            switch (getBasicType(type)) 
 			{
 			case Integer:
 				 integer = integer_from_node(tree);
@@ -235,11 +214,13 @@ static void genExp( TreeNode * tree,int scope)
             break; /* ConstK */
           
         case IdK :
+			// todo support struct
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-			emitRM("LD", get_reg(tree->type), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]
-			emitRO("MOV", get_reg(type), get_reg(tree->type), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
-			emitRM("PUSH", get_reg(type), 0, mp, "store exp");
+			emitRM("LD", get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]
+
+			emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
+			emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
 
 			if (TraceCode)  emitComment("<- Id") ;
             break; /* IdK */
@@ -247,8 +228,8 @@ static void genExp( TreeNode * tree,int scope)
 			//todo :tail recursion optimize
 			assert(tree->attr.name != NULL);
 			TreeNode *e = tree->child[0];
-			VarType  *ftype = st_get_var_type_info(tree->attr.name);
-			ParamNode *p = ftype->typeinfo.ftype.params;
+			FuncType ftype = getFunctionType(tree->attr.name);
+			ParamNode *p = ftype.params;
 			pushParam(e, p, scope + 1);
 
 			loc = getFunctionAdress(tree->attr.name);
@@ -257,36 +238,117 @@ static void genExp( TreeNode * tree,int scope)
 			// after gen the exp
 			popParam(p);
 			// convert the type of return_type and converted_type
-            origin_reg = get_reg(tree->type);
-            target_reg = get_reg(tree->converted_type);
-			if (tree->type != Void && origin_reg != target_reg)
+			
+			if (!is_basic_type(tree->type,Void) )
 			{
-				emitRM("POP",origin_reg,0,mp,"");
-				emitRO("MOV",target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
-				emitRM("PUSH", target_reg, 0, mp, "store exp");
+				origin_reg = get_reg(getBasicType(tree->type));
+				target_reg = get_reg(getBasicType(tree->converted_type));
+				if (origin_reg != target_reg) 
+				{
+					emitRM("POP", origin_reg, 0, mp, "");
+					emitRO("MOV", target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
+					emitRM("PUSH", target_reg, 0, mp, "store exp");
+				}
 			}
 			break;
 		case SingleOpK:
 			if (TraceCode) emitComment("->Single Op");
 			p1 = tree->child[0];
-			cGen(p1, scope);
-			origin_reg = get_reg(p1->converted_type);
-            target_reg = get_reg(type);
-			emitRM("POP", origin_reg, 0, mp, "pop right");
-			emitRO("MOV", target_reg, origin_reg, 0, "convert type");
+			// todo optimize following code. bad smell
+			// if the p1 is a struct and op is unref, the size is more than 1;
+			if (tree->attr.op != ADRESS && tree->attr.op != UNREF)
+			{
+				cGen(p1, scope);
+				origin_reg = get_reg(getBasicType(p1->converted_type));
+				target_reg = get_reg(getBasicType(type));
+				emitRM("POP", origin_reg, 0, mp, "pop right");
+				emitRO("MOV", target_reg, origin_reg, 0, "convert type");
+			}
 
-			switch (p1->attr.op)
+			switch (tree->attr.op)
 			{
                 case NEG:
-                    emitRO("NEG", target_reg, 0, 0, "single op (-)");// ac = ac1 op ac
+                    emitRO("NEG", target_reg, 0, 0, "single op (-)");// fac = -fac || ac = -ac
                     emitRM("PUSH", target_reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
                     break;
-                default:
+				case ADRESS:
+					loc = st_lookup(p1->attr.name);
+					emitRO("LDA", ac, loc, get_stack_bottom(st_lookup_scope(p1->attr.name)),"LDA the var adress");
+					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
+				case UNREF:
+					// todo remove the bad smell
+					assert(p1 != NULL);
+					cGen(p1, scope);
+					emitRM("POP",ac,0,mp,"pop the adress");
+					int vsize = var_size_of(p1);
+					int var_stack_bottom = get_stack_bottom(scope);
+					for (loc = 0; loc < vsize;++loc)
+					{
+						Type ptype = p1->converted_type.pointKind;
+						if ((ptype == Integer) || (ptype == Float)){
+							target_reg = get_reg1(ptype);
+						}
+						else{
+							target_reg = ac1;
+						}
+						
+						// todo optimize : move memory to memory
+						emitRM("LD", target_reg, loc, ac, "load bytes");//
+						emitRM("PUSH", target_reg,0, mp, "push bytes ");
+					}
+					break;
+				default:
                     assert(!"not implemented single op");
                     break;
 			}
 			break;
+		case AssignK:
+			if (TraceCode) emitComment("-> assign");
+			cGen(tree->child[1], scope);// load value in register ac or fac 
+			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
+			// todo optimize the code :bad smell
+			TypeInfo exp_type = tree->child[1]->converted_type;
 
+
+			int origin_reg = get_reg(getBasicType(exp_type));
+			int vsize = 1;
+			if (tree->child[0]->kind.exp == IdK)
+			{
+				char * name = tree->child[0]->attr.name;
+				type = st_lookup_type(name);
+				int target_reg = get_reg(getBasicType(type));
+
+				vsize = var_size_of(tree);
+				loc = st_lookup(name);// get the memory location of identifier
+				int var_stack_bottom = get_stack_bottom(st_lookup_scope(name));
+				while (vsize-- > 0)
+				{
+					// move bytes tmpOffset to dMem[ac]
+					// todo optimize
+					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
+					emitRM("ST", target_reg, loc++, var_stack_bottom, "copy bytes ");
+				}
+			}
+			else
+			{
+				/*  *..p = ffff */
+				TreeNode * unref = tree->child[0];
+				type = unref->type;
+				int target_reg = get_reg(getBasicType(type));
+				vsize = var_size_of(unref);
+				cGen(unref->child[0], scope);
+				emitRM("POP", ac1, 0, mp, "POP the adress of referenced");
+				for (loc = 0; loc < vsize; ++loc)
+				{
+					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
+					emitRM("ST", target_reg, loc, ac1, "copy bytes ");
+				}
+			}
+			if (TraceCode)  emitComment("<- assign");
+			break; /* assign_k */
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
@@ -295,10 +357,10 @@ static void genExp( TreeNode * tree,int scope)
             cGen(p1,scope);
 			cGen(p2, scope);
 			
-			origin_reg = get_reg(p1->converted_type);
-			int origin_reg1 = get_reg1(p2->converted_type);
-			int reg = get_reg(type);
-			int reg1 = get_reg1(type);
+			origin_reg = get_reg(getBasicType(p1->converted_type));
+			int origin_reg1 = get_reg1(getBasicType(p2->converted_type));
+			int reg = get_reg(getBasicType(type));
+			int reg1 = get_reg1(getBasicType(type));
 
 			emitRM("POP", origin_reg1,0,mp,"pop right");
 			emitRO("MOV", reg1, origin_reg1, 0, "convert type");
@@ -453,7 +515,7 @@ int get_reg(Type type)
 	{
 		return fac;
 	}
-	else if ((type == Integer) || (type == Boolean))
+	else if ((type == Integer) || (type == Boolean) || (type == Pointer))
 	{
 		return ac;
 	}
@@ -487,11 +549,10 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 		assert(p == NULL);
 		return;
 	}
-    printf("pos %d %d\n",emitSkip(0),e->attr.val.integer);
 	genExp(e, scope);// very important! cannot use cGen to avoid cGen generate exp list automatically
 
-    int exp_reg = get_reg(e->converted_type);
-	int par_reg = get_reg(p->type);
+	int exp_reg = get_reg(getBasicType(e->converted_type));
+	int par_reg = get_reg(getBasicType(p->type));
 	// todo support remove from memory to memory
 	emitRM("POP", exp_reg, 0, mp, "pop exp ");
 	emitRO("MOV", par_reg, exp_reg, 0, "");

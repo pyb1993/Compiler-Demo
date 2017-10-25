@@ -13,7 +13,7 @@
 #include "assert.h"
 /* counter for global variable memory locations */
 static int location = 0;
-static int stack_offset = 0; 
+static int stack_offset = 0;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
  */
@@ -35,7 +35,7 @@ static void defineError(TreeNode * t ,char * msg)
 
 static void typeError(TreeNode * t, char * message)
 {
-	fprintf(listing, "id : %s,Type error at line %d: %s\n",t->attr.name, t->lineno, message);
+	fprintf(listing, "Type error at line %d: %s\n", t->lineno, message);
 	Error = TRUE;
 }
 
@@ -48,10 +48,8 @@ static void typeError(TreeNode * t, char * message)
 
  void insertParam(TreeNode * t,int scope_depth)
 {
-	VarType * type;
 	if (t == NULL) return;
-	int offset = 0;
-	
+	int offset = 1;	
 	while (t != NULL)
 	{	
 		if (is_duplicate_var(t->attr.name, scope_depth)){
@@ -59,14 +57,12 @@ static void typeError(TreeNode * t, char * message)
 		}
 
 		int var_size = var_size_of(t);
+		st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type);
 		offset += var_size;
-		type = type_from_basic(t->type);
-		st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, type);
 		printf("stack offset %s %d \n", t->attr.name, offset);
 		t = t->sibling;
 	}
 }
-
 
  // delete all local variable from the stmtseq
  void deleteVarOfField(TreeNode * tree, int scope)
@@ -91,7 +87,7 @@ static void typeError(TreeNode * t, char * message)
 
  void insertNode( TreeNode * t,int scope)
 {
-	VarType * type = NULL;
+	StructType * type = NULL;
 
 	 switch (t->nodekind)
     { 
@@ -104,13 +100,13 @@ static void typeError(TreeNode * t, char * message)
 					defineError(t, "duplicate definition");
 				}
 				
-				if (t->type == Func)
+				if (is_basic_type(t->type,Func))
                 {
 					/*
 						todo :support local procedure
 					*/
-					type = new_type(t);// create the function type
-					st_insert(t->attr.name, t->lineno, location--, 1,scope, type);// function occupy 4 bytes
+					st_insert(t->attr.name, t->lineno, location--, 1,scope, t->type);// function occupy 4 bytes
+					addFunctionType(t->attr.name, new_func_type(t));
 					insertParam(t->child[0],scope + 1);
 					insertTree(t->child[1], scope + 1);
 					deleteVarOfField(t->child[0], scope + 1);
@@ -119,19 +115,17 @@ static void typeError(TreeNode * t, char * message)
 				}
 				if (scope == 0) //global var
                 {   
+					// todo remove the stackoffset,location to the symtable
                     int var_szie = var_size_of(t);
-					type = type_from_basic(t->type);
-					st_insert(t->attr.name, t->lineno, location, var_szie, scope,type);
 					location -= var_szie;
+					st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope,t->type);
 					return;
                 }
 				else // local variable
 				{
 					int var_szie = var_size_of(t);
-					type = type_from_basic(t->type);
-					st_insert(t->attr.name, t->lineno, stack_offset, var_szie, scope, type);
 					stack_offset -= var_szie;
-					printf("local variable stack offset %s %d\n",t->attr.name,stack_offset+var_szie);
+					st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
 				}
                 break;
             default:
@@ -164,23 +158,37 @@ void deleteVar(TreeNode * t,int scope_depth)
  */
 void buildSymtab(TreeNode * syntaxTree)
 { 
+	initTypeCollection();
 	insertTree(syntaxTree, 0);// insert node and check them
 	checkTree(syntaxTree, NULL, 0);
 }
 
-
-int var_size_of(TreeNode* tree)
+// todo optimize : convert tree to type
+int var_size_of_type(TypeInfo vtype)
 {
-	Type type = tree->type;
+	Type type = getBasicType(vtype);
 	if (type == Integer) return 1;
 	if (type == Float) return 1;
+	if (type == Pointer) return 1;
+	if (type == Array)
+	{
+		int ele_num = 1;
+		int ele_size = var_size_of_type(*(vtype.array_type.ele_type));
+		DimensionList * dimension = vtype.array_type.dimension;
+		while (dimension != NULL) { ele_num *= dimension->dim; dimension = dimension->next_dim; }
+		return ele_num * ele_size;
+	}
 	if (type == Struct)
-    {
+	{
 		assert(!"undefined struct size");
 		return 0;
 	}
 	assert(!"undefined type size");
-    return 0;
+	return 0;
+}
+int var_size_of(TreeNode* tree)
+{
+	return var_size_of_type(tree->type);
 }
 
 
@@ -196,43 +204,116 @@ void checkTree(TreeNode * t,char * current_function, int scope)
 
 void checkNodeType(TreeNode * t,char * current_function, int scope)
 {
+	TreeNode * child1;
+
 	switch (t->nodekind)
 	{
 	case ExpK:
-		gen_converted_type(t); // set the attribute converted_type 
 		switch (t->kind.exp)
 		{
 		case SingleOpK:
+			// todo optimize following code to functio. bad smell
+			child1 = t->child[0];
+			checkNodeType(child1,current_function,scope);
 			if (t->attr.op == NEG)
 			{
-				assert(t->type == Integer || t->type == Float);
+				t->type = child1->type;
+				assert(can_convert(child1->converted_type,createTypeFromBasic(Integer)));
 			}
+			else if (t->attr.op == ADRESS)
+			{
+				assert(child1->kind.exp == IdK);
+				if (is_basic_type(child1->type, Pointer))
+				{
+					t->type = child1->type;
+					t->type.plevel = child1->type.plevel + 1;
+				}
+				else
+				{
+					t->type = createTypeFromBasic(Pointer);
+					t->type.plevel = 1;
+					t->type.pointKind = child1->type.typekind;
+					t->type.sname = child1->type.sname;
+				}
+			}
+			else if (t->attr.op == UNREF)
+			{
+				assert(is_basic_type(child1->type, Pointer));
+				if (child1->type.plevel == 1)
+				{
+					t->type = createTypeFromBasic(child1->type.pointKind);
+					t->type.sname = child1->type.sname;
+				}
+				else
+				{
+					t->type = child1->type;
+					t->type.plevel -= 1;
+				}
+			}
+			t->converted_type = t->type;
+			return;// important! skip set_converted_type
+			break;
+		case AssignK:
+			// todo optimize bad smell
+			checkNodeType(t->child[0], current_function, scope);
+			checkNodeType(t->child[1], current_function, scope);
+			assert(t->child[0]->nodekind == ExpK && t->child[1]->nodekind == ExpK);
+			TypeInfo exp_type = t->child[1]->converted_type;
+			if (t->child[0]->kind.exp == IdK)
+			{
+				assert(st_lookup(t->child[0]->attr.name) != NOTFOUND);
+				TypeInfo id_type = st_lookup_type(t->child[0]->attr.name);
+				t->type = id_type;
+				if (!can_convert(exp_type, id_type))
+				{
+					assert(!"assgin is not allowed for this two types");
+				}
+			}
+			else
+			{
+				// *..p = xx
+				TreeNode * unref_child = t->child[0];
+				assert(unref_child->child[0] != NULL);
+				assert(can_convert(unref_child->type, exp_type));
+			}
+			t->converted_type = t->type;
 			break;
 		case OpK:
-		{
-			checkNodeType(t->child[0],current_function,scope);
-			checkNodeType(t->child[1],current_function,scope);
+			checkNodeType(t->child[0], current_function, scope);
+			checkNodeType(t->child[1], current_function, scope);
+			// todo optimize bad smell
 			TokenType op = t->attr.op;
-			if (!can_convert(t->child[0]->type, Integer) || !can_convert(t->child[1]->type, Integer))
+			
+			if (   !can_convert(t->child[0]->type, createTypeFromBasic(Integer)) ||
+				   !can_convert(t->child[0]->type, createTypeFromBasic(Pointer)) ||
+				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer)) ||
+				   !can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
+			       )
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
-				t->type = Boolean;
-			else if ((t->child[0]->type == Float) ||
-				(t->child[1]->type == Float))
-				t->type = Float;
-			else
-				t->type = Integer;
+				t->type = createTypeFromBasic(Boolean);
+			else if ((is_basic_type(t->child[0]->type,Float)) || 
+				     (is_basic_type(t->child[1]->type, Float))
+					 )
+				t->type = createTypeFromBasic(Float);
+			else{
+				t->type = createTypeFromBasic(Integer);
+			}
+
+			gen_converted_type(t); // set the attribute converted_type 
 			break;
-		}
+
 		case IdK:
 			t->type = st_lookup_type(t->attr.name);
+			t->converted_type = t->type;
 			break;
 
 		case FuncallK:
-			t->type = st_lookup_type(t->attr.name);// set the function return type
+			assert(t->attr.name != 0);
+			FuncType ftype = getFunctionType(t->attr.name);
+			t->type = ftype.return_type;// set the function return type
 			/*check the paramter type is legal*/
-			VarType *var_type = st_get_var_type_info(t->attr.name);
-			ParamNode *param_type_node = var_type->typeinfo.ftype.params;
+			ParamNode *param_type_node = ftype.params;
 			TreeNode * param_node = t->child[0];
 			while (param_type_node != NULL)
 			{
@@ -246,17 +327,21 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 				if (!can_convert(param_type_node->type, param_node->converted_type))
 				{
-					typeError(param_node, "parameter cannot match the function definition");
+					assert(param_node, "parameter cannot match the function definition");
 					break;
 				}
 				param_type_node = param_type_node->next_param;
 				param_node = param_node->sibling;
 			}
+			t->converted_type = t->type;
+			break;
+		case ConstK:
+			t->converted_type = t->type;
 			break;
 		default:
+			assert(0);
 			break;
 		}
-
 		break;
 
 	case StmtK:
@@ -264,7 +349,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		{
 		case IfK:
 			checkNodeType(t->child[0], current_function, scope + 1);
-			if (t->child[0]->type != Boolean){
+			if (!is_basic_type(t->child[0]->type,Boolean))
+			{
 				typeError(t->child[0], "if test is not Boolean");
 			}
 			checkNodeType(t->child[0],current_function,scope + 1);
@@ -274,56 +360,50 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case ReturnK:
 			assert(current_function != NULL);
 			checkNodeType(t->child[0],current_function,scope);
-			Type function_type = st_lookup_type(current_function);
-			Type return_exp_type = t->child[0] == NULL ? Void : t->child[0]->type;
-			if (!can_convert(return_exp_type, function_type))
+			FuncType function_type = getFunctionType(current_function);
+			TypeInfo function_return_type = function_type.return_type;
+			TypeInfo return_exp_type = t->child[0] == NULL ? createTypeFromBasic(Void) : t->child[0]->type;
+			if (!can_convert(return_exp_type, function_return_type))
 			{
 				typeError(t, "return type is not converted to funtion type");
 			}
-			break;
-		case AssignK:
-			checkNodeType(t->child[0],current_function, scope);
-
-			assert(st_lookup(t->attr.name) != NOTFOUND);
-			Type id_type = st_lookup_type(t->attr.name);
-			Type exp_type = t->child[0]->converted_type;
-			t->type = id_type;
-			if (!can_convert(exp_type, id_type))
-			{
-				typeError(t->child[0], "assgin is not allowed for this two types");
-			}
-			break;			
+			break;		
 		case RepeatK:
 			checkNodeType(t->child[0],current_function, scope + 1);
 			checkNodeType(t->child[1],current_function, scope + 1);
-			if (t->child[0]->type != Boolean){
+			if (!is_basic_type(t->child[0]->type,Boolean))
+			{
 				typeError(t->child[0], "repeat test is not Boolean");
 			}
 			break;
 		case WriteK:
 			checkNodeType(t->child[0],current_function,scope);
-			exp_type = t->child[0]->converted_type;
-			assert(can_convert(exp_type, Integer) || !"can only write bool,integer,float");
+			TypeInfo exp_type = t->child[0]->converted_type;
+			assert(can_convert(exp_type, createTypeFromBasic(Integer)) || 
+				   is_basic_type(exp_type,Pointer) || "can only write bool,integer,float");
 			break;
 	
 		case DeclareK:
-			if (t->type == Func)
+			stack_offset = -2;
+			if (is_basic_type(t->type,Func))
 			{
 				/*
 				todo :remove these to function insertFunction
 				*/
-				VarType * type = new_type(t);// create the function type
-				st_insert(t->attr.name, t->lineno, location--, 1, scope, type);// function occupy 4 bytes
+				addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
+				st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
 				// remove this to function deleteFunction
 				deleteVarOfField(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
+				deleteFuncType(t->attr.name);
 			}
 			break;
 		default:
-			for (int i = 0; i < MAXCHILDREN; ++i){
+			for (int i = 0; i < MAXCHILDREN; ++i)
+			{
 				checkTree(t->child[i],current_function, scope + 1);
 			}
 			break;
@@ -335,19 +415,10 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 }
 
 
-// check type a can be converted to b
-
-
-/* Procedure typeCheck performs type checking 
- * by a postorder syntax tree traversal
- */
-
-
-
 /*assert the node is exp*/
-static Type is_float(TreeNode * t)
+static TypeInfo get_converted_type(TreeNode * t)
 {
-	if (t == NULL) return ErrorType;
+	assert(t != NULL);
 	
 	switch (t->kind.exp)
 	{
@@ -361,36 +432,43 @@ static Type is_float(TreeNode * t)
 		return st_lookup_type(t->attr.name);
 		break;
 	case FuncallK:
-		return st_lookup_type(t->attr.name);
+		assert(t->attr.name != NULL);
+		FuncType ftype = getFunctionType(t->attr.name);
+		TypeInfo return_type = ftype.return_type;
+		return return_type;
 		break;
+	case AssignK:
 	case OpK:
-		for (int i = 0; i < MAXCHILDREN; ++i)
+		for (int i = 0; i < 2; ++i)
 		{
-			if (is_float(t->child[i]) == Float)
+			if (t->child[i] != NULL && is_basic_type(t->child[i]->converted_type,Float))
 			{
-				return Float;
+				return createTypeFromBasic(Float);
 			}
 		}
-		return Integer;
+		return t->child[0]->type;
 		break;
 	default:
 		assert(!"undefined exp !");
-		return ErrorType;
+		return createTypeFromBasic(Void);
 		break;
 	}
 }
 
-static void set_convertd_type(TreeNode * t, Type type){
+static void set_convertd_type(TreeNode * t, TypeInfo type)
+{
 	if (t == NULL) return;
 
 	t->converted_type = type;
-	for (int i = 0; i < MAXCHILDREN; ++i){
-		set_convertd_type(t->child[i], type);
+	for (int i = 0; i < MAXCHILDREN; ++i)
+	{
+		if (t->kind.exp == OpK)
+			set_convertd_type(t->child[i], type);
 	}
 }
 
  void gen_converted_type(TreeNode * tree)
 {
-	Type _is_float = is_float(tree);
-	set_convertd_type(tree, _is_float);	 
+	TypeInfo converted_type = get_converted_type(tree);
+	set_convertd_type(tree, converted_type);
 }

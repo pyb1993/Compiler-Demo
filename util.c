@@ -7,6 +7,7 @@
 /****************************************************/
 
 #include "globals.h"
+#include "tinytype.h"
 #include "util.h"
 
 /* Procedure printToken prints a token
@@ -36,12 +37,15 @@ void printToken(TokenType token, const char* tokenString)
         case RPAREN: fprintf(listing, ")\n"); break;
         case SEMI: fprintf(listing, ";\n"); break;
 		case NEG: fprintf(listing, "-\n"); break;
+		case ADRESS: fprintf(listing, "&\n"); break;
         case PLUS: fprintf(listing, "+\n"); break;
         case MINUS: fprintf(listing, "-\n"); break;
         case TIMES: fprintf(listing, "*\n"); break;
         case OVER: fprintf(listing, "/\n"); break;
         case LBRACKET:fprintf(listing, "{\n"); break;
         case RBRACKET:fprintf(listing, "\n}"); break;
+		case LSQUARE:fprintf(listing, "[\n"); break;
+		case RSQUARE:fprintf(listing, "]\n"); break;
         case INT:fprintf(listing, "int\n "); break;
         case FLOAT:fprintf(listing, "float\n "); break;
 		case VOID:fprintf(listing, "void\n "); break;
@@ -101,8 +105,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->nodekind = ExpK;
         t->kind.exp = kind;
         t->lineno = lineno;
-        t->type = Void;
-		t->type = Void;
+		t->type = createTypeFromBasic(Void);
     }
     return t;
 }
@@ -170,9 +173,6 @@ void printTree(TreeNode * tree)
                 case RepeatK:
                     fprintf(listing, "While\n");
                     break;
-                case AssignK:
-                    fprintf(listing, "Assign to: %s\n", tree->attr.name);
-                    break;
                 case ReadK:
                     fprintf(listing, "Read: %s\n", tree->attr.name);
                     break;
@@ -208,8 +208,12 @@ void printTree(TreeNode * tree)
                     fprintf(listing, "Op: ");
                     printToken(tree->attr.op, "\0");
                     break;
+				case AssignK:
+					if (tree->child[1] == NULL)fprintf(listing, "Assign to: %s\n", tree->attr.name);
+					else fprintf(listing, "Assign to unref exp\n");
+					break;
                 case ConstK:
-                    switch (tree->type) {
+                    switch (getBasicType(tree->type)) {
                         case Integer:
                             fprintf(listing, "Const: %d\n", tree->attr.val.integer);
                             break;

@@ -6,8 +6,10 @@
 /****************************************************/
 
 #include "globals.h"
+#include "tinytype.h"
 #include "util.h"
 #include "scan.h"
+#include "assert.h"
 #include "parse.h"
 /*
 	todo: solve the ugly implementation!!!
@@ -24,7 +26,6 @@ static TreeNode * stmt_sequence(void);
 static TreeNode * statement(void);
 static TreeNode * if_stmt(void);
 static TreeNode * while_stmt(void);
-static TreeNode * assign_stmt(void);
 static TreeNode * funcall_exp(void);
 static TreeNode * read_stmt(void);
 static TreeNode * write_stmt(void);
@@ -32,6 +33,7 @@ static TreeNode * declare_stmt(void);
 static TreeNode * break_stmt(void);
 static TreeNode * return_stmt(void);
 static TreeNode * exp(void);
+static TreeNode * compare_exp(void);
 static TreeNode * simple_exp(void);
 static TreeNode * term(void);
 static TreeNode * factor(void);
@@ -46,6 +48,10 @@ static TreeNode * idStartStmt();
 static void       initTokens();
 static TokenType  currentToken();
 static void		  unGetToken();
+static void matchWithoutSkipLineEnd(TokenType tok);
+static void skipLineEnd();
+static ArrayType parseArrayType(TypeInfo eleType);
+
 
 static void syntaxError(char * message)
 {
@@ -61,20 +67,9 @@ static TokenType tryNextToken()
 
 static void match(TokenType expected)
 {
-	
-	if (token == expected) {
-		token = currentToken();
-	}
-	else {
-		syntaxError("unexpected token -> ");
-		printToken(token, tokenString);
-		syntaxError("the required toke should be");
-		printToken(expected,"");
-		fprintf(listing, "      ");
-	}
-
+	assert(token == expected);
+	token = currentToken();
 	while (token == LINEEND && token != ENDFILE) { token = currentToken(); } // skip the remain empty line
-
 }
 
 bool match_possible_lbracket()
@@ -131,6 +126,10 @@ TreeNode * statement(void)
     case BREAK: t = break_stmt();break;
 	case RETURN:t = return_stmt(); break;
 	case ID: t = idStartStmt(); break;
+	case TIMES:
+	case LPAREN:
+		t = exp();
+		break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
 	case INT:  
@@ -139,10 +138,10 @@ TreeNode * statement(void)
 		t = declare_stmt();
 		break;
 	case LINEEND: // ignore it
+		match(LINEEND);
 		break;
 	case RBRACKET:// a empty statment
 		break;
-
 	default: syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
 		token = currentToken();
@@ -158,11 +157,11 @@ TreeNode * if_stmt(void)
 	TreeNode * t = newStmtNode(IfK);
 	match(IF);
 	if (t != NULL) t->child[0] = exp();
-	
+	skipLineEnd();
 	bool in_block = match_possible_lbracket();
 	t->child[1] = in_block ? stmt_sequence() : statement();
+	skipLineEnd();
 	match_possible_rbracket(in_block);
-
 	if (token == ELSE)
     {
 		match(ELSE);
@@ -183,6 +182,7 @@ TreeNode * while_stmt(void)
 	TreeNode * t = newStmtNode(RepeatK);
 	match(WHILE);
 	if (t != NULL) t->child[0] = exp(); //child[0] for test
+	skipLineEnd();
 	bool in_block = match_possible_lbracket();
 	t->child[1] = in_block ? stmt_sequence() : statement(); // child[1] for body
     match_possible_rbracket(in_block);
@@ -212,18 +212,6 @@ TreeNode * return_stmt(void)
 	{
 		t->child[0] = exp();
 	}
-
-	return t;
-}
-
-TreeNode * assign_stmt(void)
-{
-	TreeNode * t = newStmtNode(AssignK);
-	if ((t != NULL) && (token == ID))
-		t->attr.name = copyString(tokenString);
-	match(ID);
-	match(ASSIGN);
-	if (t != NULL) t->child[0] = exp();
 	return t;
 }
 
@@ -244,7 +232,7 @@ TreeNode * funcall_exp(void)
 	TreeNode * t;
 	if (token == VOID || token == RPAREN)
 	{
-		if (token == VOID) match(VOID);
+		if (token == VOID) matchWithoutSkipLineEnd(VOID);
 		match(RPAREN);
 		return NULL;
 	}
@@ -265,7 +253,7 @@ TreeNode * funcall_exp(void)
 TreeNode * read_stmt(void)
 {
 	TreeNode * t = newStmtNode(ReadK);
-	match(READ);
+	matchWithoutSkipLineEnd(READ);
 	if ((t != NULL) && (token == ID))
 		t->attr.name = copyString(tokenString);
 	match(ID);
@@ -283,11 +271,11 @@ TreeNode * write_stmt(void)
 /*this function will return paramk -> paramk -> .... paramk*/
 static TreeNode* paramK_stmt(void)
 {
-	match(LPAREN);
+	matchWithoutSkipLineEnd(LPAREN);
 	
 	if (token == VOID || token == RPAREN)
 	{
-		if (token == VOID) match(VOID);
+		if (token == VOID) matchWithoutSkipLineEnd(VOID);
 		match(RPAREN);
 		return NULL;
 	}
@@ -310,14 +298,14 @@ TreeNode* parseOneVar()
 {
 	TreeNode * t = declare_stmt();
 	t->kind.stmt = ParamK;
-	if (token != RPAREN) { match(COMMA); }
+	if (token != RPAREN) { matchWithoutSkipLineEnd(COMMA); }
 	return t;
 }
 
 TreeNode* parseOneExp()
 {
 	TreeNode * t = exp();
-	if (token != RPAREN) { match(COMMA);}
+	if (token != RPAREN) { matchWithoutSkipLineEnd(COMMA); }
 	return t;
 }
 
@@ -325,12 +313,8 @@ TreeNode* parseOneExp()
 TreeNode * idStartStmt()
 {
 	match(ID);
-	if (token == ASSIGN)
-	{
-		unGetToken();
-		return assign_stmt();
-	}
-	else if(token == LPAREN)
+
+	if(token == LPAREN)
 	{
 		unGetToken();
 		return funcall_exp();
@@ -342,6 +326,7 @@ TreeNode * idStartStmt()
 	}
 }
 
+
  void unGetToken()
 {
 	 token = token_array[--pos];
@@ -352,9 +337,30 @@ TreeNode * idStartStmt()
 	 do{ tokenString[i++] = *str; } while (*str++ != '\0');
 }
 
- int getLastTokenWithoutSkipLineEnd(){
+ TokenType getLastTokenWithoutSkipLineEnd()
+ {
 	 return token_array[pos - 1];
  }
+
+ void skipLineEnd()
+ {
+	 if (token == LINEEND) match(LINEEND);
+ }
+
+ void matchWithoutSkipLineEnd(TokenType expected)
+ {
+	 if (token == expected){
+		 token = currentToken();
+	 }
+	 else {
+		 syntaxError("unexpected token -> ");
+		 printToken(token, tokenString);
+		 syntaxError("the required toke should be");
+		 printToken(expected, "");
+		 fprintf(listing, "      ");
+	 }
+ }
+
 
  TokenType  currentToken()
  {
@@ -400,48 +406,56 @@ TreeNode* declare_stmt(void)
 
 	/*switch case token type */
     TreeNode* t = newStmtNode(DeclareK);
-    bool is_pointer = (tryNextToken() == TIMES);
-    bool func_dec = FALSE;
     
     switch(token)
     {
       // define a variable; eg: int value;
       case INT:
             match(INT);
-			t->type = Integer;
+			t->type = createTypeFromBasic(Integer);
             break;
 	  case FLOAT:
           match(FLOAT);
-		  t->type = Float;
+		  t->type = createTypeFromBasic(Float);
 		  break;
 	  case VOID:
           match(VOID);
-          t->type = Void;
+		  t->type = createTypeFromBasic(Void);
 		  break;
       default:
-            t->type = ErrorType;
-            syntaxError("undefined type");
-            break;
+		  match(token);
+		  t->type = createTypeFromBasic(ErrorType);
+          syntaxError("undefined type");
+          break;
     }
-    
 
+
+    
+	bool is_pointer = (token == TIMES);
     if (is_pointer)
     {
-        t->typeinfo.plevel = getPointerLevel();
-    
-    
+		t->type.pointKind = t->type.typekind;
+		t->type.typekind = Pointer;
+		t->type.plevel = 0;
+		while (token == TIMES) { t->type.plevel += 1; match(TIMES);}
     }
     
     t->attr.name = copyString(tokenString);
     match(ID);
-    func_dec = (token == LPAREN);
-    
 
+	// deal with array
+	if (token == LSQUARE)
+	{
+		TypeInfo ele_type = t->type;
+		t->type.typekind = Array;
+		t->type.array_type	= parseArrayType(ele_type);
+	}
 
+    bool func_dec = (token == LPAREN);
 	if (func_dec)
 	{
 		t->return_type = t->type;//define the return type;
-		t->type = Func;
+		t->type = createTypeFromBasic(Func);
 		t->child[0] = paramK_stmt();
 		match(LBRACKET);
 		t->child[1] = stmt_sequence();
@@ -452,20 +466,39 @@ TreeNode* declare_stmt(void)
 
 TreeNode * exp(void)
 {
+	TreeNode * t = compare_exp();
+	while (token == ASSIGN)
+	{
+		TreeNode * p = newExpNode(AssignK);
+		if (p != NULL) 
+		{
+			p->child[0] = t;
+			t = p;
+			matchWithoutSkipLineEnd(token);
+			t->child[1] = compare_exp();
+		}
+	}
+	return t;
+}
+
+TreeNode * compare_exp(void)
+{
 	TreeNode * t = simple_exp();
-	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE)) {
+	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE))
+	{
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) {
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
 		}
-		match(token);
+		matchWithoutSkipLineEnd(token);
 		if (t != NULL)
 			t->child[1] = simple_exp();
 	}
 
 	return t;
+
 }
 
 TreeNode * simple_exp(void)
@@ -478,7 +511,7 @@ TreeNode * simple_exp(void)
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
-			match(token);
+			matchWithoutSkipLineEnd(token);
 			t->child[1] = term();//
 		}
 	}
@@ -488,14 +521,15 @@ TreeNode * simple_exp(void)
 TreeNode * term(void)
 {
 	TreeNode * t = factor();
-	while ((token == TIMES) || (token == OVER))
+	while ((token == TIMES) || (token == OVER) || (token == BITAND))
 	{
 		TreeNode * p = newExpNode(OpK);
-		if (p != NULL) {
+		if (p != NULL) 
+		{
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
-			match(token);
+			matchWithoutSkipLineEnd(token);
 			p->child[1] = factor();
 		}
 	}
@@ -510,9 +544,10 @@ TreeNode * factor(void)
 	{
 	case MINUS:
         last_token = getLastTokenWithoutSkipLineEnd();
-		match(MINUS);
+		matchWithoutSkipLineEnd(MINUS);
 		// the last token are part of exp; exp -
 		// so the minus is just substract!
+		// todo remove this to help function
 		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
 		{
 			t = exp();
@@ -520,27 +555,60 @@ TreeNode * factor(void)
 		else
 		{
 			t = newExpNode(SingleOpK);
-			t->child[0] = exp();
-			t->type = t->child[0]->type;			
+			t->child[0] = factor();
 			t->attr.op = NEG;
+		}
+		break;
+	case TIMES:
+		last_token = getLastTokenWithoutSkipLineEnd();
+		matchWithoutSkipLineEnd(TIMES);
+		// the last token are part of exp; exp -
+		// so the minus is just substract!
+		// todo remove this to help function
+		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
+		{
+			t = exp();
+		}
+		else
+		{
+			t = newExpNode(SingleOpK);
+			t->child[0] = factor();
+			t->attr.op = UNREF;
+		}
+		break;
+	case BITAND:
+		last_token = getLastTokenWithoutSkipLineEnd();
+		matchWithoutSkipLineEnd(BITAND);
+		// the last token are part of exp; exp -
+		// so the minus is just substract!
+		// todo remove this to help function
+		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
+		{
+			t = exp();
+		}
+		else
+		{
+			t = newExpNode(SingleOpK);
+			t->child[0] = factor();
+			t->attr.op = ADRESS;
 		}
 		break;
 	case NUM:
 		t = newExpNode(ConstK);
 		t->attr.val.integer = atoi(tokenString);
-		t->type = Integer;
-		match(NUM);
+		t->type = createTypeFromBasic(Integer);
+		matchWithoutSkipLineEnd(NUM);
 		break;
     case FlOATNUM:
             t = newExpNode(ConstK);
 			t->attr.val.flt = atof(tokenString);
-			t->type = Float;
-			match(FlOATNUM);
+			t->type = createTypeFromBasic(Float);
+			matchWithoutSkipLineEnd(FlOATNUM);
             break;
 	case ID:
 		// todo, support assignment exp
 		// todo, remove code to other
-		match(ID);
+		matchWithoutSkipLineEnd(ID);
 		if (token == LPAREN)
 		{
 			unGetToken();
@@ -551,14 +619,14 @@ TreeNode * factor(void)
 			unGetToken();
 			t = newExpNode(IdK);
 			t->attr.name = copyString(tokenString);
-			match(ID);
+			matchWithoutSkipLineEnd(ID);
 		}
 		break;
 	case LPAREN:
 		// todo support comma expression, backup the pos, and restore!!!
-		match(LPAREN);
+		matchWithoutSkipLineEnd(LPAREN);
 		t = exp();
-		match(RPAREN);
+		matchWithoutSkipLineEnd(RPAREN);
 		break;
 	default:
 		syntaxError("unexpected token -> ");
@@ -580,4 +648,35 @@ TreeNode * parse(void)
 	if (token != ENDFILE)
 		syntaxError("Code ends before file\n");
 	return t;
+}
+
+ArrayType parseArrayType(TypeInfo element_type)
+{
+	ArrayType atype;
+	atype.ele_type = (TypeInfo *)malloc(sizeof(TypeInfo));
+	*atype.ele_type = element_type;
+
+	// todo remove bad smell
+	int dimension = 0;
+	DimensionList * origin_dimension = (DimensionList *) malloc(sizeof(DimensionList));
+	DimensionList * dim_node = origin_dimension;
+	match(LSQUARE);
+	dim_node->dim = atoi(tokenString);
+	match(NUM);
+	match(RSQUARE);
+	// deal with remain dimension
+	while (token == LSQUARE)
+	{	
+		match(LSQUARE);
+		dim_node->next_dim = (DimensionList *)malloc(sizeof(DimensionList));
+		dim_node = dim_node->next_dim;
+		dim_node->dim = atoi(tokenString);
+		assert(dim_node->dim > 0);
+		match(NUM);
+		match(RSQUARE);
+	}
+
+	dim_node->next_dim = NULL;
+	atype.dimension = origin_dimension;
+	return atype;
 }

@@ -34,9 +34,9 @@ typedef enum
 	/* reserved words */
 	IF, ELSE,ELSIF, END, WHILE,BREAK,RETURN,UNTIL, READ, WRITE,LINEEND,
 	/* multicharacter tokens */
-	ID,NEG, NUM, FlOATNUM,
+	ID,NEG,ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, LPAREN, RPAREN, SEMI, COMMA,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
 	LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,
 	/*variable type*/
 	INT,FLOAT,VOID,FUN
@@ -51,13 +51,36 @@ extern int lineno; /* source line number for listing */
 /**************************************************/
 
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, AssignK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
-typedef enum { OpK,SingleOpK, ConstK, IdK,FuncallK } ExpKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,ParamK,BreakK,ReturnK } StmtKind;
+typedef enum { AssignK, OpK, SingleOpK, ConstK, IdK, FuncallK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
 
 #define MAXCHILDREN 3
+struct _dimension;
+typedef struct _dimension
+{
+	int dim; // used for array
+	struct _dimension * next_dim;
+} DimensionList;
+
+
+typedef struct _ArrayType
+{
+	struct _TypeInfo* ele_type;
+	DimensionList *dimension;
+} ArrayType;
+
+
+typedef struct _TypeInfo
+{
+	Type typekind;
+	Type pointKind; // Integer,Float,Boolean,Struct
+	ArrayType array_type;
+	int plevel;
+	char *sname;
+} TypeInfo;
 
 typedef struct treeNode
 {
@@ -76,21 +99,10 @@ typedef struct treeNode
 		} val;// constk should contain one of three values
 	} attr;
     
-    int plevel;// pointer level
-    Type type; // if type is not the elementary type;
-	Type return_type; // used only for the return type of function || pointer_type
-	Type converted_type; // used for exp
-    
-    struct PointerType
-    {
-        Type typekind;
-        int plevel;
-        char * sname;
-    } pointer_to;
+    TypeInfo type; // if type is not the elementary type;
+	TypeInfo return_type; // used only for the return type of function || pointer_type
+	TypeInfo converted_type; // used for exp
 } TreeNode;
-
-
-
 
 
 /**************************************************/

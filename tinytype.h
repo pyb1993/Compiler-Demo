@@ -11,40 +11,37 @@ typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and 
 	the parmaNode must be declared before FuncType
 */
 typedef struct _ParamNode{
-	Type type;
+	TypeInfo type;
 	struct _ParamNode * next_param;
 }  ParamNode;
 
 
 typedef struct _FuncType{
-	Type return_type;
+	TypeInfo return_type;
 	ParamNode * params;
+	char * name;
 } FuncType;
 
 
-typedef struct _VarType
+typedef struct _Struct
 {
     //struct BasicType * basic_type;//  -> LFloat -> LBoolean and so on;
-    union
-    {
-         Type btype;	   // case basic type : such as the LInteger,LBoolean,LFloat
-         FuncType ftype;   //  case function type: function can also be a variable. which is not implemented.
-         struct _VarType * stype; //   case struct type :  
-    } typeinfo;
-    
-    struct _VarType * next; // only meaningful in the case strcut type
+	TypeInfo typeinfo;
+    struct _StructType * next; // only meaningful in the case strcut type
 	char * name; // eg: A.a,B.teacher.grades 
-    TypeKind typekind; //the upper type
-} VarType;
+} StructType;
 
 
-struct _VarType * type_from_basic(Type type);
 int integer_from_node(TreeNode * t);
 float float_from_node(TreeNode * t);
-bool can_convert(Type a, Type b);
-VarType * new_type(TreeNode * tree);
+bool can_convert(TypeInfo a, TypeInfo b);
 FuncType new_func_type(TreeNode * tree);
-void	free_type(VarType *);
 ParamNode * new_param_node(TreeNode * tree);
-
+FuncType getFunctionType(char * name);
+Type getBasicType(TypeInfo typeinfo);
+TypeInfo createTypeFromBasic(Type basic);
+void addFunctionType(char * key, FuncType ftype);
+void deleteFuncType(char * key);
+void initTypeCollection();
+void lookupTypefromName(char * name);
 #endif /* tinytype_h */

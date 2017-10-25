@@ -17,7 +17,7 @@ typedef struct BucketListRec
 	int memloc; /* memory location for variable */
 	int mem_size;/* memory size for this variable */
 	int scope_depth;// the scope depth
-	VarType* var_type;
+	TypeInfo  var_type;
 	struct BucketListRec * next;
 } *BucketList;
 
@@ -25,13 +25,11 @@ typedef struct BucketListRec
 static BucketList hashTable[SIZE];
 
 static int hash(char * key);
-static BucketList construct_node(char * name, int lineno, int loc, int size,int depth, VarType * type);
+static BucketList construct_node(char * name, int lineno, int loc, int size,int depth,TypeInfo type);
 static BucketList insert_into_list( BucketList list,BucketList inserted);
 static BucketList del_from_list(BucketList list, char * name);
 static void free_node(BucketList node);
 static BucketList st_get_node(char * name);
-
-
 
 /*insert the node into the hashtable */
 /* the hash function */
@@ -60,7 +58,7 @@ void st_delete(char * name)
 * first time, otherwise ignored
 */
 
-void st_insert( char * name, int lineno, int loc,int size,int depth,VarType * type)
+void st_insert( char * name, int lineno, int loc,int size,int depth,TypeInfo type)
 {
     int h = hash(name);
 	BucketList inserted = construct_node(name, lineno, loc, size,depth, type);
@@ -87,7 +85,7 @@ BucketList insert_into_list(BucketList list,BucketList inserted)
 	return list;
 }
 
-BucketList construct_node(char * name, int lineno, int loc, int size,int depth, VarType * type)
+BucketList construct_node(char * name, int lineno, int loc, int size,int depth, TypeInfo type)
 {
 	BucketList list = (BucketList)malloc(sizeof(struct BucketListRec));
 	list->name = name; // note: name cannot be free !!!
@@ -124,7 +122,6 @@ BucketList del_from_list(BucketList list, char * name){
 void free_node(BucketList l)
 {
 	assert(l != NULL);
-	free_type(l->var_type);
 	free(l);
 }
 
@@ -141,14 +138,12 @@ int st_lookup ( char * name )
 	used for get basic type
 	return the upper type of variable
 */
-Type st_lookup_type(char * name)
+
+TypeInfo st_lookup_type(char * name)
 {
 	BucketList l = st_get_node(name);
 	assert(l != NULL);
-	if (l->var_type->typekind == BTYPE) return l->var_type->typeinfo.btype;
-	if (l->var_type->typekind == FUNTYPE) return l->var_type->typeinfo.ftype.return_type;
-    assert(!("unimplemented type to return"));
-    return  ErrorType;
+	return l->var_type;
 }
 
 int st_lookup_scope(char * name)
@@ -156,16 +151,6 @@ int st_lookup_scope(char * name)
 	BucketList l = st_get_node(name);
 	return l->scope_depth;
 }
-
-/*get the type info of var named \key*/
-
-VarType* st_get_var_type_info(char * key)
-{
-	BucketList l = st_get_node(key);
-	assert(l != NULL);
-	return l->var_type;
-}
-
 
 
 bool is_duplicate_var(char * name, int depth)
@@ -184,8 +169,7 @@ static BucketList st_get_node(char * name)
 {
 	int h = hash(name);
 	BucketList l = hashTable[h];
-	while ((l != NULL) && (strcmp(name, l->name) != 0))
-		l = l->next;
+	while ((l != NULL) && (strcmp(name, l->name) != 0)) l = l->next;
 	return l;
 }
 
