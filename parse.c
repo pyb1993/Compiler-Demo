@@ -51,6 +51,7 @@ static void		  unGetToken();
 static void matchWithoutSkipLineEnd(TokenType tok);
 static void skipLineEnd();
 static ArrayType parseArrayType(TypeInfo eleType);
+static TreeNode * parseIndexNode();
 
 
 static void syntaxError(char * message)
@@ -429,7 +430,6 @@ TreeNode* declare_stmt(void)
           break;
     }
 
-
     
 	bool is_pointer = (token == TIMES);
     if (is_pointer)
@@ -478,7 +478,6 @@ TreeNode * exp(void)
 			t->child[1] = compare_exp();
 		}
 	}
-	return t;
 }
 
 TreeNode * compare_exp(void)
@@ -498,7 +497,6 @@ TreeNode * compare_exp(void)
 	}
 
 	return t;
-
 }
 
 TreeNode * simple_exp(void)
@@ -507,13 +505,23 @@ TreeNode * simple_exp(void)
 	while ((token == PLUS) || (token == MINUS))
 	{
 		TreeNode * p = newExpNode(OpK);
-		if (p != NULL) {
+		if (p != NULL) 
+		{
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
 			matchWithoutSkipLineEnd(token);
 			t->child[1] = term();//
 		}
+	}
+
+	// eg (p+5)[i] || (f(123)[j][k])
+	if (token == LSQUARE)
+	{
+		TreeNode * exp = t;
+		t = newExpNode(IndexK);
+		t->child[0] = exp;
+		t->child[1] = parseIndexNode();
 	}
 	return t;
 }
@@ -540,6 +548,7 @@ TreeNode * factor(void)
 {
 	TreeNode * t = NULL;
     TokenType last_token;
+	TokenType next_token;
 	switch (token) 
 	{
 	case MINUS:
@@ -608,15 +617,11 @@ TreeNode * factor(void)
 	case ID:
 		// todo, support assignment exp
 		// todo, remove code to other
-		matchWithoutSkipLineEnd(ID);
-		if (token == LPAREN)
-		{
-			unGetToken();
+		next_token = tryNextToken();
+		if (next_token == LPAREN) {
 			t = funcall_exp();
 		}
-		else
-		{
-			unGetToken();
+		else {
 			t = newExpNode(IdK);
 			t->attr.name = copyString(tokenString);
 			matchWithoutSkipLineEnd(ID);
@@ -680,3 +685,27 @@ ArrayType parseArrayType(TypeInfo element_type)
 	atype.dimension = origin_dimension;
 	return atype;
 }
+
+TreeNode * parseIndexNode()
+{
+	TreeNode * index_list = NULL;
+	TreeNode * head = NULL;
+	while (token == LSQUARE)
+	{
+		matchWithoutSkipLineEnd(LSQUARE);
+		if (index_list == NULL) { 
+			head = exp();
+			index_list = head;
+		}
+		else
+		{
+			index_list->sibling = exp();
+			index_list = index_list->sibling;		
+		}
+		matchWithoutSkipLineEnd(RSQUARE);
+	}
+
+	return head;
+}
+
+

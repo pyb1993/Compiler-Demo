@@ -34,7 +34,6 @@ int main()
 	source = fopen(filename, "r");
 	listing = stdout;
 
-
 	if (source == NULL)
 	{
 		printf("open error\n");
@@ -42,9 +41,8 @@ int main()
 	}
 
 	 TreeNode *t = parse();
-	 printf("%d", var_size_of(t));
-	// printTree(t);
-	#if 0
+	 printTree(t);
+	#if 1
 		if (!Error)
 		{
 			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");

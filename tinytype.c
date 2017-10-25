@@ -122,6 +122,9 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		assert(0);
 		return false;
 		break;
+	case Array:
+		assert(!"array to pointer is not implemented now");
+		return false;
 	default:
 		assert(!"unknown type");
 		return false;

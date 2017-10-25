@@ -137,7 +137,6 @@ static void typeError(TreeNode * t, char * message)
 				defineError(t,"undefined variable");			
 			break;
 	 }
-
 }
 
 /*notice one thing: delete param list after function body,not imediately!*/
@@ -151,7 +150,6 @@ void deleteVar(TreeNode * t,int scope_depth)
 		st_delete(t->attr.name);
 	}
 }
-
 
 /* Function buildSymtab constructs the symbol
  * table by preorder traversal of the syntax tree
@@ -170,6 +168,7 @@ int var_size_of_type(TypeInfo vtype)
 	if (type == Integer) return 1;
 	if (type == Float) return 1;
 	if (type == Pointer) return 1;
+	if (type == Func) return 1;
 	if (type == Array)
 	{
 		int ele_num = 1;
@@ -190,7 +189,6 @@ int var_size_of(TreeNode* tree)
 {
 	return var_size_of_type(tree->type);
 }
-
 
 
 void checkTree(TreeNode * t,char * current_function, int scope)
@@ -258,6 +256,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[0], current_function, scope);
 			checkNodeType(t->child[1], current_function, scope);
 			assert(t->child[0]->nodekind == ExpK && t->child[1]->nodekind == ExpK);
+			assert(t->child[0]->type.typekind != Array);
 			TypeInfo exp_type = t->child[1]->converted_type;
 			if (t->child[0]->kind.exp == IdK)
 			{
@@ -266,7 +265,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				t->type = id_type;
 				if (!can_convert(exp_type, id_type))
 				{
-					assert(!"assgin is not allowed for this two types");
+					assert(!"conversion is not allowed for this two types");
 				}
 			}
 			else
@@ -278,6 +277,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			t->converted_type = t->type;
 			break;
+
 		case OpK:
 			checkNodeType(t->child[0], current_function, scope);
 			checkNodeType(t->child[1], current_function, scope);
@@ -288,7 +288,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				   !can_convert(t->child[0]->type, createTypeFromBasic(Pointer)) ||
 				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer)) ||
 				   !can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
-			       )
+			   )
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
 				t->type = createTypeFromBasic(Boolean);
@@ -307,7 +307,28 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
+		case IndexK:
+			checkNodeType(t->child[0], current_function, scope);
 
+			TreeNode * exp = t->child[0];
+			TreeNode * index_list = t->child[1];
+			DimensionList * dimension = st_lookup_type(exp->attr.name).array_type.dimension;
+			assert(exp->kind.exp == IdK);// only support a[12345]
+
+			// check the dimension 
+			// not supported the (a[5] + 3) pointer operation
+			
+			do
+			{
+				checkNodeType(index_list, current_function, scope);
+				assert(can_convert(index_list->converted_type, createTypeFromBasic(Integer)));
+				index_list = index_list->sibling;
+				dimension = dimension->next_dim;
+			} while (index_list != NULL && dimension != NULL);
+
+			assert(index_list == NULL && dimension == NULL);
+			t->converted_type = t->type = *exp->type.array_type.ele_type;
+			break;
 		case FuncallK:
 			assert(t->attr.name != 0);
 			FuncType ftype = getFunctionType(t->attr.name);

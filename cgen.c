@@ -557,7 +557,6 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	emitRM("POP", exp_reg, 0, mp, "pop exp ");
 	emitRO("MOV", par_reg, exp_reg, 0, "");
 	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
-
 }
 /*pop parameters*/
 void popParam(ParamNode * p)
