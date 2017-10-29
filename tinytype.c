@@ -93,6 +93,7 @@ float float_from_node(TreeNode * t)
 	}
 }
 
+// can b be converted to a
 bool can_convert(TypeInfo a_type, TypeInfo b_type)
 {
 	// todo : add a map to represent the function

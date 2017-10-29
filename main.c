@@ -8,8 +8,8 @@
 #include "tm.h"
 
 
-struct test{
-
+struct test
+{
 	int a;
 	int b;
 };
@@ -51,7 +51,7 @@ int main()
 		}
 	#endif
 
-#if 0
+#if 1
 	/**compute the length of filename before .tm **/
 	int len = (int)strcspn(filename, ".");
 	char * codeFile = (char *)calloc(len+4,sizeof(char));
@@ -61,14 +61,14 @@ int main()
 	codeGen(t,codeFile);
 	fclose(code);
 #endif
-#if 0
+#if 1
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
 
-#if 0
+#if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{
@@ -78,5 +78,6 @@ int main()
 	fclose(code);
 
 #endif
+
 	return 0;
 }

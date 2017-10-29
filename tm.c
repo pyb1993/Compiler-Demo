@@ -366,9 +366,9 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-	if (pc_pos == 34)
+	if (pc_pos == 19)
 	{
-		int a = 100;;
+		int a = 100;
 	}
 
 	if ((pc_pos < 0) || (pc_pos > IADDR_SIZE))
@@ -469,7 +469,8 @@ STEPRESULT stepTM(void)
 		reg[s]--;
 		break;
 	case opPOP:
-		reg[r] = dMem[++reg[s]];
+		reg[r] = dMem[m+1];
+		reg[s]++;
 		break;
 		/*************** RA instructions ********************/
 	case opLDA:    reg[r] = m; break;

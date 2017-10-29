@@ -1,10 +1,3 @@
-//
-//  cgen.h
-//  compiler
-//
-//  Created by pyb on 2017/9/25.
-//  Copyright © 2017年 pyb. All rights reserved.
-//
 
 #ifndef cgen_h
 #define cgen_h

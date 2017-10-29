@@ -1,11 +1,3 @@
-//
-//  code.h
-//  compiler
-//
-//  Created by pyb on 2017/9/23.
-//  Copyright © 2017年 pyb. All rights reserved.
-//
-
 #ifndef code_h
 #define code_h
 /****************************************************/

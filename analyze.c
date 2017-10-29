@@ -25,7 +25,6 @@ void insertNode(TreeNode * t, int scope);
 void insertTree(TreeNode * t, int scope);
 void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 
-
 static void defineError(TreeNode * t ,char * msg)
 {
     fprintf(listing,"Define error at line %d: %s\n",t->lineno,msg);
@@ -59,7 +58,6 @@ static void typeError(TreeNode * t, char * message)
 		int var_size = var_size_of(t);
 		st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type);
 		offset += var_size;
-		printf("stack offset %s %d \n", t->attr.name, offset);
 		t = t->sibling;
 	}
 }
@@ -171,12 +169,10 @@ int var_size_of_type(TypeInfo vtype)
 	if (type == Func) return 1;
 	if (type == Array)
 	{
-		int ele_num = 1;
-		int ele_size = var_size_of_type(*(vtype.array_type.ele_type));
-		DimensionList * dimension = vtype.array_type.dimension;
-		while (dimension != NULL) { ele_num *= dimension->dim; dimension = dimension->next_dim; }
-		return ele_num * ele_size;
+		ArrayType atype = vtype.array_type;
+		return atype.ele_num * var_size_of_type(*atype.ele_type);
 	}
+	
 	if (type == Struct)
 	{
 		assert(!"undefined struct size");
@@ -270,10 +266,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			else
 			{
-				// *..p = xx
+				// *..p = xx || a[exp] = xxx
 				TreeNode * unref_child = t->child[0];
 				assert(unref_child->child[0] != NULL);
-				assert(can_convert(unref_child->type, exp_type));
+				assert(can_convert(exp_type,unref_child->type));
+				if (unref_child->kind.exp == IndexK)
+				{
+					assert(!is_basic_type(unref_child->type, Array)|| 
+						   !"Const array cannot be left operand");
+				}
 			}
 			t->converted_type = t->type;
 			break;
@@ -284,11 +285,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			// todo optimize bad smell
 			TokenType op = t->attr.op;
 			
-			if (   !can_convert(t->child[0]->type, createTypeFromBasic(Integer)) ||
-				   !can_convert(t->child[0]->type, createTypeFromBasic(Pointer)) ||
-				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer)) ||
+			if (   (!can_convert(t->child[0]->type, createTypeFromBasic(Integer)) &&
+				   !can_convert(t->child[0]->type, createTypeFromBasic(Pointer))
+				   ) 
+				   || 
+				   (
+				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer)) &&
 				   !can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
-			   )
+				   )
+				)
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
 				t->type = createTypeFromBasic(Boolean);
@@ -308,26 +313,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->converted_type = t->type;
 			break;
 		case IndexK:
-			checkNodeType(t->child[0], current_function, scope);
-
-			TreeNode * exp = t->child[0];
-			TreeNode * index_list = t->child[1];
-			DimensionList * dimension = st_lookup_type(exp->attr.name).array_type.dimension;
-			assert(exp->kind.exp == IdK);// only support a[12345]
-
-			// check the dimension 
-			// not supported the (a[5] + 3) pointer operation
+			checkNodeType(t->child[0],current_function,scope);
+			checkNodeType(t->child[1], current_function, scope);
+			assert(can_convert(t->child[1]->converted_type, createTypeFromBasic(Integer)));
+			assert(is_basic_type(t->child[0]->converted_type, Array) || 
+				   !"left expression is not array or pointer");
 			
-			do
-			{
-				checkNodeType(index_list, current_function, scope);
-				assert(can_convert(index_list->converted_type, createTypeFromBasic(Integer)));
-				index_list = index_list->sibling;
-				dimension = dimension->next_dim;
-			} while (index_list != NULL && dimension != NULL);
-
-			assert(index_list == NULL && dimension == NULL);
-			t->converted_type = t->type = *exp->type.array_type.ele_type;
+			// change the array to pointer
+			t->type = *(t->child[0]->type.array_type.ele_type);			
+			t->converted_type = t->type;
 			break;
 		case FuncallK:
 			assert(t->attr.name != 0);
@@ -346,7 +340,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 				checkNodeType(param_node, current_function, scope + 1);
 
-				if (!can_convert(param_type_node->type, param_node->converted_type))
+				if (!can_convert(param_node->converted_type, param_type_node->type))
 				{
 					assert(param_node, "parameter cannot match the function definition");
 					break;
@@ -391,7 +385,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;		
 		case RepeatK:
 			checkNodeType(t->child[0],current_function, scope + 1);
-			checkNodeType(t->child[1],current_function, scope + 1);
+			checkTree(t->child[1],current_function, scope + 1);
 			if (!is_basic_type(t->child[0]->type,Boolean))
 			{
 				typeError(t->child[0], "repeat test is not Boolean");

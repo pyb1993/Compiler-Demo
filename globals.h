@@ -65,11 +65,10 @@ typedef struct _dimension
 	struct _dimension * next_dim;
 } DimensionList;
 
-
 typedef struct _ArrayType
 {
 	struct _TypeInfo* ele_type;
-	DimensionList *dimension;
+	int ele_num;
 } ArrayType;
 
 

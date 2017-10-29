@@ -170,7 +170,6 @@ static void genStmt( TreeNode * tree,int scope)
 			{
 				insertNode(tree, scope);
 				int varsize = var_size_of(tree);
-				assert((varsize == 1 || !"not implemented"));
 				emitRM("PUSH",0,0,sp,"stack expand");// todo support expand stack
 			}
 			break;
@@ -188,6 +187,7 @@ static void genExp( TreeNode * tree,int scope)
 	TypeInfo type = tree->converted_type;
 	int integer;
 	float float_num;
+	int vsize = 0;
 	int origin_reg, target_reg;
 	switch (tree->kind.exp) 
 	{       
@@ -217,12 +217,11 @@ static void genExp( TreeNode * tree,int scope)
 			// todo support struct
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-			emitRM("LD", get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]
-
+			char * cmd = tree->type.typekind == Array ? "LDA" : "LD";
+			emitRM(cmd, get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
 			emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
 			emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
-
-			if (TraceCode)  emitComment("<- Id") ;
+			if (TraceCode)  emitComment("<- Id");
             break; /* IdK */
 		case FuncallK:
 			//todo :tail recursion optimize
@@ -281,7 +280,7 @@ static void genExp( TreeNode * tree,int scope)
 					assert(p1 != NULL);
 					cGen(p1, scope);
 					emitRM("POP",ac,0,mp,"pop the adress");
-					int vsize = var_size_of(p1);
+					vsize = var_size_of(p1);
 					int var_stack_bottom = get_stack_bottom(scope);
 					for (loc = 0; loc < vsize;++loc)
 					{
@@ -310,9 +309,8 @@ static void genExp( TreeNode * tree,int scope)
 			// todo optimize the code :bad smell
 			TypeInfo exp_type = tree->child[1]->converted_type;
 
-
 			int origin_reg = get_reg(getBasicType(exp_type));
-			int vsize = 1;
+			vsize = 1;
 			if (tree->child[0]->kind.exp == IdK)
 			{
 				char * name = tree->child[0]->attr.name;
@@ -331,10 +329,10 @@ static void genExp( TreeNode * tree,int scope)
 					emitRM("ST", target_reg, loc++, var_stack_bottom, "copy bytes ");
 				}
 			}
-			else
+			else if (tree->child[0]->kind.exp == SingleOpK && tree->child[0]->attr.op == UNREF)
 			{
 				/*  *..p = ffff */
-				TreeNode * unref = tree->child[0];
+				TreeNode *unref = tree->child[0];
 				type = unref->type;
 				int target_reg = get_reg(getBasicType(type));
 				vsize = var_size_of(unref);
@@ -347,8 +345,49 @@ static void genExp( TreeNode * tree,int scope)
 					emitRM("ST", target_reg, loc, ac1, "copy bytes ");
 				}
 			}
+			else if (tree->child[0]->kind.exp == IndexK)
+			{
+				// analyze.c ensure the left operand is not pointed to array
+				TreeNode *unref = tree->child[0];
+				vsize = var_size_of(unref);
+				cGen(unref->child[0], scope);
+				cGen(unref->child[1], scope);
+				emitRM("POP", ac, 0, mp, "load index value to ac");
+				emitRO("LDC", ac1, vsize, 0, "load array size");
+				emitRO("MUL", ac, ac1, ac, "compute the offset");
+				emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
+				emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
+				
+				//
+				emitRM("POP", ac1, 0, mp, "load exp value");
+				emitRM("ST", ac1, 0, ac,"store value");
+			}
 			if (TraceCode)  emitComment("<- assign");
 			break; /* assign_k */
+		case IndexK:
+			if (TraceCode) emitComment("->index k");
+			cGen(tree->child[0], scope);
+			cGen(tree->child[1], scope);
+			vsize = var_size_of(tree);
+			// todo skip the adress
+			emitRM("POP", ac, 0, mp, "load index value to ac");
+			emitRO("LDC", ac1, vsize, 0, "load array size");
+			emitRO("MUL", ac, ac1, ac, "compute the offset");
+			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
+			emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
+			if (is_basic_type(tree->converted_type, Array))
+			{
+				emitRM("PUSH", ac, 0,mp, "");
+			}
+			else
+			{
+				// todo support struct array
+				// todo support the reg conversion
+				emitRM("LD", ac1, 0, ac, "load value");
+				emitRM("PUSH", ac1, 0, mp, "");
+
+			}
+			break;
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
@@ -465,7 +504,7 @@ static void cGen( TreeNode * tree,int scope)
 void codeGen(TreeNode * syntaxTree, char * codefile)
 { 
 	char * s = malloc(strlen(codefile)+7);
-    strcpy(s,"File: ");
+    copyString(s,"File: ");
     strcat(s,codefile);
     emitComment(s);
     /* generate st\andard prelude */
@@ -515,7 +554,7 @@ int get_reg(Type type)
 	{
 		return fac;
 	}
-	else if ((type == Integer) || (type == Boolean) || (type == Pointer))
+	else if ((type == Integer) || (type == Boolean) || (type == Pointer) || (type == Array))
 	{
 		return ac;
 	}
