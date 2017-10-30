@@ -124,7 +124,8 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		return false;
 		break;
 	case Array:
-		assert(!"array to pointer is not implemented now");
+		if (b == Array) return true;// the dimension is not cared
+		assert(!"other conversion for array is not implemented");
 		return false;
 	default:
 		assert(!"unknown type");

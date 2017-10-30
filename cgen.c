@@ -217,7 +217,7 @@ static void genExp( TreeNode * tree,int scope)
 			// todo support struct
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-			char * cmd = tree->type.typekind == Array ? "LDA" : "LD";
+			char * cmd = tree->type.typekind == Array ? "LDA" : "LD";// array will be load from adress
 			emitRM(cmd, get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
 			emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
 			emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
@@ -593,6 +593,7 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	int exp_reg = get_reg(getBasicType(e->converted_type));
 	int par_reg = get_reg(getBasicType(p->type));
 	// todo support remove from memory to memory
+	// todo support struct pass
 	emitRM("POP", exp_reg, 0, mp, "pop exp ");
 	emitRO("MOV", par_reg, exp_reg, 0, "");
 	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
