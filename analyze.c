@@ -126,6 +126,13 @@ static void typeError(TreeNode * t, char * message)
 					st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
 				}
                 break;
+			case StructDefineK:
+
+				
+
+
+
+				break;
             default:
                 break;
         }
@@ -159,28 +166,6 @@ void buildSymtab(TreeNode * syntaxTree)
 	checkTree(syntaxTree, NULL, 0);
 }
 
-// todo optimize : convert tree to type
-int var_size_of_type(TypeInfo vtype)
-{
-	Type type = getBasicType(vtype);
-	if (type == Integer) return 1;
-	if (type == Float) return 1;
-	if (type == Pointer) return 1;
-	if (type == Func) return 1;
-	if (type == Array)
-	{
-		ArrayType atype = vtype.array_type;
-		return atype.ele_num * var_size_of_type(*atype.ele_type);
-	}
-	
-	if (type == Struct)
-	{
-		assert(!"undefined struct size");
-		return 0;
-	}
-	assert(!"undefined type size");
-	return 0;
-}
 int var_size_of(TreeNode* tree)
 {
 	return var_size_of_type(tree->type);

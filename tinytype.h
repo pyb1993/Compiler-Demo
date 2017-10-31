@@ -1,10 +1,9 @@
-
-
 #ifndef tinytype_h
 #define tinytype_h
 
 #include "globals.h"
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
+int var_size_of_type(TypeInfo);
 
 
 /*
@@ -25,6 +24,7 @@ typedef struct _FuncType{
 typedef struct _member
 {
 	TypeInfo typeinfo;
+	int offset;
 	char * member_name;// A.x eg:x is the member_name
 	struct _member *next_member;
 } Member;
@@ -81,13 +81,16 @@ how to access Stu.x
 int integer_from_node(TreeNode * t);
 float float_from_node(TreeNode * t);
 bool can_convert(TypeInfo a, TypeInfo b);
+bool is_basic_type(TypeInfo type, Type btype);
+
 FuncType new_func_type(TreeNode * tree);
+StructType new_struct_type(TreeNode * tree);
 ParamNode * new_param_node(TreeNode * tree);
+Member * new_member_list(TreeNode * tree,int offset);
 FuncType getFunctionType(char * name);
 Type getBasicType(TypeInfo typeinfo);
 TypeInfo createTypeFromBasic(Type basic);
 void addFunctionType(char * key, FuncType ftype);
 void deleteFuncType(char * key);
 void initTypeCollection();
-void lookupTypefromName(char * name);
 #endif /* tinytype_h */

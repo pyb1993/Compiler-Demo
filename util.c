@@ -182,6 +182,9 @@ void printTree(TreeNode * tree)
                 case DeclareK:
                     fprintf(listing, "Declare variable (%s)\n",tree->attr.name);
                     break;
+				case StructDefineK:
+					fprintf(listing, "define struct (%s)\n", tree->attr.name);
+					break;
 				case ParamK:
 					fprintf(listing, "Param variable (%s)\n", tree->attr.name);
 					break;

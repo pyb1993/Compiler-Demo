@@ -1,5 +1,9 @@
-
-
+struct test{
+	int a
+	int b
+	struct test c
+	void f(int a,int b){}
+}
 
 void main()
 {

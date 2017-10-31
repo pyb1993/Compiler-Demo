@@ -71,9 +71,11 @@ static struct
 	char* str;
 	TokenType tok;
 } reservedWords[MAXRESERVED]
-= { { "if", IF }, { "else", ELSE }, { "end", END },
-  { "while", WHILE }, { "break", BREAK }, {"return", RETURN}, { "until", UNTIL }, { "read", READ },
-	{ "write", WRITE }, { "int", INT }, { "float", FLOAT }, {"void",VOID},{"def", FUN} 
+= {	  { "if", IF }, { "else", ELSE }, { "end", END },
+	  { "while", WHILE }, { "break", BREAK }, {"return", RETURN},
+	  { "until", UNTIL }, { "read", READ },{ "write", WRITE },
+	  { "int", INT }, { "float", FLOAT }, { "void", VOID },
+	  { "def", FUN }, {"struct",STRUCT}
   };
 
 /* lookup an identifier to see if it is a reserved word */
