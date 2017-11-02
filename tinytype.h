@@ -2,6 +2,7 @@
 #define tinytype_h
 
 #include "globals.h"
+
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 int var_size_of_type(TypeInfo);
 
@@ -93,4 +94,5 @@ TypeInfo createTypeFromBasic(Type basic);
 void addFunctionType(char * key, FuncType ftype);
 void deleteFuncType(char * key);
 void initTypeCollection();
+bool ensure_type_defined(char * key);
 #endif /* tinytype_h */

@@ -85,7 +85,6 @@ static void typeError(TreeNode * t, char * message)
 
  void insertNode( TreeNode * t,int scope)
 {
-	StructType * type = NULL;
 
 	 switch (t->nodekind)
     { 
@@ -327,7 +326,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 				if (!can_convert(param_node->converted_type, param_type_node->type))
 				{
-					assert(param_node, "parameter cannot match the function definition");
+					assert(param_node || !"parameter cannot match the function definition");
 					break;
 				}
 				param_type_node = param_type_node->next_param;

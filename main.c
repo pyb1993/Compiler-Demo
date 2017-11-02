@@ -6,13 +6,7 @@
 #include "cgen.h"
 #include "util.h"
 #include "tm.h"
-
-
-struct test
-{
-	int a;
-	int b;
-};
+#include <unistd.h>
 
 int lineno = 0;
 FILE * source;
@@ -26,16 +20,24 @@ int TraceParse = TRUE;
 int TraceAnalyze = TRUE;
 int TraceCode = TRUE;
 int Error = FALSE;
-int done;
+int done = FALSE;
 
 int main()
+
 {
-	char *filename = "pyb_example.p";
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
+        fprintf(stdout, "Current working dir: %s\n", cwd);
+    else
+        perror("getcwd() error");
+    
+	char *filename = "..//pyb_example.p";
 	source = fopen(filename, "r");
 	listing = stdout;
 
 	if (source == NULL)
 	{
+        perror("1");
 		printf("open error\n");
 		exit(1);
 	}
@@ -61,6 +63,7 @@ int main()
 	codeGen(t,codeFile);
 	fclose(code);
 #endif
+    
 #if 0
 	/* read the program */
 	code = fopen(codeFile, "r");

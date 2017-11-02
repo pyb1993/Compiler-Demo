@@ -2,6 +2,9 @@
 #include "util.h"
 #include "scan.h"
 
+
+
+char tokenString[MAXTOKENLEN + 5];
 /* states in scanner DFA */
 typedef enum
 {

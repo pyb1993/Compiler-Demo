@@ -11,6 +11,7 @@
 #include "symtable.h"
 #include "code.h"
 #include "cgen.h"
+#include "util.h"
 #include "tinytype.h"
 #include "assert.h"
 #include "analyze.h"
@@ -169,7 +170,6 @@ static void genStmt( TreeNode * tree,int scope)
 			else if (scope > 0 && !is_basic_type(tree->type,Func))//local variable
 			{
 				insertNode(tree, scope);
-				int varsize = var_size_of(tree);
 				emitRM("PUSH",0,0,sp,"stack expand");// todo support expand stack
 			}
 			break;
@@ -281,7 +281,6 @@ static void genExp( TreeNode * tree,int scope)
 					cGen(p1, scope);
 					emitRM("POP",ac,0,mp,"pop the adress");
 					vsize = var_size_of(p1);
-					int var_stack_bottom = get_stack_bottom(scope);
 					for (loc = 0; loc < vsize;++loc)
 					{
 						Type ptype = p1->converted_type.pointKind;
@@ -503,8 +502,7 @@ static void cGen( TreeNode * tree,int scope)
  */
 void codeGen(TreeNode * syntaxTree, char * codefile)
 { 
-	char * s = malloc(strlen(codefile)+7);
-    copyString(s,"File: ");
+	char *s = copyString("File: ");
     strcat(s,codefile);
     emitComment(s);
     /* generate st\andard prelude */

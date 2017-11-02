@@ -39,12 +39,11 @@ static TreeNode * term();
 static TreeNode * factor();
 
 //help function
-static TreeNode * getPointerLevel();
 static TreeNode * parseOneVar();
 static TreeNode * parseOneExp();
 static TreeNode * param_pass();// parse function call params
 static TreeNode * paramK_stmt();// parse function def params
-static TreeNode * idStartStmt();
+//static TreeNode * idStartStmt();
 static TreeNode * parseStruct();// parse struct declaration or struct definition
 static TreeNode * parseStructDef();
 static TreeNode * parseIndexNode(TreeNode*);
@@ -318,9 +317,10 @@ TreeNode* parseOneExp()
 }
 
 // if the first token is id, two possibilities
+/*
 TreeNode * idStartStmt()
 {
-	/*
+	
 	match(ID);
 
 	if(token == LPAREN)
@@ -333,8 +333,8 @@ TreeNode * idStartStmt()
 		unGetToken();
 	    return parseExp();
 	}
-	*/
-}
+	
+}*/
 
 
  void unGetToken()
@@ -645,7 +645,6 @@ TreeNode * factor(void)
 	// eg (p+5)[i] || f(123)[j][k]
 	if (token == LSQUARE)
 	{
-		TreeNode * exp = t;
 		t = parseIndexNode(t);
 	}
 	return t;

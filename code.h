@@ -1,15 +1,5 @@
 #ifndef code_h
 #define code_h
-/****************************************************/
-/* File: code.h                                     */
-/* Code emitting utilities for the TINY compiler    */
-/* and interface to the TM machine                  */
-/* Compiler Construction: Principles and Practice   */
-/* Kenneth C. Louden                                */
-/****************************************************/
-
-#ifndef _CODE_H_
-#define _CODE_H_
 
 /* pc = program counter  */
 #define  pc 7
@@ -36,7 +26,7 @@
  * with comment c in the code file
  */
 
-static char labelTable[211][6];
+extern char labelTable[211][6];
 
 
 void emitComment( char * c );
@@ -97,9 +87,5 @@ void emitRM_Abs( char *op, int r, int a, char * c);
 
 // emit LDC code specifically
 void emitLDCF(char * op, int r, float d, int s, char *c);
-
-
-
-#endif
 
 #endif /* code_h */

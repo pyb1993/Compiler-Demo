@@ -80,7 +80,7 @@ Member * new_member_list(TreeNode * tree,int offset)
 		Member * member = (Member *)malloc(sizeof(Member));
 		if (is_basic_type(tree->type, Struct))
 		{
-			ensure_type_defined(tree->type.sname);
+			assert(ensure_type_defined(tree->type.sname));
 		}
 		
 		member->typeinfo = tree->type;
@@ -247,8 +247,8 @@ bool is_basic_type(TypeInfo type, Type btype)
 	return type.typekind == btype;
 }
 
-void ensure_type_defined(char * key){
+bool ensure_type_defined(char * key){
 
-
+    return true;
 
 }

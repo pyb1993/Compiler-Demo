@@ -138,4 +138,6 @@ extern int TraceCode;
 
 /* Error = TRUE prevents further passes if an error occurs */
 extern int Error;
+
+extern int done;
 #endif

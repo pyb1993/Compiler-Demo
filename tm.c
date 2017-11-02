@@ -54,7 +54,6 @@ int num;
 float flt_num;
 char word[WORDSIZE];
 char ch;
-int done;
 
 // macro used to DRY
 #define operand_proc(op,func) do{\

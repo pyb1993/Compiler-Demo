@@ -4,16 +4,15 @@
 /* Compiler Construction: Principles and Practice   */
 /* Kenneth C. Louden                                */
 /****************************************************/
-#include "globals.h"
 #ifndef _SCAN_H_
 #define _SCAN_H_
+#include "globals.h"
 
 /* MAXTOKENLEN is the maximum size of a token */
 #define MAXTOKENLEN 40
 
 /* tokenString array stores the lexeme of each token */
- char tokenString[MAXTOKENLEN + 5];
-
+extern char tokenString[MAXTOKENLEN + 5];
 /* function getToken returns the
 * next token in source file
 */

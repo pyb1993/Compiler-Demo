@@ -3,6 +3,7 @@
 #include "code.h"
 #include "symtable.h"
 /* TM location number for current instruction emission */
+char labelTable[211][6];
 static int emitLoc = 0 ;// the first location is for jump to main function adress
 
 static int highEmitLoc = 0;/*the highest EmitLocation the instruction has been created */
