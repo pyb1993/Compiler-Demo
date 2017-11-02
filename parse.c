@@ -43,7 +43,6 @@ static TreeNode * parseOneVar();
 static TreeNode * parseOneExp();
 static TreeNode * param_pass();// parse function call params
 static TreeNode * paramK_stmt();// parse function def params
-//static TreeNode * idStartStmt();
 static TreeNode * parseStruct();// parse struct declaration or struct definition
 static TreeNode * parseStructDef();
 static TreeNode * parseIndexNode(TreeNode*);
@@ -299,8 +298,6 @@ static TreeNode* paramK_stmt(void)
 	return t;
 }
 
-
-
 TreeNode* parseOneVar()
 {
 	TreeNode * t = declare_stmt();
@@ -315,27 +312,6 @@ TreeNode* parseOneExp()
 	if (token != RPAREN) { matchWithoutSkipLineEnd(COMMA); }
 	return t;
 }
-
-// if the first token is id, two possibilities
-/*
-TreeNode * idStartStmt()
-{
-	
-	match(ID);
-
-	if(token == LPAREN)
-	{
-		unGetToken();
-		return funcall_exp();
-	}
-	else
-	{
-		unGetToken();
-	    return parseExp();
-	}
-	
-}*/
-
 
  void unGetToken()
 {
@@ -434,9 +410,9 @@ TreeNode* declare_stmt(void)
 		break;
 	  case STRUCT:
 		  matchWithoutSkipLineEnd(STRUCT);
+		  t->type = createTypeFromBasic(Struct);
 		  t->type.sname = copyString(tokenString);
 		  matchWithoutSkipLineEnd(ID);// struct name
-		  t->type = createTypeFromBasic(Struct);
 		  break;
       default:
 		  matchWithoutSkipLineEnd(token);
@@ -445,7 +421,6 @@ TreeNode* declare_stmt(void)
           break;
     }
 
-    
 	bool is_pointer = (token == TIMES);
     if (is_pointer)
     {

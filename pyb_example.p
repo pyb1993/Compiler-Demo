@@ -1,8 +1,11 @@
 struct test{
 	int a
 	int b
-	struct test c
-	void f(int a,int b){}
+	int a
+}
+
+struct test1{
+	int d
 }
 
 void main()

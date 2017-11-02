@@ -6,7 +6,6 @@
 #include "cgen.h"
 #include "util.h"
 #include "tm.h"
-#include <unistd.h>
 
 int lineno = 0;
 FILE * source;
@@ -23,15 +22,8 @@ int Error = FALSE;
 int done = FALSE;
 
 int main()
-
-{
-    char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) != NULL)
-        fprintf(stdout, "Current working dir: %s\n", cwd);
-    else
-        perror("getcwd() error");
-    
-	char *filename = "..//pyb_example.p";
+{    
+	char *filename = "pyb_example.p";
 	source = fopen(filename, "r");
 	listing = stdout;
 
@@ -44,7 +36,7 @@ int main()
 
 	 TreeNode *t = parse();
 	 printTree(t);
-	#if 0
+	#if 1
 		if (!Error)
 		{
 			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
@@ -81,6 +73,5 @@ int main()
 	fclose(code);
 
 #endif
-
 	return 0;
 }

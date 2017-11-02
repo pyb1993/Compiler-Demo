@@ -91,13 +91,8 @@ static void typeError(TreeNode * t, char * message)
 	 case StmtK:
             switch (t->kind.stmt)
         {
-            case DeclareK:
-				if (is_duplicate_var(t->attr.name,scope))
-				{
-					defineError(t, "duplicate definition");
-				}
-				
-				if (is_basic_type(t->type,Func))
+            case DeclareK:				
+				if (is_basic_type(t->type,Func) && scope == 0)
                 {
 					/*
 						todo :support local procedure
@@ -108,6 +103,7 @@ static void typeError(TreeNode * t, char * message)
 					insertTree(t->child[1], scope + 1);
 					deleteVarOfField(t->child[0], scope + 1);
 					deleteVarOfField(t->child[1], scope + 1);
+					deleteFuncType(t->attr.name);
 					return;
 				}
 				if (scope == 0) //global var
@@ -126,11 +122,17 @@ static void typeError(TreeNode * t, char * message)
 				}
                 break;
 			case StructDefineK:
-
-				
-
-
-
+				addStructType(t->attr.name, new_struct_type(t));
+				// todo insertStructMember
+				// insert for member in struct, but not insertTree directly for loc and size will be zero
+				TreeNode * child_sibling = t->child[0];
+				while (child_sibling != NULL)
+				{
+					st_insert(child_sibling->attr.name, t->lineno, 0, 0, scope + 1, t->type);
+					child_sibling = child_sibling->sibling;
+				}
+				deleteVarOfField(t->child[0], scope + 1);
+				// todo delete StructType
 				break;
             default:
                 break;
@@ -143,15 +145,23 @@ static void typeError(TreeNode * t, char * message)
 	 }
 }
 
-/*notice one thing: delete param list after function body,not imediately!*/
+/*notice one thing: delete param list after function body, not imediately!*/
 void deleteVar(TreeNode * t,int scope_depth)
 {
 	if (t == NULL){ return; }
-	if (t->nodekind != StmtK ||( t->kind.stmt != DeclareK && t->kind.stmt != ParamK)) return;
-
-	if (scope_depth > 0)
+	if (t->nodekind != StmtK || ( t->kind.stmt != DeclareK && t->kind.stmt != ParamK)) return;
+	assert(scope_depth > 0);
+	if (is_basic_type(t->type,Func))
 	{
-		st_delete(t->attr.name);
+		assert(0);
+	}
+	else if (is_basic_type(t->type, Struct))
+	{
+		assert(0);
+	}
+	else{
+	st_delete(t->attr.name);
+	
 	}
 }
 
@@ -384,13 +394,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 	
 		case DeclareK:
 			stack_offset = -2;
-			if (is_basic_type(t->type,Func))
+			if (is_basic_type(t->type,Func) && scope == 0)
 			{
 				/*
-				todo :remove these to function insertFunction
+				todo :remove these  function insert Function
 				*/
 				addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
-				st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
+				//st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
