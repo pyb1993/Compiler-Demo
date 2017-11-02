@@ -8,6 +8,7 @@
 void buildSymtab(TreeNode *);
 void typeCheck(TreeNode *);
 int var_size_of(TreeNode *);
+
 void  insertNode(TreeNode * t, int scope_depth);
 void  insertParam(TreeNode * t,int scope_depth);
 void deleteVar(TreeNode * t,int scope_depth);

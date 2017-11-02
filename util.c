@@ -182,6 +182,9 @@ void printTree(TreeNode * tree)
                 case DeclareK:
                     fprintf(listing, "Declare variable (%s)\n",tree->attr.name);
                     break;
+				case StructDefineK:
+					fprintf(listing, "define struct (%s)\n", tree->attr.name);
+					break;
 				case ParamK:
 					fprintf(listing, "Param variable (%s)\n", tree->attr.name);
 					break;
@@ -211,6 +214,9 @@ void printTree(TreeNode * tree)
 				case AssignK:
 					if (tree->child[1] == NULL)fprintf(listing, "Assign to: %s\n", tree->attr.name);
 					else fprintf(listing, "Assign to unref exp\n");
+					break;
+				case IndexK:
+					fprintf(listing, "Index: []..[]\n ");
 					break;
                 case ConstK:
                     switch (getBasicType(tree->type)) {

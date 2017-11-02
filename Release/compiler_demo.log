@@ -1,52 +1,27 @@
-﻿生成启动时间为 2017/10/18 0:21:45。
+﻿生成启动时间为 2017/10/29 16:39:41。
      1>项目“C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\compiler_demo\compiler_demo.vcxproj”在节点 2 上(Build 个目标)。
      1>ClCompile:
-         H:\Vs2013 SDD\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt cgen.c code.c main.c parse.c tm.c
+         H:\Vs2013 SDD\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt  /D _CRT_SECURE_NO_WARNINGS cgen.c
          cgen.c
-     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\code.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\cgen.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>cgen.c(248): warning C4020: “pushParam”: 实参太多
-     1>cgen.c(208): warning C4101: “origin_reg”: 未引用的局部变量
-     1>cgen.c(208): warning C4101: “target_reg”: 未引用的局部变量
-     1>cgen.c(397): error C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-     1>cgen.c(398): error C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-     1>cgen.c(471): warning C4029: 声明的形参表不同于定义
-         code.c
-     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\code.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>code.c(113): error C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 H:\Vs2013 SDD\VC\include\stdio.h(356) : 参见“sprintf”的声明
-         main.c
-     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\cgen.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>main.c(28): error C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 H:\Vs2013 SDD\VC\include\stdio.h(211) : 参见“fopen”的声明
-     1>main.c(54): error C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-         parse.c
-     1>parse.c(34): warning C4391: “TreeNode *exp(void)”: 不正确的内部函数返回类型，应为“double”
-     1>parse.c(34): warning C4392: “TreeNode *exp(void)”: 不正确的内部函数参数个数，应为“1”个参数
-     1>parse.c(159): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(184): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(212): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(225): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(278): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(318): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(340): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(447): warning C4392: “TreeNode *exp(void)”: 不正确的内部函数参数个数，应为“1”个参数
-     1>parse.c(447): error C2169: “exp”: 内部函数，不能定义
-     1>parse.c(511): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(516): error C2168: “exp”: 内部函数的实参太少
-     1>parse.c(529): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-     1>parse.c(553): error C2168: “exp”: 内部函数的实参太少
-         tm.c
-     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\code.h : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>tm.c(198): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-     1>tm.c(419): error C4996: 'gets': This function or variable may be unsafe. Consider using gets_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 H:\Vs2013 SDD\VC\include\stdio.h(254) : 参见“gets”的声明
-     1>tm.c(430): warning C4244: “=”: 从“float”转换到“int”，可能丢失数据
-     1>tm.c(431): warning C4244: “=”: 从“float”转换到“int”，可能丢失数据
-     1>tm.c(745): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-     1>tm.c(753): warning C4244: “=”: 从“float”转换到“int”，可能丢失数据
-     1>已完成生成项目“C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\compiler_demo\compiler_demo.vcxproj”(Build 个目标)的操作 - 失败。
+     1>cgen.c(507): warning C4013: “copyString”未定义；假设外部返回 int
+       Link:
+         H:\Vs2013 SDD\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\Release\compiler_demo.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\Release\compiler_demo.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\Release\compiler_demo.lib" /MACHINE:X86 /SAFESEH Release\analyze.obj
+         Release\cgen.obj
+         Release\code.obj
+         Release\main.obj
+         Release\parse.obj
+         Release\scan.obj
+         Release\symtable.obj
+         Release\tinytype.obj
+         Release\tm.obj
+         Release\util.obj
+         正在生成代码
+     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\tinytype.c(154): warning C4715: “getIndexOfFType”: 不是所有的控件路径都返回值
+     1>c:\users\admin\documents\visual studio 2013\projects\compiler_demo\compiler_demo\tinytype.c(49): warning C4715: “createTypeFromBasic”: 不是所有的控件路径都返回值
+         已完成代码的生成
+         compiler_demo.vcxproj -> C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\Release\compiler_demo.exe
+     1>已完成生成项目“C:\Users\admin\Documents\Visual Studio 2013\Projects\compiler_demo\compiler_demo\compiler_demo.vcxproj”(Build 个目标)的操作。
 
-生成失败。
+生成成功。
 
-已用时间 00:00:00.34
+已用时间 00:00:00.84

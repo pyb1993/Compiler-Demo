@@ -13,5 +13,4 @@ void printSymTab(FILE * listing);
 void setFunctionAdress(char * name,int adress);
 int getFunctionAdress(char * name);
 bool is_duplicate_var(char * name, int depth);
-bool is_basic_type(TypeInfo type,Type btype);
 #endif

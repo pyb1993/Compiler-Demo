@@ -8,8 +8,8 @@
 #include "tm.h"
 
 
-struct test{
-
+struct test
+{
 	int a;
 	int b;
 };
@@ -34,7 +34,6 @@ int main()
 	source = fopen(filename, "r");
 	listing = stdout;
 
-
 	if (source == NULL)
 	{
 		printf("open error\n");
@@ -42,8 +41,7 @@ int main()
 	}
 
 	 TreeNode *t = parse();
-	 printf("%d", var_size_of(t));
-	// printTree(t);
+	 printTree(t);
 	#if 0
 		if (!Error)
 		{

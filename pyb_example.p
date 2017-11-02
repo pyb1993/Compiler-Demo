@@ -1,3 +1,11 @@
+struct test{
+	int a
+	int b
+	struct test c
+	void f(int a,int b){}
+}
 
-float a[10][2]
-
+void main()
+{
+	int a[10][10]
+}
