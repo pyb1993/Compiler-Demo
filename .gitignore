@@ -2,3 +2,6 @@ compiler_demo.*
 Debug/
 prog.*
 compiler.build/
+.DS_Store
+resource.h
+Release/
