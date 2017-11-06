@@ -1,14 +1,15 @@
-struct test{
+struct test
+{
 	int a
 	int b
-	int a
+	float * c
+	int a2[10]
 }
 
-struct test1{
-	int d
-}
+
 
 void main()
 {
-	int a[10][10]
+	int a[10]
+	struct test t
 }

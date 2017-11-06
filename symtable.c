@@ -102,11 +102,12 @@ BucketList construct_node(char * name, int lineno, int loc, int size,int depth, 
 	return list;
 }
 
-
 /*return the first node in the list after delete*/
-BucketList del_from_list(BucketList list, char * name){
+BucketList del_from_list(BucketList list, char * name)
+{
 	assert((list != NULL || !"delete failed!"));
-	if (strcmp(list->name, name) == 0){
+	if (strcmp(list->name, name) == 0)
+	{
 		BucketList last = list->next;
 		free_node(list);
 		return last;

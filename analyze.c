@@ -70,6 +70,7 @@ static void typeError(TreeNode * t, char * message)
 	 while (t != NULL)
 	 {
 		 deleteVar(t, scope);
+		 stack_offset += var_size_of(t);
 		 t = t->sibling;
 	 }
  }
@@ -122,17 +123,13 @@ static void typeError(TreeNode * t, char * message)
 				}
                 break;
 			case StructDefineK:
+				assert(scope == 0);
 				addStructType(t->attr.name, new_struct_type(t));
-				// todo insertStructMember
-				// insert for member in struct, but not insertTree directly for loc and size will be zero
-				TreeNode * child_sibling = t->child[0];
-				while (child_sibling != NULL)
-				{
-					st_insert(child_sibling->attr.name, t->lineno, 0, 0, scope + 1, t->type);
-					child_sibling = child_sibling->sibling;
-				}
+				// to check any duplicate members
+				// todo remove to check duplicate members
+				insertTree(t->child[0], scope + 1);
 				deleteVarOfField(t->child[0], scope + 1);
-				// todo delete StructType
+				// todo support local struct
 				break;
             default:
                 break;
@@ -155,11 +152,8 @@ void deleteVar(TreeNode * t,int scope_depth)
 	{
 		assert(0);
 	}
-	else if (is_basic_type(t->type, Struct))
+	else
 	{
-		assert(0);
-	}
-	else{
 	st_delete(t->attr.name);
 	
 	}

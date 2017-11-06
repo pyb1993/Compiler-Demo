@@ -45,7 +45,7 @@ int main()
 		}
 	#endif
 
-#if 0
+#if 1
 	/**compute the length of filename before .tm **/
 	int len = (int)strcspn(filename, ".");
 	char * codeFile = (char *)calloc(len+4,sizeof(char));

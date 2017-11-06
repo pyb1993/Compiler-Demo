@@ -173,6 +173,9 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRM("PUSH",0,0,sp,"stack expand");// todo support expand stack
 			}
 			break;
+		case StructDefineK:
+//			addStructType(tree->attr.name,new_struct_type(tree->child[0]));
+			break;
         default:
             break;
     }
@@ -271,12 +274,14 @@ static void genExp( TreeNode * tree,int scope)
                     emitRM("PUSH", target_reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
                     break;
 				case ADRESS:
+					// todo support &p[1][2] || &(*(xxxx))
 					loc = st_lookup(p1->attr.name);
 					emitRO("LDA", ac, loc, get_stack_bottom(st_lookup_scope(p1->attr.name)),"LDA the var adress");
 					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 					break;
 				case UNREF:
 					// todo remove the bad smell
+					// todo support *(&p)
 					assert(p1 != NULL);
 					cGen(p1, scope);
 					emitRM("POP",ac,0,mp,"pop the adress");

@@ -58,6 +58,7 @@ TypeInfo createTypeFromBasic(Type basic)
 	case Pointer:
 	case Func:
 	case Struct:
+	case ErrorType:
 		typeinfo.typekind = basic;
 		break;	
 	default:
@@ -179,9 +180,6 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 }
 
 
-
-
-
 int getIndexOfFType(char *key)
 {
 	assert(key != NULL);
@@ -242,11 +240,13 @@ void addFunctionType(char * key,FuncType ftype)
 
 void addStructType(char * type_name, StructType stype)
 {
-
+	// ensure the type name is not duplicate
 	for (int j = 0; j < MAXTYPENUM; ++j)
 	{
-		if (STypeCollection[j].typeinfo.sname != NULL)
-		ensure_not_same_name(type_name, STypeCollection[j].typeinfo.sname);
+		if (STypeCollection[j].members != NULL){
+			assert(STypeCollection[j].typeinfo.sname || !"struct name is null");
+			ensure_not_same_name(type_name, STypeCollection[j].typeinfo.sname);
+		}
 	}
 	int i = 0;
 	while (i < MAXTYPENUM && STypeCollection[i].typeinfo.sname != NULL){ i++; }
@@ -258,10 +258,17 @@ void addStructType(char * type_name, StructType stype)
 void deleteFuncType (char * key)
 {
 	int i = getIndexOfFType(key);
-//	free(FTypeCollection[i].name);
 	FTypeCollection[i].name = NULL;
 }
 
+void deleteStructType(char * key)
+{
+	int i = getIndexOfSType(key);
+	// todo free members
+	STypeCollection[i].members = NULL;
+	STypeCollection[i].typeinfo = createTypeFromBasic(ErrorType);
+	STypeCollection[i].typeinfo.sname = NULL;
+}
 
 // todo optimize : convert tree to type
 int var_size_of_type(TypeInfo vtype)

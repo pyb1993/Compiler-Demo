@@ -20,6 +20,7 @@ typedef struct _FuncType{
 	TypeInfo return_type;
 	ParamNode * params;
 	char * name;
+	int scope_depth;
 } FuncType;
 
 typedef struct _member
@@ -34,6 +35,7 @@ typedef struct _Struct
 {
     // struct BasicType * basic_type;//  -> LFloat -> LBoolean and so on;
 	TypeInfo typeinfo;
+	int scope_depth;
     Member * members; // only meaningful when typeinfo is struct
 } StructType;
 /*
@@ -97,6 +99,7 @@ TypeInfo createTypeFromBasic(Type basic);
 void addFunctionType(char * key, FuncType ftype);
 void addStructType(char * key, StructType stype);
 void deleteFuncType(char * key);
+void deleteStructType(char * key);
 void initTypeCollection();
 bool ensure_type_defined(char * key);
 #endif /* tinytype_h */

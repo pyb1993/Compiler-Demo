@@ -70,7 +70,10 @@ static TokenType tryNextToken()
 
 static void match(TokenType expected)
 {
-	assert(token == expected);
+	if (token != expected){
+		printToken(token,"");
+		assert(token == expected);
+	}
 	token = currentToken();
 	while (token == LINEEND && token != ENDFILE) { token = currentToken(); } // skip the remain empty line
 }
@@ -439,6 +442,7 @@ TreeNode* declare_stmt(void)
 		TypeInfo ele_type = t->type;
 		t->type.typekind = Array;
 		t->type.array_type	= parseArrayType(ele_type);
+		skipLineEnd();
 	}
 
     bool func_dec = (token == LPAREN);
@@ -681,15 +685,20 @@ TreeNode * parseIndexNode(TreeNode * lhs_exp)
 
 TreeNode * parseStruct()
 {
-	match(STRUCT);
-	if (tryNextToken() == LBRACKET)
+	#define rollback_token_to_struct() do \
+		{while(pos > pos_backup) unGetToken();}while(0)
+
+	int pos_backup = pos;
+	matchWithoutSkipLineEnd(STRUCT);
+	match(ID);
+	if (token == LBRACKET)
 	{
-		unGetToken();
+		rollback_token_to_struct();
 		return parseStructDef();
 	}
 	else
 	{
-		unGetToken();
+		rollback_token_to_struct();
 		return declare_stmt();
 	}
 }
@@ -700,7 +709,7 @@ TreeNode * parseStructDef()
 	TreeNode * t = newStmtNode(StructDefineK);
 	TreeNode * members = NULL;
 
-	matchWithoutSkipLineEnd(STRUCT);
+	match(STRUCT);
 	t->attr.name = copyString(tokenString);
 	match(ID);
 
