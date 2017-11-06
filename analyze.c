@@ -16,7 +16,7 @@ static int location = 0;
 static int stack_offset = 0;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
- */
+*/
 
 static void checkTree(TreeNode * t,char * curretn_function,int scope);
 static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
@@ -69,9 +69,12 @@ static void typeError(TreeNode * t, char * message)
 	 if (scope == 0) return;
 	 while (t != NULL)
 	 {
-		 deleteVar(t, scope);
-		 stack_offset += var_size_of(t);
-		 t = t->sibling;
+		 if (t->nodekind == StmtK && t->kind.exp == DeclareK)
+		 {
+			 deleteVar(t, scope);
+			 stack_offset += var_size_of(t);
+			 t = t->sibling;
+		 }
 	 }
  }
 
@@ -309,6 +312,16 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			
 			// change the array to pointer
 			t->type = *(t->child[0]->type.array_type.ele_type);			
+			t->converted_type = t->type;
+			break;
+		case PointK:
+			// setInPointKRecursion
+			// checkIfInPointKRecursion
+			// RestoreInPointKRecursion
+			checkNodeType(t->child[0],current_function, scope);
+			StructType stype = getStructType(t->child[0]->type.sname);
+			Member* member = getMember(stype, t->attr.name);
+			t->type = member->typeinfo;
 			t->converted_type = t->type;
 			break;
 		case FuncallK:

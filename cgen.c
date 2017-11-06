@@ -22,6 +22,7 @@
  stored, and incremeted when loaded again
  */
 static int label_table[1024];//label table
+static bool in_adressMode = FALSE;
 static char * current_function = NULL;
 static int  genLabel();
 static void addLabel();// add label to the labelTabel
@@ -34,9 +35,16 @@ static int get_reg(Type type);
 static int get_reg1(Type type);
 /*get the current env's stack*/
 static int get_stack_bottom(int scope);
-// delete all local variable from the stmtseq
 static void pushParam(TreeNode * t,ParamNode * p, int scope);
 static void popParam(ParamNode * p);
+
+// help
+// get the A.x from tmpOffset
+static void getRealAdressBy(TreeNode* tree);
+
+void setInAdressMode();
+bool checkInAdressMode();
+void restoreAdressMode();
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -330,7 +338,7 @@ static void genExp( TreeNode * tree,int scope)
 					// todo optimize
 					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
 					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
-					emitRM("ST", target_reg, loc++, var_stack_bottom, "copy bytes ");
+					emitRM("ST", target_reg, loc + vsize, var_stack_bottom, "copy bytes ");
 				}
 			}
 			else if (tree->child[0]->kind.exp == SingleOpK && tree->child[0]->attr.op == UNREF)
@@ -342,11 +350,11 @@ static void genExp( TreeNode * tree,int scope)
 				vsize = var_size_of(unref);
 				cGen(unref->child[0], scope);
 				emitRM("POP", ac1, 0, mp, "POP the adress of referenced");
-				for (loc = 0; loc < vsize; ++loc)
+				while (vsize-- > 0)
 				{
 					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
 					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
-					emitRM("ST", target_reg, loc, ac1, "copy bytes ");
+					emitRM("ST", target_reg, vsize, ac1, "copy bytes ");
 				}
 			}
 			else if (tree->child[0]->kind.exp == IndexK)
@@ -390,6 +398,33 @@ static void genExp( TreeNode * tree,int scope)
 				emitRM("LD", ac1, 0, ac, "load value");
 				emitRM("PUSH", ac1, 0, mp, "");
 
+			}
+			break;
+		case PointK:
+			if (!checkInAdressMode())
+			{
+				setInAdressMode();// enter the adress mode,eg:A.x will only create the adress of A!
+				cGen(tree->child[0], scope);//generate the adress
+				getRealAdressBy(tree);
+				// now need to produce the real value rather than Adress
+				origin_reg = get_reg(getBasicType(tree->type));
+				target_reg = get_reg(getBasicType(tree->converted_type));
+				vsize = var_size_of(tree);
+				for (int i = 0; i < vsize; ++i)
+				{
+					// move bytes tmpOffset to tmpOffset
+					// todo optimize
+					emitRM("LD", origin_reg, i, ac, "copy bytes");//reg[ac] =  dMem[reg[ac]]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
+					emitRM("PUSH", target_reg, 0, mp, "push a.x value into tmp");
+				}
+				restoreAdressMode();
+			}
+			else
+			{
+				// copy from memory to memory
+				cGen(tree->child[0], scope);//generate the adress
+				getRealAdressBy(tree);
 			}
 			break;
 		case OpK :
@@ -611,4 +646,29 @@ void popParam(ParamNode * p)
 		p = p->next_param;
 	}
 	emitRM("LDA",sp, param_size, sp, "pop parameters");
+}
+
+void setInAdressMode()
+{
+	in_adressMode = TRUE;
+}
+bool checkInAdressMode()
+{
+	return in_adressMode;
+}
+void restoreAdressMode()
+{
+	in_adressMode = FALSE;
+}
+
+// compute and store Adress of A.x in ac
+void getRealAdressBy( TreeNode* tree)
+{
+	// assure the adress of A  in tmpOffset
+	StructType stype = getStructType(tree->child[0]->type.sname);
+	Member* member = getMember(stype, tree->attr.name);
+	int loc = member->offset;
+	emitRO("LDC", ac, loc, 0, "load offset of member");
+	emitRM("POP", ac1, 0, mp, "load adress of lhs struct");
+	emitRO("ADD", ac, ac, ac1, "compute the real adress if pointK");
 }

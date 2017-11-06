@@ -33,6 +33,7 @@ static TreeNode * declare_stmt();
 static TreeNode * break_stmt();
 static TreeNode * return_stmt();
 static TreeNode * parseExp();
+static TreeNode * parsePointExp(TreeNode*);
 static TreeNode * compare_exp();
 static TreeNode * simple_exp();
 static TreeNode * term();
@@ -184,7 +185,6 @@ TreeNode * if_stmt(void)
     }
 	return t;
 }
-
 
 TreeNode * while_stmt(void)
 {
@@ -626,6 +626,11 @@ TreeNode * factor(void)
 	{
 		t = parseIndexNode(t);
 	}
+	// eg (f()).x
+	else if (token == POINT)
+	{
+		t = parsePointExp(t);
+	}
 	return t;
 }
 
@@ -732,4 +737,16 @@ TreeNode * parseStructDef()
 	return t;
 }
 
-
+ TreeNode * parsePointExp(TreeNode* lhs_exp)
+{
+	 if (token != POINT)
+	 {
+		 return lhs_exp;
+	 }
+	 TreeNode * t = newExpNode(PointK);
+	 matchWithoutSkipLineEnd(POINT);
+	 t->child[0] = lhs_exp;
+	 t->attr.name = copyString(tokenString);
+	 matchWithoutSkipLineEnd(ID);
+	 return parsePointExp(t);
+}

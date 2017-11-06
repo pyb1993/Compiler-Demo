@@ -90,7 +90,7 @@ FuncType new_func_type(TreeNode * tree);
 StructType new_struct_type(TreeNode * tree);
 ParamNode * new_param_node(TreeNode * tree);
 Member * new_member_list(TreeNode * tree,int offset);
-
+Member* getMember(StructType stype, char * name);
 FuncType getFunctionType(char * name);
 StructType getStructType(char * name);
 

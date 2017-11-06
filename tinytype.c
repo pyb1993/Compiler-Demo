@@ -17,6 +17,7 @@ static int getIndexOfFType(char *key);
 static int getIndexOfSType(char * key);
 static int var_size_of_members(Member* members);
 
+
 void initTypeCollection()
 {
 	for (int i = 0; i < MAXTYPENUM; ++i){ FTypeCollection[i].name = NULL;}
@@ -180,7 +181,8 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 }
 
 
-int getIndexOfFType(char *key)
+int
+getIndexOfFType(char *key)
 {
 	assert(key != NULL);
 	for (int i = MAXTYPENUM - 1; i >= 0; --i)
@@ -195,7 +197,8 @@ int getIndexOfFType(char *key)
 	return -1;
 }
 
-int getIndexOfSType(char * key)
+int
+getIndexOfSType(char * key)
 {
 	int i = 0;
 	while ( i < MAXTYPENUM 
@@ -209,20 +212,23 @@ int getIndexOfSType(char * key)
 	return i;
 }
 
- FuncType getFunctionType(char * key)
+ FuncType
+ getFunctionType(char * key)
 {
 	int i = getIndexOfFType(key);
 	return FTypeCollection[i];
 }
 
- StructType getStructType(char * key)
+ StructType
+	 getStructType(char * key)
  {
 	int i = getIndexOfSType(key);
 	assert(i != -1 || !"struct type not exist");
 	return STypeCollection[i];
  }
 
-void addFunctionType(char * key,FuncType ftype)
+void
+addFunctionType(char * key,FuncType ftype)
 {
 	for (int j = 0; j < MAXTYPENUM; ++j)
 	{
@@ -238,7 +244,8 @@ void addFunctionType(char * key,FuncType ftype)
 	FTypeCollection[i] = ftype;
 }
 
-void addStructType(char * type_name, StructType stype)
+void
+addStructType(char * type_name, StructType stype)
 {
 	// ensure the type name is not duplicate
 	for (int j = 0; j < MAXTYPENUM; ++j)
@@ -255,13 +262,15 @@ void addStructType(char * type_name, StructType stype)
 	STypeCollection[i] = stype;
 }
 
-void deleteFuncType (char * key)
+void
+deleteFuncType (char * key)
 {
 	int i = getIndexOfFType(key);
 	FTypeCollection[i].name = NULL;
 }
 
-void deleteStructType(char * key)
+void
+deleteStructType(char * key)
 {
 	int i = getIndexOfSType(key);
 	// todo free members
@@ -271,7 +280,8 @@ void deleteStructType(char * key)
 }
 
 // todo optimize : convert tree to type
-int var_size_of_type(TypeInfo vtype)
+int
+var_size_of_type(TypeInfo vtype)
 {
 	Type type = getBasicType(vtype);
 	if (type == Integer) return 1;
@@ -293,7 +303,8 @@ int var_size_of_type(TypeInfo vtype)
 	return 0;
 }
 
-static int var_size_of_members(Member* members)
+static int
+var_size_of_members(Member* members)
 {
 	if (members == NULL) return 0;
 	int first_var_size = var_size_of_type(members->typeinfo);
@@ -301,12 +312,27 @@ static int var_size_of_members(Member* members)
 	return first_var_size + remain_size;
 }
 
-bool is_basic_type(TypeInfo type, Type btype)
+bool 
+is_basic_type(TypeInfo type, Type btype)
 {
 	return type.typekind == btype;
 }
 
-bool ensure_type_defined(char * key)
+bool
+ensure_type_defined(char * key)
 {
 	return getIndexOfSType(key) != -1;
 }
+
+Member* 
+getMember(StructType stype,char * name)
+{
+	Member* members = stype.members;
+	while (members != NULL && strcpy(members->member_name, name) != 0)
+	{
+		members = members->next_member;
+	}
+	assert(members != NULL || "member is not defined!");
+	return members;
+}
+

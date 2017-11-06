@@ -37,7 +37,7 @@ typedef enum
 	ID,NEG,ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
-	LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,STRUCT,
+	POINT, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,STRUCT,
 	/*variable type*/
 	INT,FLOAT,VOID,FUN
 } TokenType;
@@ -52,7 +52,7 @@ extern int lineno; /* source line number for listing */
 
 typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,DefineK,StructDefineK,ParamK,BreakK,ReturnK } StmtKind;
-typedef enum { AssignK, OpK, SingleOpK, IndexK, ConstK, IdK, FuncallK } ExpKind;
+typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ConstK, IdK, FuncallK } ExpKind;
 /* ExpType is used for type checking */
 typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 

@@ -194,6 +194,9 @@ TokenType getToken(void)
 				case ',':
 					currentToken = COMMA;
 					break;
+				case '.':
+					currentToken = POINT;
+					break;
 				default:
 					currentToken = ERROR;
 					break;
@@ -271,7 +274,8 @@ TokenType getToken(void)
 			{
 				 fprintf(listing, "Scanner Error: -%c", c);
 			}
-			break;*/
+			break;
+		*/
 		case OVER_OR_COMMENT:
 			if (c == '/'){
 				state = INCOMMENT;
