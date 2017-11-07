@@ -73,8 +73,8 @@ static void typeError(TreeNode * t, char * message)
 		 {
 			 deleteVar(t, scope);
 			 stack_offset += var_size_of(t);
-			 t = t->sibling;
 		 }
+		 t = t->sibling;
 	 }
  }
 
@@ -400,7 +400,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 	
 		case DeclareK:
-			stack_offset = -2;
 			if (is_basic_type(t->type,Func) && scope == 0)
 			{
 				/*

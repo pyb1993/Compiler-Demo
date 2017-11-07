@@ -132,13 +132,14 @@ TreeNode * statement(void)
 	case WHILE: t = while_stmt(); break;
     case BREAK: t = break_stmt();break;
 	case RETURN:t = return_stmt(); break;
+	
+	case ID:
 	case TIMES:
 	case LPAREN:
 		t = parseExp();
 		break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
-	case ID:
 	case INT:  
 	case FLOAT:
 	case VOID:

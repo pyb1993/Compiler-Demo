@@ -328,7 +328,7 @@ Member*
 getMember(StructType stype,char * name)
 {
 	Member* members = stype.members;
-	while (members != NULL && strcpy(members->member_name, name) != 0)
+	while (members != NULL && strcmp(members->member_name, name) != 0)
 	{
 		members = members->next_member;
 	}

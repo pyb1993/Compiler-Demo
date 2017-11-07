@@ -228,10 +228,16 @@ static void genExp( TreeNode * tree,int scope)
 			// todo support struct
             if (TraceCode) emitComment("-> Id") ;
             loc = st_lookup(tree->attr.name);
-			char * cmd = tree->type.typekind == Array ? "LDA" : "LD";// array will be load from adress
+
+			char * cmd;
+			if (checkInAdressMode())  cmd = "LDA";
+			else  cmd = tree->type.typekind == Array ? "LDA" : "LD";
+			
 			emitRM(cmd, get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
 			emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
-			emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
+			
+			if (strcmp(cmd, "LDA"))	emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
+			
 			if (TraceCode)  emitComment("<- Id");
             break; /* IdK */
 		case FuncallK:
@@ -360,8 +366,18 @@ static void genExp( TreeNode * tree,int scope)
 			else if (tree->child[0]->kind.exp == IndexK)
 			{
 				// analyze.c ensure the left operand is not pointed to array
+				// todo: optimize the code: IndexK should run in the AdressMode
 				TreeNode *unref = tree->child[0];
 				vsize = var_size_of(unref);
+
+				setInAdressMode();
+				cGen(unref,scope);// now the adress is in ac
+				restoreAdressMode();
+				emitRM("POP", ac1, 0, mp, "load exp value");
+				emitRM("ST", ac1, 0, ac, "store value");
+
+
+				/*
 				cGen(unref->child[0], scope);
 				cGen(unref->child[1], scope);
 				emitRM("POP", ac, 0, mp, "load index value to ac");
@@ -373,31 +389,46 @@ static void genExp( TreeNode * tree,int scope)
 				//
 				emitRM("POP", ac1, 0, mp, "load exp value");
 				emitRM("ST", ac1, 0, ac,"store value");
+				*/
+			}
+			else if (tree->child[0]->nodekind == ExpK 
+					&& tree->child[0]->kind.exp == PointK)
+			{
+				cGen(tree->child[1], scope);
+
+				setInAdressMode();
+				cGen(tree->child[0], scope);
+				restoreAdressMode();
+
+				vsize = var_size_of(tree->child[0]);
+				type = tree->child[0]->converted_type;
+				int target_reg = get_reg(getBasicType(type));
+				emitRO("MOV", ac1, ac, 0, "move adress to ac1");
+				while (vsize-- > 0)
+				{
+					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
+					emitRM("ST", target_reg, vsize, ac1, "copy bytes ");
+				}
 			}
 			if (TraceCode)  emitComment("<- assign");
 			break; /* assign_k */
 		case IndexK:
 			if (TraceCode) emitComment("->index k");
-			cGen(tree->child[0], scope);
 			cGen(tree->child[1], scope);
 			vsize = var_size_of(tree);
 			// todo skip the adress
 			emitRM("POP", ac, 0, mp, "load index value to ac");
 			emitRO("LDC", ac1, vsize, 0, "load array size");
-			emitRO("MUL", ac, ac1, ac, "compute the offset");
-			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
+			emitRO("MUL", ac1, ac, ac1, "compute the offset");
+			cGen(tree->child[0], scope);// get the adress of array
 			emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
-			if (is_basic_type(tree->converted_type, Array))
-			{
-				emitRM("PUSH", ac, 0,mp, "");
-			}
-			else
+			if (!checkInAdressMode() && !is_basic_type(tree->converted_type, Array))
 			{
 				// todo support struct array
 				// todo support the reg conversion
 				emitRM("LD", ac1, 0, ac, "load value");
 				emitRM("PUSH", ac1, 0, mp, "");
-
 			}
 			break;
 		case PointK:
@@ -410,6 +441,7 @@ static void genExp( TreeNode * tree,int scope)
 				origin_reg = get_reg(getBasicType(tree->type));
 				target_reg = get_reg(getBasicType(tree->converted_type));
 				vsize = var_size_of(tree);
+				
 				for (int i = 0; i < vsize; ++i)
 				{
 					// move bytes tmpOffset to tmpOffset
@@ -592,7 +624,8 @@ int get_reg(Type type)
 	{
 		return fac;
 	}
-	else if ((type == Integer) || (type == Boolean) || (type == Pointer) || (type == Array))
+	else if ((type == Integer) || (type == Boolean) ||
+			(type == Pointer) || (type == Array) || (type == Struct))
 	{
 		return ac;
 	}
@@ -664,11 +697,12 @@ void restoreAdressMode()
 // compute and store Adress of A.x in ac
 void getRealAdressBy( TreeNode* tree)
 {
-	// assure the adress of A  in tmpOffset
+	// assure the adress of A  in ac
 	StructType stype = getStructType(tree->child[0]->type.sname);
 	Member* member = getMember(stype, tree->attr.name);
 	int loc = member->offset;
+	emitRO("MOV", ac1, ac, 0, "load adress of lhs struct");
 	emitRO("LDC", ac, loc, 0, "load offset of member");
-	emitRM("POP", ac1, 0, mp, "load adress of lhs struct");
 	emitRO("ADD", ac, ac, ac1, "compute the real adress if pointK");
+	//emitRM("PUSH", ac, 0, mp, "");
 }
