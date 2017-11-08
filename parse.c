@@ -37,6 +37,7 @@ static TreeNode * parsePointExp(TreeNode*);
 static TreeNode * compare_exp();
 static TreeNode * simple_exp();
 static TreeNode * term();
+static TreeNode * piexp();//point or square
 static TreeNode * factor();
 
 //help function
@@ -516,7 +517,7 @@ TreeNode * simple_exp(void)
 
 TreeNode * term(void)
 {
-	TreeNode * t = factor();
+	TreeNode * t = piexp();
 	while ((token == TIMES) || (token == OVER) || (token == BITAND))
 	{
 		TreeNode * p = newExpNode(OpK);
@@ -531,11 +532,35 @@ TreeNode * term(void)
 	}
 	return t;
 }
+/*
+   exp[a].s[6]
+*/
+TreeNode * piexp()
+{
+	TreeNode * t = factor();
+	while (token == POINT || token == LSQUARE)
+	{
+		// eg (p+5)[i] || f(123)[j][k] || s[x].y
+		if (token == POINT)
+		{
+			t = parsePointExp(t);
+		}
+
+		// A.x[k] so this case must behind point
+		if (token == LSQUARE)
+		{
+			t = parseIndexNode(t);
+		}
+		// eg (f()).x
+	}
+	return t;
+}
 
 TreeNode * factor(void)
 {
 	TreeNode * t = NULL;
     TokenType last_token;
+
 	switch (token) 
 	{
 	case MINUS:
@@ -621,16 +646,6 @@ TreeNode * factor(void)
 		printToken(token, tokenString);
 		token = currentToken( );
 		break;
-	}
-	// eg (p+5)[i] || f(123)[j][k]
-	if (token == LSQUARE)
-	{
-		t = parseIndexNode(t);
-	}
-	// eg (f()).x
-	else if (token == POINT)
-	{
-		t = parsePointExp(t);
 	}
 	return t;
 }

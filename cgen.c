@@ -354,8 +354,9 @@ static void genExp( TreeNode * tree,int scope)
 				type = unref->type;
 				int target_reg = get_reg(getBasicType(type));
 				vsize = var_size_of(unref);
-				cGen(unref->child[0], scope);
-				emitRM("POP", ac1, 0, mp, "POP the adress of referenced");
+
+				cGen(unref->child[0], scope);				
+				emitRM("POP", ac1, 0, mp, "move the adress of referenced");
 				while (vsize-- > 0)
 				{
 					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
@@ -373,9 +374,9 @@ static void genExp( TreeNode * tree,int scope)
 				setInAdressMode();
 				cGen(unref,scope);// now the adress is in ac
 				restoreAdressMode();
+			
 				emitRM("POP", ac1, 0, mp, "load exp value");
 				emitRM("ST", ac1, 0, ac, "store value");
-
 
 				/*
 				cGen(unref->child[0], scope);
@@ -415,18 +416,26 @@ static void genExp( TreeNode * tree,int scope)
 			break; /* assign_k */
 		case IndexK:
 			if (TraceCode) emitComment("->index k");
-			cGen(tree->child[1], scope);
 			vsize = var_size_of(tree);
 			// todo skip the adress
+			bool adress_mode = checkInAdressMode() \
+				|| is_basic_type(tree->converted_type, Array);
+
+			setInAdressMode();
+			cGen(tree->child[0], scope);
+			emitRM("PUSH", ac, 0, mp, "sotre lhs adress");
+			restoreAdressMode();
+
+			cGen(tree->child[1], scope);
 			emitRM("POP", ac, 0, mp, "load index value to ac");
 			emitRO("LDC", ac1, vsize, 0, "load array size");
-			emitRO("MUL", ac1, ac, ac1, "compute the offset");
-			cGen(tree->child[0], scope);// get the adress of array
+			emitRO("MUL", ac, ac1, ac, "compute the offset");
+
+			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
 			emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
-			if (!checkInAdressMode() && !is_basic_type(tree->converted_type, Array))
+			
+			if (!adress_mode)
 			{
-				// todo support struct array
-				// todo support the reg conversion
 				emitRM("LD", ac1, 0, ac, "load value");
 				emitRM("PUSH", ac1, 0, mp, "");
 			}
