@@ -50,6 +50,8 @@ Type getBasicType(TypeInfo typeinfo)
 TypeInfo createTypeFromBasic(Type basic)
 {
 	TypeInfo typeinfo;
+	typeinfo.typekind = basic;
+
 	switch (basic)
 	{
 	case Integer:
@@ -57,10 +59,10 @@ TypeInfo createTypeFromBasic(Type basic)
 	case Boolean:
 	case Void:
 	case Pointer:
+		typeinfo.point_type.pointKind = (TypeInfo*)malloc(sizeof(TypeInfo));
 	case Func:
 	case Struct:
 	case ErrorType:
-		typeinfo.typekind = basic;
 		break;	
 	default:
 		assert(!"unknown basic type");
@@ -69,6 +71,18 @@ TypeInfo createTypeFromBasic(Type basic)
 	return typeinfo;
 }
 
+void free_type(TypeInfo typeinfo)
+{
+	switch (typeinfo.typekind)
+	{
+	case Pointer:
+		free(typeinfo.point_type.pointKind);
+		break;
+	case Array:
+		free(typeinfo.array_type.ele_type);
+		break;
+	}
+}
 
 ParamNode * new_param_node(TreeNode * tree)
 {
@@ -160,13 +174,12 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		break;
 	case Pointer:
 		if (b != Pointer) return false;
-		if (a_type.plevel != b_type.plevel) return false;
-		if (!can_convert(createTypeFromBasic(a_type.pointKind), createTypeFromBasic(b_type.pointKind))) return false;
+		if (a_type.point_type.plevel != b_type.point_type.plevel) return false;
+		if (!can_convert(*a_type.point_type.pointKind,*b_type.point_type.pointKind)) return false;
 		return true;
 		break;
 	case Struct:
-		assert(0);
-		return false;
+		return (a == b) && (strcmp(a_type.sname,b_type.sname) == 0);
 		break;
 	case Array:
 		if (b == Array) return true;// the dimension is not cared

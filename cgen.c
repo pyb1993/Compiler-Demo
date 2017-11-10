@@ -157,10 +157,9 @@ static void genStmt( TreeNode * tree,int scope)
 
 				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
 				emitRM("PUSH", ac,  0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
-				
+						
 				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
 				
-                //todo support return value
 				//todo this should be moved to return node
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
@@ -170,9 +169,9 @@ static void genStmt( TreeNode * tree,int scope)
 				emitBackup(skip_adress);
 				emitRM_Abs("LDA",pc,leave_adress,"skip the function body");
 				emitRestore();
-				deleteVarOfField(tree->child[1], scope + 1);
-				deleteVarOfField (tree->child[0], scope + 1);
-				deleteFuncType(tree->attr.name);
+				//deleteVarOfField(tree->child[1], scope + 1);
+				//deleteVarOfField (tree->child[0], scope + 1);
+				//deleteFuncType(tree->attr.name);
 				current_function = last_current;
 			}
 			else if (scope > 0 && !is_basic_type(tree->type,Func))//local variable
@@ -225,18 +224,19 @@ static void genExp( TreeNode * tree,int scope)
             break; /* ConstK */
           
         case IdK :
-			// todo support struct
-            if (TraceCode) emitComment("-> Id") ;
+            if (TraceCode) emitComment("-> Id");
             loc = st_lookup(tree->attr.name);
-
-			char * cmd;
-			if (checkInAdressMode())  cmd = "LDA";
-			else  cmd = tree->type.typekind == Array ? "LDA" : "LD";
 			
-			emitRM(cmd, get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
-			emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
-			
-			if (strcmp(cmd, "LDA"))	emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
+			if (checkInAdressMode() || tree->type.typekind == Array)
+			{
+				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
+			}
+			else
+			{
+				emitRM("LD", get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
+				emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
+				emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
+			}
 			
 			if (TraceCode)  emitComment("<- Id");
             break; /* IdK */
@@ -297,22 +297,27 @@ static void genExp( TreeNode * tree,int scope)
 					// todo remove the bad smell
 					// todo support *(&p)
 					assert(p1 != NULL);
-					cGen(p1, scope);
-					emitRM("POP",ac,0,mp,"pop the adress");
-					vsize = var_size_of(p1);
-					for (loc = 0; loc < vsize;++loc)
+					if (checkInAdressMode())
 					{
-						Type ptype = p1->converted_type.pointKind;
-						if ((ptype == Integer) || (ptype == Float)){
-							target_reg = get_reg1(ptype);
+						restoreAdressMode();
+						cGen(p1, scope);
+						emitRM("POP", ac, 0, mp, "pop the adress");
+					}
+					else
+					{
+						cGen(p1, scope);
+						emitRM("POP", ac, 0, mp, "pop the adress");
+						vsize = var_size_of(p1);
+						for (loc = 0; loc < vsize; ++loc)
+						{
+							TypeInfo ptype = *p1->converted_type.point_type.pointKind;
+							bool is_basic = is_basic_type(ptype, Integer) || is_basic_type(ptype, Float);
+							target_reg = is_basic ? get_reg1(ptype.typekind) : ac1;
+
+							// todo optimize : move memory to memory
+							emitRM("LD", target_reg, loc, ac, "load bytes");//
+							emitRM("PUSH", target_reg, 0, mp, "push bytes ");
 						}
-						else{
-							target_reg = ac1;
-						}
-						
-						// todo optimize : move memory to memory
-						emitRM("LD", target_reg, loc, ac, "load bytes");//
-						emitRM("PUSH", target_reg,0, mp, "push bytes ");
 					}
 					break;
 				default:

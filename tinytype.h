@@ -94,8 +94,11 @@ Member* getMember(StructType stype, char * name);
 FuncType getFunctionType(char * name);
 StructType getStructType(char * name);
 
+
+
 Type getBasicType(TypeInfo typeinfo);
 TypeInfo createTypeFromBasic(Type basic);
+void free_type(TypeInfo typeinfo);
 void addFunctionType(char * key, FuncType ftype);
 void addStructType(char * key, StructType stype);
 void deleteFuncType(char * key);

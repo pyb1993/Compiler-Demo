@@ -8,14 +8,17 @@ struct test
 {
 	int a
 	int b
-	int c[10]
-	struct test1 t1 
+	float c
 }
+
 
 void main()
 {
+	struct test* x
 	struct test t
-	t.c[5] = 10
-	t.a = 2
-	write t.c[5] + t.a
+
+	x = &t
+	*x.b = 10
+	*x.c = t.b + 5
+	write t.c
 }

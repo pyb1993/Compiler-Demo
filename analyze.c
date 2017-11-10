@@ -13,7 +13,7 @@
 #include "assert.h"
 /* counter for global variable memory locations */
 static int location = 0;
-static int stack_offset = 0;
+static int stack_offset = -2;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
@@ -211,28 +211,29 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				if (is_basic_type(child1->type, Pointer))
 				{
 					t->type = child1->type;
-					t->type.plevel = child1->type.plevel + 1;
+					t->type.point_type.plevel = child1->type.point_type.plevel + 1;
 				}
 				else
 				{
-					t->type = createTypeFromBasic(Pointer);
-					t->type.plevel = 1;
-					t->type.pointKind = child1->type.typekind;
+					//free_type(t->type);// in general, t->type should be null
+					t->type = createTypeFromBasic(Pointer);// malloc new memory
+					t->type.point_type.plevel = 1;
+					*t->type.point_type.pointKind = child1->type;//warnning, share same memory
 					t->type.sname = child1->type.sname;
 				}
 			}
 			else if (t->attr.op == UNREF)
 			{
 				assert(is_basic_type(child1->type, Pointer));
-				if (child1->type.plevel == 1)
+				if (child1->type.point_type.plevel == 1)
 				{
-					t->type = createTypeFromBasic(child1->type.pointKind);
+					t->type = *child1->type.point_type.pointKind;
 					t->type.sname = child1->type.sname;
 				}
 				else
 				{
 					t->type = child1->type;
-					t->type.plevel -= 1;
+					t->type.point_type.plevel -= 1;
 				}
 			}
 			t->converted_type = t->type;

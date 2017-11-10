@@ -37,7 +37,7 @@ static TreeNode * parsePointExp(TreeNode*);
 static TreeNode * compare_exp();
 static TreeNode * simple_exp();
 static TreeNode * term();
-static TreeNode * piexp();//point or square
+static TreeNode * piexp();
 static TreeNode * factor();
 
 //help function
@@ -429,10 +429,12 @@ TreeNode* declare_stmt(void)
 	bool is_pointer = (token == TIMES);
     if (is_pointer)
     {
-		t->type.pointKind = t->type.typekind;
+		TypeInfo* type = (TypeInfo*)malloc(sizeof(TypeInfo));
+		*type = t->type;
+		t->type.point_type.pointKind = type;
 		t->type.typekind = Pointer;
-		t->type.plevel = 0;
-		while (token == TIMES) { t->type.plevel += 1; match(TIMES);}
+		t->type.point_type.plevel = 0;
+		while (token == TIMES) { t->type.point_type.plevel += 1; match(TIMES); }
     }
     
     t->attr.name = copyString(tokenString);
@@ -662,6 +664,8 @@ TreeNode * parse(void)
 		syntaxError("Code ends before file\n");
 	return t;
 }
+
+
 
 ArrayType parseArrayType(TypeInfo element_type)
 {

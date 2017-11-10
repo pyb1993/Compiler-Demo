@@ -7,8 +7,6 @@
 #include "util.h"
 #include "tm.h"
 
-
-
 int lineno = 0;
 FILE * source;
 FILE * listing;

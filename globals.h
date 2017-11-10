@@ -62,7 +62,7 @@ struct _dimension;
 typedef struct _dimension
 {
 	int dim; // used for array
-	struct _dimension * next_dim;
+	struct _dimension* next_dim;
 } DimensionList;
 
 typedef struct _ArrayType
@@ -71,13 +71,17 @@ typedef struct _ArrayType
 	int ele_num;
 } ArrayType;
 
+typedef struct _PointType
+{
+	int plevel;
+	struct _TypeInfo * pointKind; // Integer,Float,Boolean,Struct
+} PointType;
 
 typedef struct _TypeInfo
 {
 	Type typekind;
-	Type pointKind; // Integer,Float,Boolean,Struct
 	ArrayType array_type;
-	int plevel;
+	PointType point_type;
 	char *sname;
 } TypeInfo;
 
