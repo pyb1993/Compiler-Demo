@@ -1,24 +1,41 @@
 struct test1
 {
 	int m	
-
+	int n
+	float d
 }
 
 struct test
 {
-	int a
-	int b
-	float c
+	int x
+	int y
+	struct test1 c
 }
-
 
 void main()
 {
-	struct test* x
-	struct test t
+	/*
+	struct test b[6]
+	struct test a[10]
+	a[5].x = 1
+	a[5].c.m = 10
+	a[5].c.d = a[5].c.m * a[5].c.m
+	b[3] = a[5]
+	write b[3].x
+	write b[3].c.d
+	*/
 
-	x = &t
-	*x.b = 10
-	*x.c = t.b + 5
-	write t.c
+	
+	struct test a
+	struct test b
+	struct test c
+	a.x = 10
+	b.x = 100
+	c.x = 1000
+	struct test *x[2]
+	x[0] = &b
+	x[1] = &a
+	write *(x[0]).x
+	write *(x[1]).x
+	
 }

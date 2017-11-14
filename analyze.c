@@ -309,10 +309,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[1], current_function, scope);
 			assert(can_convert(t->child[1]->converted_type, createTypeFromBasic(Integer)));
 			assert(is_basic_type(t->child[0]->converted_type, Array) || 
+				   is_basic_type(t->child[0]->converted_type, Pointer) ||
 				   !"left expression is not array or pointer");
 			
-			// change the array to pointer
-			t->type = *(t->child[0]->type.array_type.ele_type);			
+			if (is_basic_type(t->child[0]->converted_type, Array)){
+				t->type = *(t->child[0]->type.array_type.ele_type);
+			}
+			else{
+				t->type = *(t->child[0]->type.point_type.pointKind);
+			}
 			t->converted_type = t->type;
 			break;
 		case PointK:

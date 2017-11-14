@@ -529,7 +529,7 @@ TreeNode * term(void)
 			p->attr.op = token;
 			t = p;
 			matchWithoutSkipLineEnd(token);
-			p->child[1] = factor();
+			p->child[1] = piexp();
 		}
 	}
 	return t;
