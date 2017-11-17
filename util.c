@@ -128,11 +128,11 @@ char * copyString(char * s)
     int n;
     char * t;
     if (s == NULL) return NULL;
-    n = strlen(s) + 1;
+    n = (int)strlen(s) + 1;
     t = (char *)malloc(n);
     if (t == NULL)
         fprintf(listing, "Out of memory error at line %d\n", lineno);
-    else my_strcpy(t,strlen(s),s);
+    else my_strcpy(t,(int)strlen(s),s);
     return t;
 }
 

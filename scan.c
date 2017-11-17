@@ -102,7 +102,7 @@ TokenType getToken(void)
 {  /* index for storing into tokenString */
 	int tokenStringIndex = 0;
 	/* holds current token to be returned */
-	TokenType currentToken;
+	TokenType currentToken = ERROR;
 	/* current state - always begins at START */
 	StateType state = START;
 	/* flag to indicate save to tokenString */

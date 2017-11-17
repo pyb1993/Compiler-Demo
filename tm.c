@@ -249,7 +249,7 @@ int error(char * msg, int lineNo, int instNo)
 int readInstructions(FILE *pgm)
 {
 	OPCODE op;
-	int arg1, arg2, arg3;
+	int arg1 = -1, arg2 = -1, arg3 = -1;
 	int loc, regNo, lineNo;
 	for (regNo = 0; regNo < NO_REGS; regNo++)
 		reg[regNo] = 0;
@@ -273,7 +273,7 @@ int readInstructions(FILE *pgm)
 		fgets(in_Line, LINESIZE - 2, pgm);
 		inCol = 0;
 		lineNo++;
-		lineLen = strlen(in_Line) - 1;
+		lineLen = (int)strlen(in_Line) - 1;
 		if (in_Line[lineLen] == '\n') in_Line[lineLen] = '\0';
 		else in_Line[++lineLen] = '\0';
 		if ((nonBlank()) && (in_Line[inCol] != '*'))
@@ -367,11 +367,11 @@ STEPRESULT stepTM(void)
 	printf("run ins:%d\n", pc_pos);
 	if (pc_pos == 129)
 	{
-		int a = 100;
+		ok = 100;
 	}
 
-	if ((pc_pos < 0) || (pc_pos > IADDR_SIZE))
-		return srIMEM_ERR;
+    if ((pc_pos < 0) || (pc_pos > IADDR_SIZE)) {return srIMEM_ERR;}
+    
 	reg[PC_REG] = pc_pos + 1;
 	currentinstruction = iMem[pc_pos];
 	switch (opClass(currentinstruction.iop))
@@ -398,6 +398,10 @@ STEPRESULT stepTM(void)
 		s = currentinstruction.iarg3;
 		m = currentinstruction.iarg2 + reg[s];
 		break;
+    default:
+        assert(!"unknown op type");
+        return srDMEM_ERR;
+        break;
 	} /* case */
 
 	switch (currentinstruction.iop)
@@ -416,7 +420,7 @@ STEPRESULT stepTM(void)
 			fflush(stdin);
 			fflush(stdout);
 			gets(in_Line);
-			lineLen = strlen(in_Line);
+			lineLen = (int)strlen(in_Line);
 			inCol = 0;
 			/*
 				deal with the float number
@@ -481,6 +485,7 @@ STEPRESULT stepTM(void)
 	case opJEQ:    if (reg[r] == 0) reg[PC_REG] = m; break;
 	case opJNE:    if (reg[r] != 0) reg[PC_REG] = m; break;
 	case opRETURN: reg[PC_REG] = dMem[m];	break;
+    default:        assert(!"unknown op type");break;
 		/* end of legal instructions */
 	} /* case */
 	return srOKAY;
@@ -500,7 +505,7 @@ int doCommand(void)
 		fflush(stdin);
 		fflush(stdout);
 		gets(in_Line);
-		lineLen = strlen(in_Line);
+		lineLen = (int)strlen(in_Line);
 		inCol = 0;
 	} while (!getWord());
 

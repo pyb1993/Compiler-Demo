@@ -188,7 +188,7 @@ static void genExp( TreeNode * tree,int scope)
 	int integer;
 	float float_num;
 	int vsize = 0;
-	int origin_reg, target_reg;
+	int origin_reg = -1, target_reg = -1;
 	switch (tree->kind.exp) 
 	{       
         case ConstK :
