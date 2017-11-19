@@ -15,165 +15,145 @@
  11:   PUSH  0,0(3) 	push the return adress
  12:   PUSH  0,0(3) 	stack expand
  13:   PUSH  0,0(3) 	stack expand
- 14:   PUSH  0,0(3) 	stack expand
-* -> assign
-* -> Const
- 15:    LDC  0,10(0) 	load integer const
- 16:   PUSH  0,0(6) 	store exp
-* <- Const
-* -> Const
- 17:    LDC  0,10(0) 	load integer const
- 18:   PUSH  0,0(6) 	store exp
-* <- Const
-* -> Id
- 19:    LDA  0,-6(2) 	load id adress
-* <- Id
- 20:    MOV  1,0,0 	load adress of lhs struct
- 21:    LDC  0,0,0 	load offset of member
- 22:    ADD  0,0,1 	compute the real adress if pointK
- 23:    MOV  1,0,0 	move adress to ac1
- 24:    POP  0,0(6) 	copy bytes
- 25:     ST  0,0(1) 	copy bytes 
-* <- assign
-* -> assign
-* -> Const
- 26:    LDC  0,100(0) 	load integer const
- 27:   PUSH  0,0(6) 	store exp
-* <- Const
-* -> Const
- 28:    LDC  0,100(0) 	load integer const
- 29:   PUSH  0,0(6) 	store exp
-* <- Const
-* -> Id
- 30:    LDA  0,-11(2) 	load id adress
-* <- Id
- 31:    MOV  1,0,0 	load adress of lhs struct
- 32:    LDC  0,0,0 	load offset of member
- 33:    ADD  0,0,1 	compute the real adress if pointK
- 34:    MOV  1,0,0 	move adress to ac1
- 35:    POP  0,0(6) 	copy bytes
- 36:     ST  0,0(1) 	copy bytes 
-* <- assign
-* -> assign
-* -> Const
- 37:    LDC  0,1000(0) 	load integer const
- 38:   PUSH  0,0(6) 	store exp
-* <- Const
-* -> Const
- 39:    LDC  0,1000(0) 	load integer const
- 40:   PUSH  0,0(6) 	store exp
-* <- Const
-* -> Id
- 41:    LDA  0,-16(2) 	load id adress
-* <- Id
- 42:    MOV  1,0,0 	load adress of lhs struct
- 43:    LDC  0,0,0 	load offset of member
- 44:    ADD  0,0,1 	compute the real adress if pointK
- 45:    MOV  1,0,0 	move adress to ac1
- 46:    POP  0,0(6) 	copy bytes
- 47:     ST  0,0(1) 	copy bytes 
-* <- assign
- 48:   PUSH  0,0(3) 	stack expand
 * -> assign
 * ->Single Op
- 49:    LDA  0,-11,2 	LDA the var adress
- 50:   PUSH  0,0(6) 	op: load left
-* ->index k
-* -> Id
- 51:    LDA  0,-18(2) 	load id adress
-* <- Id
- 52:   PUSH  0,0(6) 	sotre lhs adress
-* -> Const
- 53:    LDC  0,0(0) 	load integer const
- 54:   PUSH  0,0(6) 	store exp
-* <- Const
- 55:    POP  0,0(6) 	load index value to ac
- 56:    LDC  1,1,0 	load array size
- 57:    MUL  0,1,0 	compute the offset
- 58:    POP  1,0(6) 	load lhs adress to ac1
- 59:    ADD  0,0,1 	compute the real index adress a[index]
- 60:    MOV  1,0,0 	move adress to ac1
- 61:    POP  0,0(6) 	copy bytes
- 62:     ST  0,0(1) 	copy bytes 
+ 14:    LDA  0,-102,2 	LDA the var adress
+ 15:   PUSH  0,0(6) 	op: load left
+ 16:    POP  0,0(6) 	copy bytes
+ 17:     ST  0,-2(2) 	copy bytes 
 * <- assign
 * -> assign
-* ->Single Op
- 63:    LDA  0,-6,2 	LDA the var adress
- 64:   PUSH  0,0(6) 	op: load left
+* -> Const
+ 18:    LDC  0,100(0) 	load integer const
+ 19:   PUSH  0,0(6) 	store exp
+* <- Const
+* ->index k
 * ->index k
 * -> Id
- 65:    LDA  0,-18(2) 	load id adress
+ 20:    LDA  0,-102(2) 	load id adress
 * <- Id
- 66:   PUSH  0,0(6) 	sotre lhs adress
+ 21:   PUSH  0,0(6) 	sotre lhs adress
 * -> Const
- 67:    LDC  0,1(0) 	load integer const
- 68:   PUSH  0,0(6) 	store exp
+ 22:    LDC  0,1(0) 	load integer const
+ 23:   PUSH  0,0(6) 	store exp
 * <- Const
- 69:    POP  0,0(6) 	load index value to ac
- 70:    LDC  1,1,0 	load array size
- 71:    MUL  0,1,0 	compute the offset
- 72:    POP  1,0(6) 	load lhs adress to ac1
- 73:    ADD  0,0,1 	compute the real index adress a[index]
- 74:    MOV  1,0,0 	move adress to ac1
- 75:    POP  0,0(6) 	copy bytes
- 76:     ST  0,0(1) 	copy bytes 
+ 24:    POP  0,0(6) 	load index value to ac
+ 25:    LDC  1,10,0 	load array size
+ 26:    MUL  0,1,0 	compute the offset
+ 27:    POP  1,0(6) 	load lhs adress to ac1
+ 28:    ADD  0,0,1 	compute the real index adress a[index]
+ 29:   PUSH  0,0(6) 	sotre lhs adress
+* -> Const
+ 30:    LDC  0,1(0) 	load integer const
+ 31:   PUSH  0,0(6) 	store exp
+* <- Const
+ 32:    POP  0,0(6) 	load index value to ac
+ 33:    LDC  1,1,0 	load array size
+ 34:    MUL  0,1,0 	compute the offset
+ 35:    POP  1,0(6) 	load lhs adress to ac1
+ 36:    ADD  0,0,1 	compute the real index adress a[index]
+ 37:    MOV  1,0,0 	move adress to ac1
+ 38:    POP  0,0(6) 	copy bytes
+ 39:     ST  0,0(1) 	copy bytes 
 * <- assign
-* ->Single Op
+* ->index k
 * ->index k
 * -> Id
- 77:    LDA  0,-18(2) 	load id adress
+ 40:     LD  0,-2(2) 	load id value
+ 41:   PUSH  0,0(6) 	store exp
 * <- Id
- 78:   PUSH  0,0(6) 	sotre lhs adress
 * -> Const
- 79:    LDC  0,0(0) 	load integer const
- 80:   PUSH  0,0(6) 	store exp
+ 42:    LDC  0,1(0) 	load integer const
+ 43:   PUSH  0,0(6) 	store exp
 * <- Const
- 81:    POP  0,0(6) 	load index value to ac
- 82:    LDC  1,1,0 	load array size
- 83:    MUL  0,1,0 	compute the offset
- 84:    POP  1,0(6) 	load lhs adress to ac1
- 85:    ADD  0,0,1 	compute the real index adress a[index]
- 86:     LD  1,0(0) 	copy bytes
- 87:   PUSH  1,0(6) 	push a.x value into tmp
- 88:    POP  0,0(6) 	pop the adress
- 89:    MOV  1,0,0 	load adress of lhs struct
- 90:    LDC  0,0,0 	load offset of member
- 91:    ADD  0,0,1 	compute the real adress if pointK
- 92:     LD  1,0(0) 	copy bytes
- 93:   PUSH  1,0(6) 	push a.x value into tmp
- 94:    POP  0,0(6) 	move result to register
- 95:    OUT  0,0,0 	output value in register[ac / fac]
-* ->Single Op
+ 44:    POP  0,0(6) 	load index value to ac
+ 45:    LDC  1,10,0 	load array size
+ 46:    MUL  0,1,0 	compute the offset
+ 47:    POP  1,0(6) 	load lhs adress to ac1
+ 48:    ADD  0,0,1 	compute the real index adress a[index]
+ 49:   PUSH  0,0(6) 	sotre lhs adress
+* -> Const
+ 50:    LDC  0,1(0) 	load integer const
+ 51:   PUSH  0,0(6) 	store exp
+* <- Const
+ 52:    POP  0,0(6) 	load index value to ac
+ 53:    LDC  1,1,0 	load array size
+ 54:    MUL  0,1,0 	compute the offset
+ 55:    POP  1,0(6) 	load lhs adress to ac1
+ 56:    ADD  0,0,1 	compute the real index adress a[index]
+ 57:     LD  1,0(0) 	copy bytes
+ 58:   PUSH  1,0(6) 	push a.x value into tmp
+ 59:    POP  0,0(6) 	move result to register
+ 60:    OUT  0,0,0 	output value in register[ac / fac]
+* -> assign
+* -> Const
+ 61:    LDC  0,32(0) 	load integer const
+ 62:   PUSH  0,0(6) 	store exp
+* <- Const
+* ->index k
 * ->index k
 * -> Id
- 96:    LDA  0,-18(2) 	load id adress
+ 63:     LD  0,-2(2) 	load id value
+ 64:   PUSH  0,0(6) 	store exp
 * <- Id
- 97:   PUSH  0,0(6) 	sotre lhs adress
 * -> Const
- 98:    LDC  0,1(0) 	load integer const
- 99:   PUSH  0,0(6) 	store exp
+ 65:    LDC  0,2(0) 	load integer const
+ 66:   PUSH  0,0(6) 	store exp
 * <- Const
-100:    POP  0,0(6) 	load index value to ac
-101:    LDC  1,1,0 	load array size
-102:    MUL  0,1,0 	compute the offset
-103:    POP  1,0(6) 	load lhs adress to ac1
-104:    ADD  0,0,1 	compute the real index adress a[index]
-105:     LD  1,0(0) 	copy bytes
-106:   PUSH  1,0(6) 	push a.x value into tmp
-107:    POP  0,0(6) 	pop the adress
-108:    MOV  1,0,0 	load adress of lhs struct
-109:    LDC  0,0,0 	load offset of member
-110:    ADD  0,0,1 	compute the real adress if pointK
-111:     LD  1,0(0) 	copy bytes
-112:   PUSH  1,0(6) 	push a.x value into tmp
-113:    POP  0,0(6) 	move result to register
-114:    OUT  0,0,0 	output value in register[ac / fac]
-115:    MOV  3,2,0 	restore the caller sp
-116:     LD  2,0(2) 	resotre the caller fp
-117:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 67:    POP  0,0(6) 	load index value to ac
+ 68:    LDC  1,10,0 	load array size
+ 69:    MUL  0,1,0 	compute the offset
+ 70:    POP  1,0(6) 	load lhs adress to ac1
+ 71:    ADD  0,0,1 	compute the real index adress a[index]
+ 72:   PUSH  0,0(6) 	sotre lhs adress
+* -> Const
+ 73:    LDC  0,5(0) 	load integer const
+ 74:   PUSH  0,0(6) 	store exp
+* <- Const
+ 75:    POP  0,0(6) 	load index value to ac
+ 76:    LDC  1,1,0 	load array size
+ 77:    MUL  0,1,0 	compute the offset
+ 78:    POP  1,0(6) 	load lhs adress to ac1
+ 79:    ADD  0,0,1 	compute the real index adress a[index]
+ 80:    MOV  1,0,0 	move adress to ac1
+ 81:    POP  0,0(6) 	copy bytes
+ 82:     ST  0,0(1) 	copy bytes 
+* <- assign
+* ->index k
+* ->index k
+* -> Id
+ 83:    LDA  0,-102(2) 	load id adress
+* <- Id
+ 84:   PUSH  0,0(6) 	sotre lhs adress
+* -> Const
+ 85:    LDC  0,2(0) 	load integer const
+ 86:   PUSH  0,0(6) 	store exp
+* <- Const
+ 87:    POP  0,0(6) 	load index value to ac
+ 88:    LDC  1,10,0 	load array size
+ 89:    MUL  0,1,0 	compute the offset
+ 90:    POP  1,0(6) 	load lhs adress to ac1
+ 91:    ADD  0,0,1 	compute the real index adress a[index]
+ 92:   PUSH  0,0(6) 	sotre lhs adress
+* -> Const
+ 93:    LDC  0,5(0) 	load integer const
+ 94:   PUSH  0,0(6) 	store exp
+* <- Const
+ 95:    POP  0,0(6) 	load index value to ac
+ 96:    LDC  1,1,0 	load array size
+ 97:    MUL  0,1,0 	compute the offset
+ 98:    POP  1,0(6) 	load lhs adress to ac1
+ 99:    ADD  0,0,1 	compute the real index adress a[index]
+100:     LD  1,0(0) 	copy bytes
+101:   PUSH  1,0(6) 	push a.x value into tmp
+102:    POP  0,0(6) 	move result to register
+103:    OUT  0,0,0 	output value in register[ac / fac]
+104:    MOV  3,2,0 	restore the caller sp
+105:     LD  2,0(2) 	resotre the caller fp
+106:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-  7:    LDA  7,110(7) 	skip the function body
+  7:    LDA  7,99(7) 	skip the function body
 * call main function
-118:    LDC  0,120(0) 	store the return adress
-119:    LDC  7,8(0) 	ujp to the function body
-120:   HALT  0,0,0 	
+107:    LDC  0,109(0) 	store the return adress
+108:    LDC  7,8(0) 	ujp to the function body
+109:   HALT  0,0,0 	

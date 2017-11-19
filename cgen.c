@@ -23,6 +23,7 @@ if (is_basic_type(tree->converted_type, Pointer)){\
 else{\
 	setInAdressMode(); \
 	proc; \
+	emitRM("PUSH", ac, 0, mp, "sotre lhs adress");\
 	restoreAdressMode(); \
 }\
 }while(0)
@@ -240,15 +241,19 @@ static void genExp( TreeNode * tree,int scope)
             if (TraceCode) emitComment("-> Id");
             loc = st_lookup(tree->attr.name);
 			
-			if (checkInAdressMode() || is_basic_type(tree->converted_type,Array))
+			if (checkInAdressMode())
 			{
 				restoreAdressMode();
 				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
 			}
+			else if (is_basic_type(tree->converted_type, Array))
+			{
+				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
+				emitRM("PUSH", ac, 0, mp, "push array adress to mp");
+			}
 			else
 			{
 				int vsize = var_size_of(tree);
-				
 				for (int i = 0; i < vsize; ++i)
 				{
 					emitRM("LD", get_reg(getBasicType(tree->type)), loc + i, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
@@ -345,6 +350,7 @@ static void genExp( TreeNode * tree,int scope)
 			break;
 		case AssignK:
 			if (TraceCode) emitComment("-> assign");
+			restoreAdressMode();
 			cGen(tree->child[1], scope);// load value 
 			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
 			// todo optimize the code :bad smell
@@ -439,7 +445,6 @@ static void genExp( TreeNode * tree,int scope)
 			restoreAdressMode();// avoid the effect of adress_mode
 			TRY_ADRESS_MODE(tree->child[0], do {
 				cGen(tree->child[0], scope);
-				emitRM("PUSH", ac, 0, mp, "sotre lhs adress");
 			} while (0));
 			
 			cGen(tree->child[1], scope);

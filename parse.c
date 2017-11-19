@@ -39,6 +39,8 @@ static TreeNode * simple_exp();
 static TreeNode * term();
 static TreeNode * piexp();
 static TreeNode * factor();
+static TreeNode * lparenStartstmt();
+
 
 //help function
 static TreeNode * parseOneVar();
@@ -48,6 +50,10 @@ static TreeNode * paramK_stmt();// parse function def params
 static TreeNode * parseStruct();// parse struct declaration or struct definition
 static TreeNode * parseStructDef();
 static TreeNode * parseIndexNode(TreeNode*);
+
+static TypeInfo parseBaseType(void);
+static TypeInfo parsePointerType(TypeInfo);
+static void rollback(int);
 
 static void initTokens();
 static void unGetToken();
@@ -133,10 +139,9 @@ TreeNode * statement(void)
 	case WHILE: t = while_stmt(); break;
     case BREAK: t = break_stmt();break;
 	case RETURN:t = return_stmt(); break;
-	
+	case LPAREN:t = lparenStartstmt();break;
 	case ID:
 	case TIMES:
-	case LPAREN:
 		t = parseExp();
 		break;
 	case READ: t = read_stmt(); break;
@@ -393,74 +398,132 @@ TreeNode* parseOneExp()
  }
 
 
-TreeNode* declare_stmt(void)
-{
-	/*switch case token type */
-    TreeNode* t = newStmtNode(DeclareK);
-    
-    switch(token)
-    {
-      // define a variable; eg: int value;
-      case INT:
-		matchWithoutSkipLineEnd(INT);
-		t->type = createTypeFromBasic(Integer);
-        break;
-	  case FLOAT:
-		matchWithoutSkipLineEnd(FLOAT);
-		t->type = createTypeFromBasic(Float);
-		break;
-	  case VOID:
-		matchWithoutSkipLineEnd(VOID);
-		t->type = createTypeFromBasic(Void);
-		break;
-	  case STRUCT:
-		  matchWithoutSkipLineEnd(STRUCT);
-		  t->type = createTypeFromBasic(Struct);
-		  t->type.sname = copyString(tokenString);
-		  matchWithoutSkipLineEnd(ID);// struct name
-		  break;
-      default:
-		  matchWithoutSkipLineEnd(token);
-		  t->type = createTypeFromBasic(ErrorType);
-          syntaxError("undefined type");
-          break;
-    }
+ TypeInfo parsePointerType(TypeInfo type){
+	 TypeInfo ptype;
+	 if (token == TIMES)
+	 {
+		 ptype.point_type.pointKind = (TypeInfo*)(malloc(sizeof(TypeInfo)));
+		 ptype.typekind = Pointer;
+		 *ptype.point_type.pointKind = type;
+		 ptype.point_type.plevel = 0;
+		 while (token == TIMES) { ptype.point_type.plevel += 1; match(TIMES); }
+	 }
+	 return ptype; 
+ }
 
-	bool is_pointer = (token == TIMES);
-    if (is_pointer)
-    {
-		TypeInfo* type = (TypeInfo*)malloc(sizeof(TypeInfo));
-		*type = t->type;
-		t->type.point_type.pointKind = type;
-		t->type.typekind = Pointer;
-		t->type.point_type.plevel = 0;
-		while (token == TIMES) { t->type.point_type.plevel += 1; match(TIMES); }
-    }
-    
-    t->attr.name = copyString(tokenString);
-    match(ID);
+ TypeInfo parseDeclareType()
+ {
+	 TypeInfo type = parseBaseType();
 
-	// deal with array
-	if (token == LSQUARE)
-	{
-		TypeInfo ele_type = t->type;
-		t->type.typekind = Array;
-		t->type.array_type	= parseArrayType(ele_type);
-		skipLineEnd();
-	}
+	 if (token == TIMES)
+	 {
+		 type = parsePointerType(type);
+	 }
 
-    bool func_dec = (token == LPAREN);
-	if (func_dec)
-	{
-		t->return_type = t->type;//define the return type;
-		t->type = createTypeFromBasic(Func);
-		t->child[0] = paramK_stmt();
-		match(LBRACKET);
-		t->child[1] = stmt_sequence();
-		match(RBRACKET);
-	}
-	return t;
-}
+	 if (token == LSQUARE)// array
+	 {
+		 type.array_type = parseArrayType(type);
+		 type.typekind = Array;
+		 skipLineEnd();
+	 }
+	 return type;
+ }
+
+ TypeInfo parseBaseType(void)
+ {
+	 TypeInfo type;
+	 switch (token)
+	 {
+	 case LPAREN:
+		 matchWithoutSkipLineEnd(LPAREN);
+		 type = parseDeclareType();
+		 matchWithoutSkipLineEnd(RPAREN);
+		 break;
+	 case INT:
+		 matchWithoutSkipLineEnd(INT);
+		 type = createTypeFromBasic(Integer);
+		 break;
+	 case FLOAT:
+		 matchWithoutSkipLineEnd(FLOAT);
+		 type = createTypeFromBasic(Float);
+		 break;
+	 case VOID:
+		 matchWithoutSkipLineEnd(VOID);
+		 type = createTypeFromBasic(Void);
+		 break;
+	 case STRUCT:
+		 matchWithoutSkipLineEnd(STRUCT);
+		 type = createTypeFromBasic(Struct);
+		 type.sname = copyString(tokenString);
+		 matchWithoutSkipLineEnd(ID);// struct name
+		 break;
+	 default:
+		 matchWithoutSkipLineEnd(token);
+		 type = createTypeFromBasic(ErrorType);
+		 syntaxError("undefined type");
+		 break;
+	 }
+	 return type;
+ }
+
+ TreeNode* declare_stmt(void)
+ {
+	 TreeNode* t = newStmtNode(DeclareK);
+	 t->type = parseBaseType();
+
+	 if (token == TIMES)
+	 {
+		 t->type = parsePointerType(t->type);
+	 }
+
+	 t->attr.name = copyString(tokenString);
+	 matchWithoutSkipLineEnd(ID);
+
+	 if (token == LSQUARE)// array
+	 {
+		 t->type.array_type = parseArrayType(t->type);
+		 t->type.typekind = Array;
+	 }
+	 else if (token == LPAREN)// function
+	 {
+		 t->return_type = t->type;//define the return type;
+		 t->type = createTypeFromBasic(Func);
+		 t->child[0] = paramK_stmt();
+		 match(LBRACKET);
+		 t->child[1] = stmt_sequence();
+		 match(RBRACKET);
+	 }
+	 skipLineEnd();
+
+	 return t;
+ }
+ 
+ /*
+ two possible case
+ (....) type declaration
+ (.....) exp
+ */
+ TreeNode * lparenStartstmt()
+ {
+	 int pos_backup = pos;
+	 matchWithoutSkipLineEnd(LPAREN);
+	 while (token == LPAREN)
+	 {
+		 matchWithoutSkipLineEnd(LPAREN);
+	 }
+
+
+	 if (token == FLOAT || token == INT || token == STRUCT || token == VOID)
+	 {
+		 rollback(pos_backup);
+		 return declare_stmt();
+	 }
+	 else
+	 {
+		 rollback(pos_backup);
+		 return parseExp();
+	 }
+ }
 
 TreeNode * parseExp()
 {
@@ -710,20 +773,18 @@ TreeNode * parseIndexNode(TreeNode * lhs_exp)
 
 TreeNode * parseStruct()
 {
-	#define rollback_token_to_struct() do \
-		{while(pos > pos_backup) unGetToken();}while(0)
 
 	int pos_backup = pos;
 	matchWithoutSkipLineEnd(STRUCT);
 	match(ID);
 	if (token == LBRACKET)
 	{
-		rollback_token_to_struct();
+		rollback(pos_backup);
 		return parseStructDef();
 	}
 	else
 	{
-		rollback_token_to_struct();
+		rollback(pos_backup);
 		return declare_stmt();
 	}
 }
@@ -770,3 +831,8 @@ TreeNode * parseStructDef()
 	 matchWithoutSkipLineEnd(ID);
 	 return parsePointExp(t);
 }
+
+ void rollback(int pos_backup) 
+ {
+	 while (pos > pos_backup) unGetToken(); 
+ }

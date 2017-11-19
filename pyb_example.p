@@ -1,19 +1,19 @@
-struct test1
-{
-	int m	
-	int n
-	float d
-}
 
-struct test
-{
-	int x
-	int y
-	struct test1 c
-}
 
 void main()
 {
+
+	(int [10]) *a
+	int b[10][10]
+	a = &b
+	b[1][1] = 100
+	write a[1][1]
+	a[2][5] = 32
+	write b[2][5]
+
+
+
+
 	/*
 	struct test b[6]
 	struct test a[10]
@@ -23,7 +23,7 @@ void main()
 	b[3] = a[5]
 	write b[3].x
 	write b[3].c.d
-	*/
+	
 
 	
 	struct test a
@@ -37,5 +37,5 @@ void main()
 	x[1] = &a
 	write *(x[0]).x
 	write *(x[1]).x
-	
+	*/
 }
