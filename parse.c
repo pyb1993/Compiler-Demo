@@ -475,7 +475,6 @@ TreeNode* parseOneExp()
 	 {
 		 t->type = parsePointerType(t->type);
 	 }
-
 	 t->attr.name = copyString(tokenString);
 	 matchWithoutSkipLineEnd(ID);
 
@@ -492,6 +491,12 @@ TreeNode* parseOneExp()
 		 match(LBRACKET);
 		 t->child[1] = stmt_sequence();
 		 match(RBRACKET);
+	 }
+	 else if (token == ASSIGN)
+	 {
+		// not support array initialzation
+		 matchWithoutSkipLineEnd(ASSIGN);// can ignore empty line
+		t->child[2] = parseExp();
 	 }
 	 skipLineEnd();
 
@@ -727,8 +732,6 @@ TreeNode * parse(void)
 		syntaxError("Code ends before file\n");
 	return t;
 }
-
-
 
 ArrayType parseArrayType(TypeInfo element_type)
 {

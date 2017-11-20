@@ -14,6 +14,6 @@ void  insertParam(TreeNode * t,int scope_depth);
 void deleteVar(TreeNode * t,int scope_depth);
 void deleteVarOfField(TreeNode * tree, int scope);
 void gen_converted_type(TreeNode * tree);
-
-
+bool shouldBeExp(TreeNode * t, ExpKind ekind);
+bool shouldBeStmt(TreeNode * t, StmtKind skind);
 #endif

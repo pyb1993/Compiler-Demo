@@ -11,19 +11,18 @@
 #include "analyze.h"
 #include "tinytype.h"
 #include "assert.h"
+
+#define ERROR_IF(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
+
 /* counter for global variable memory locations */
 static int location = 0;
 static int stack_offset = -2;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
-
 static void checkTree(TreeNode * t,char * curretn_function,int scope);
 static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
-
-void insertNode(TreeNode * t, int scope);
-void insertTree(TreeNode * t, int scope);
-void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
+static void check_assign_node(TreeNode *,TreeNode *,TreeNode*, char * current_function, int scope);
 
 static void defineError(TreeNode * t ,char * msg)
 {
@@ -36,6 +35,21 @@ static void typeError(TreeNode * t, char * message)
 {
 	fprintf(listing, "Type error at line %d: %s\n", t->lineno, message);
 	Error = TRUE;
+}
+
+void insertNode(TreeNode * t, int scope);
+void insertTree(TreeNode * t, int scope);
+void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
+
+
+ bool shouldBeExp(TreeNode * t, ExpKind ekind)
+{
+	return t->nodekind == ExpK && t->kind.exp == ekind;
+}
+
+ bool shouldBeStmt(TreeNode * t, StmtKind skind)
+{
+	return t->nodekind == StmtK && t->kind.exp == skind;
 }
 
 /* Procedure insertNode inserts
@@ -69,7 +83,7 @@ static void typeError(TreeNode * t, char * message)
 	 if (scope == 0) return;
 	 while (t != NULL)
 	 {
-		 if (t->nodekind == StmtK && t->kind.exp == DeclareK)
+		 if (shouldBeStmt(t,DeclareK) || shouldBeStmt(t,ParamK))
 		 {
 			 deleteVar(t, scope);
 			 stack_offset += var_size_of(t);
@@ -169,6 +183,7 @@ void buildSymtab(TreeNode * syntaxTree)
 { 
 	initTypeCollection();
 	insertTree(syntaxTree, 0);// insert node and check them
+	printf("insert tree is done\n");
 	checkTree(syntaxTree, NULL, 0);
 }
 
@@ -239,36 +254,11 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->converted_type = t->type;
 			return;// important! skip set_converted_type
 			break;
+
 		case AssignK:
-			// todo optimize bad smell
 			checkNodeType(t->child[0], current_function, scope);
 			checkNodeType(t->child[1], current_function, scope);
-			assert(t->child[0]->nodekind == ExpK && t->child[1]->nodekind == ExpK);
-			assert(t->child[0]->type.typekind != Array);
-			TypeInfo exp_type = t->child[1]->converted_type;
-			if (t->child[0]->kind.exp == IdK)
-			{
-				assert(st_lookup(t->child[0]->attr.name) != NOTFOUND);
-				TypeInfo id_type = st_lookup_type(t->child[0]->attr.name);
-				t->type = id_type;
-				if (!can_convert(exp_type, id_type))
-				{
-					assert(!"conversion is not allowed for this two types");
-				}
-			}
-			else
-			{
-				// *..p = xx || a[exp] = xxx
-				TreeNode * unref_child = t->child[0];
-				assert(unref_child->child[0] != NULL);
-				assert(can_convert(exp_type,unref_child->type));
-				if (unref_child->kind.exp == IndexK)
-				{
-					assert(!is_basic_type(unref_child->type, Array)|| 
-						   !"Const array cannot be left operand");
-				}
-			}
-			t->converted_type = t->type;
+			check_assign_node(t, t->child[0], t->child[1], current_function, scope);
 			break;
 
 		case OpK:
@@ -412,14 +402,18 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				todo :remove these  function insert Function
 				*/
 				addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
-				//st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
 				// remove this to function deleteFunction
 				deleteVarOfField(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
-				deleteFuncType(t->attr.name);
+				//deleteFuncType(t->attr.name);
+			}
+			if (t->child[2] != NULL)// int x = 100
+			{
+				checkNodeType(t->child[2], current_function, scope);
+				check_assign_node(t, t, t->child[2], current_function, scope);
 			}
 			break;
 		default:
@@ -439,7 +433,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 /*assert the node is exp*/
 static TypeInfo get_converted_type(TreeNode * t)
 {
-	assert(t != NULL);
+	ERROR_IF(t != NULL,"try to get type of null node");
 	
 	switch (t->kind.exp)
 	{
@@ -453,7 +447,7 @@ static TypeInfo get_converted_type(TreeNode * t)
 		return st_lookup_type(t->attr.name);
 		break;
 	case FuncallK:
-		assert(t->attr.name != NULL);
+		ERROR_IF(t->attr.name != NULL,"function not found");
 		FuncType ftype = getFunctionType(t->attr.name);
 		TypeInfo return_type = ftype.return_type;
 		return return_type;
@@ -493,3 +487,31 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	TypeInfo converted_type = get_converted_type(tree);
 	set_convertd_type(tree, converted_type);
 }
+
+  void check_assign_node(TreeNode * t,TreeNode * left,TreeNode * right, char * current_function, int scope)
+ {
+	  ERROR_IF(right->nodekind == ExpK,"illegal assign");
+	  assert(!is_basic_type(left->type,Array));
+	  TypeInfo exp_type = right->converted_type;
+	  if (shouldBeExp(left,IdK) || shouldBeStmt(t,DeclareK))
+	  {
+		  ERROR_IF(st_lookup(left->attr.name) != NOTFOUND,"variable not defined");
+		  TypeInfo id_type = st_lookup_type(left->attr.name);
+		  t->type = id_type;
+		  ERROR_IF(can_convert(exp_type, id_type),
+					"conversion is not allowed for this two types");
+	  }
+	  else
+	  {
+		  // *..p = xx || a[exp] = xxx
+		  TreeNode * unref_child = t->child[0];
+		  ERROR_IF(left->child[0] != NULL,"illegal assgin stmt");
+		  ERROR_IF(can_convert(exp_type, unref_child->type),"not converted type in assign");
+		  if (shouldBeExp(unref_child,IndexK))
+		  {
+			  ERROR_IF(!is_basic_type(unref_child->type, Array),
+						"Const array cannot be left operand");
+		  }
+	  }
+	  t->converted_type = t->type;
+ }

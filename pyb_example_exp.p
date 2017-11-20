@@ -74,21 +74,52 @@ void main()
 */
 
 /*
+	(int [10]) *a
+	int b[10][10]
+	a = &b
+	b[1][1] = 100
+	write a[1][1]
+	a[2][5] = 32
+	write b[2][5]
+	*/
+
+	/*
+	struct test b[6]
+	struct test a[10]
+	a[5].x = 1
+	a[5].c.m = 10
+	a[5].c.d = a[5].c.m * a[5].c.m
+	b[3] = a[5]
+	write b[3].x
+	write b[3].c.d
+	
+
+	
+	struct test a
+	struct test b
+	struct test c
+	a.x = 10
+	b.x = 100
+	c.x = 1000
+	struct test *x[2]
+	x[0] = &b
+	x[1] = &a
+	write *(x[0]).x
+	write *(x[1]).x
+	*/
+
+
+/*
 to do list
-0.0 support array to pointer(funtion parameter pass,a[x] produce array)
 1.0 support local function: need to add the stack_depth
-1.1 check the assign,read,write
 1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token
 	which is the preporcessor !
 	to implement the procedure, we need to save the linebuf,
 2. implement break
 3. implement !,and,or
-5  implement array
 6  support three value expression
 6  support switch case
-6  implement struct
-7  implement Pointer
 8  define variable
 9  auto x = 10; auto inference
 10 import other file

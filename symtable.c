@@ -65,8 +65,9 @@ void st_insert( char * name, int lineno, int loc,int size,int depth,TypeInfo typ
 		printf("%s duplicate var :",name);
 		assert(!" duplicate definition");
 	}
-    int h = hash(name);
-	BucketList inserted = construct_node(name, lineno, loc, size,depth, type);
+    
+	int h = hash(name);
+	BucketList inserted = construct_node(name, lineno, loc, size, depth, type);
 	hashTable[h] = insert_into_list(hashTable[h],inserted);
 } 
 
