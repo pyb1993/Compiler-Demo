@@ -90,6 +90,7 @@ typedef struct treeNode
 	struct treeNode * child[MAXCHILDREN];
 	struct treeNode * sibling;
 	int lineno;
+	bool empty_exp;
 	NodeKind nodekind;
 	union { StmtKind stmt; ExpKind exp; } kind;
 	union {

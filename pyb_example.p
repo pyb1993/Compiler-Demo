@@ -1,23 +1,19 @@
 
-//int y = 2
+int y = 2
 
-/*int f(int x,int y)
+int f(int x,int y)
 {	
-	int a
-	int b
-	write &x	
-	write &y
-	write &a
-	write &b
+	y = 2 + 9
+	return x+y
+}
 
-}
-*/
-int test(int x)
-{
-}
 void main()
 {
-	int aa
-	write &aa
-   //f(1,20)
+	float x
+	int c
+	c = x = 1 + (y = f(2,3))
+	write x
+	write c
+	write y
+
 }

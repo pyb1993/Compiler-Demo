@@ -541,7 +541,7 @@ TreeNode * parseExp()
 			p->child[0] = t;
 			t = p;
 			matchWithoutSkipLineEnd(token);
-			t->child[1] = compare_exp();
+			t->child[1] = parseExp();// why? because the x = y = z,y = z is also a assinK
 		}
 	}
 	return t;

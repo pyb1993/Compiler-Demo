@@ -42,12 +42,12 @@ void insertTree(TreeNode * t, int scope);
 void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 
 
- bool shouldBeExp(TreeNode * t, ExpKind ekind)
+ bool isExp(TreeNode * t, ExpKind ekind)
 {
 	return t->nodekind == ExpK && t->kind.exp == ekind;
 }
 
- bool shouldBeStmt(TreeNode * t, StmtKind skind)
+ bool isStmt(TreeNode * t, StmtKind skind)
 {
 	return t->nodekind == StmtK && t->kind.exp == skind;
 }
@@ -76,20 +76,32 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 	}
 }
 
- // delete all local variable from the stmtseq
- void deleteVarOfField(TreeNode * tree, int scope)
+ void __deleteVarOfField(TreeNode * tree,int scope,bool need_change_stack)
  {
 	 TreeNode * t = tree;
 	 if (scope == 0) return;
 	 while (t != NULL)
 	 {
-		 if (shouldBeStmt(t,DeclareK) || shouldBeStmt(t,ParamK))
+		 if (isStmt(t, DeclareK) || isStmt(t, ParamK))
 		 {
 			 deleteVar(t, scope);
-			 stack_offset += var_size_of(t);
+			 if (need_change_stack)
+				stack_offset += var_size_of(t);
 		 }
 		 t = t->sibling;
 	 }
+ }
+
+ // delete all local variable from the stmtseq
+ void deleteVarOfField(TreeNode * tree, int scope)
+ {
+	 __deleteVarOfField(tree, scope, true);
+ }
+
+ // delete all local variable from the stmtseq
+ void deleteParams(TreeNode * tree, int scope)
+ {
+	 __deleteVarOfField(tree, scope, false);
  }
 
  void insertTree(TreeNode * t,int scope)
@@ -105,57 +117,59 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 {
 
 	 switch (t->nodekind)
-    { 
+	 {
 	 case StmtK:
-            switch (t->kind.stmt)
-        {
-            case DeclareK:				
-				if (is_basic_type(t->type,Func) && scope == 0)
-                {
-					/*
-						todo :support local procedure
-					*/
-					st_insert(t->attr.name, t->lineno, location--, 1,scope, t->type);// function occupy 4 bytes
-					addFunctionType(t->attr.name, new_func_type(t));
-					insertParam(t->child[0],scope + 1);
-					insertTree(t->child[1], scope + 1);
-					deleteVarOfField(t->child[0], scope + 1);
-					deleteVarOfField(t->child[1], scope + 1);
-					deleteFuncType(t->attr.name);
-					return;
-				}
-				if (scope == 0) //global var
-                {   
-					// todo remove the stackoffset,location to the symtable
-                    int var_szie = var_size_of(t);
-					location -= var_szie;
-					st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope,t->type);
-					return;
-                }
-				else // local variable
-				{
-					int var_szie = var_size_of(t);
-					stack_offset -= var_szie;
-					st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
-				}
-                break;
-			case StructDefineK:
-				assert(scope == 0);
-				addStructType(t->attr.name, new_struct_type(t));
-				// to check any duplicate members
-				// todo remove to check duplicate members
-				insertTree(t->child[0], scope + 1);
-				deleteVarOfField(t->child[0], scope + 1);
-				// todo support local struct
-				break;
-            default:
-                break;
-        }
-            break;
-        case ExpK:
-			if ((t->kind.exp == IdK || t->kind.exp == FuncallK) && st_lookup(t->attr.name) == NOTFOUND)
-				defineError(t,"undefined variable");			
-			break;
+		 switch (t->kind.stmt)
+		 {
+		 case DeclareK:
+			 if (is_basic_type(t->type, Func) && scope == 0)
+			 {
+				 /*
+					 todo :support local procedure
+					 */
+				 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
+				 addFunctionType(t->attr.name, new_func_type(t));
+				 insertParam(t->child[0], scope + 1);
+				 insertTree(t->child[1], scope + 1);
+				 deleteParams(t->child[0], scope + 1);
+				 deleteVarOfField(t->child[1], scope + 1);
+				 deleteFuncType(t->attr.name);
+				 return;
+			 }
+			 if (scope == 0) //global var
+			 {
+				 // todo remove the stackoffset,location to the symtable
+				 int var_szie = var_size_of(t);
+				 location -= var_szie;
+				 st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope, t->type);
+				 return;
+			 }
+			 else // local variable
+			 {
+				 int var_szie = var_size_of(t);
+				 stack_offset -= var_szie;
+				 st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
+			 }
+			 break;
+		 case StructDefineK:
+			 assert(scope == 0);
+			 addStructType(t->attr.name, new_struct_type(t));
+			 // to check any duplicate members
+			 // todo remove to check duplicate members
+			 insertTree(t->child[0], scope + 1);
+			 deleteVarOfField(t->child[0], scope + 1);
+			 // todo support local struct
+			 break;
+		 default:
+			 break;
+		 }
+		 break;
+	 case ExpK:
+		 // deal with the exp in line
+		 // todo remove
+		ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK), "empty exp beyond call and assign is not allowed!");
+		t->empty_exp = TRUE;
+		break;
 	 }
 }
 
@@ -171,8 +185,7 @@ void deleteVar(TreeNode * t,int scope_depth)
 	}
 	else
 	{
-	st_delete(t->attr.name);
-	
+		st_delete(t->attr.name);
 	}
 }
 
@@ -191,7 +204,6 @@ int var_size_of(TreeNode* tree)
 {
 	return var_size_of_type(tree->type);
 }
-
 
 void checkTree(TreeNode * t,char * current_function, int scope)
 {
@@ -291,6 +303,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 
 		case IdK:
+			ERROR_IF(st_lookup(t->attr.name) != NOTFOUND, "undefined variable");
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
@@ -406,7 +419,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
 				// remove this to function deleteFunction
-				deleteVarOfField(t->child[0], scope + 1);
+				deleteParams(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
 				//deleteFuncType(t->attr.name);
 			}
@@ -493,7 +506,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	  ERROR_IF(right->nodekind == ExpK,"illegal assign");
 	  assert(!is_basic_type(left->type,Array));
 	  TypeInfo exp_type = right->converted_type;
-	  if (shouldBeExp(left,IdK) || shouldBeStmt(t,DeclareK))
+	  if (isExp(left,IdK) || isStmt(t,DeclareK))
 	  {
 		  ERROR_IF(st_lookup(left->attr.name) != NOTFOUND,"variable not defined");
 		  TypeInfo id_type = st_lookup_type(left->attr.name);
@@ -507,7 +520,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 		  TreeNode * unref_child = t->child[0];
 		  ERROR_IF(left->child[0] != NULL,"illegal assgin stmt");
 		  ERROR_IF(can_convert(exp_type, unref_child->type),"not converted type in assign");
-		  if (shouldBeExp(unref_child,IndexK))
+		  if (isExp(unref_child,IndexK))
 		  {
 			  ERROR_IF(!is_basic_type(unref_child->type, Array),
 						"Const array cannot be left operand");
