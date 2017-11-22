@@ -1,4 +1,3 @@
-
 #include "globals.h"
 #include "symtable.h"
 #include "code.h"
@@ -7,6 +6,8 @@
 #include "tinytype.h"
 #include "assert.h"
 #include "analyze.h"
+
+typedef void(*emitFunc)(int, int, int);
 
 #define TRY_ADRESS_MODE(tree,proc) do {\
 restoreAdressMode();\
@@ -35,11 +36,20 @@ static void addLabel();// add label to the labelTabel
 static void cgen_assign(TreeNode *,TreeNode *,int);
 static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
 
-int look_label(int label);// find the label representing the adress
+static void __cGenST(int , int , int );
+static void __cGenPUSH(int ,int, int );
+static void __cgenPopFromTemp(int, int, int,int, emitFunc);
+static void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg)
+{
+	__cgenPopFromTemp(origin_reg, target_reg, offset, target_adress_reg, __cGenST);
+}
+static void cgenPushObj(int origin_reg, int target_reg, int offset)
+{
+	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
+}
+static void cGen(TreeNode * tree, int scope);
 
-/* prototype for internal recursive code generator */
-static void cGen (TreeNode * tree,int scope);
-/*function used to get the relative register  */
+/*function used to get the relative register of specific type  */
 static int get_reg(Type type);
 static int get_reg1(Type type);
 /*get the current env's stack*/
@@ -54,6 +64,7 @@ static void getRealAdressBy(TreeNode* tree);
 void setInAdressMode();
 bool checkInAdressMode();
 void restoreAdressMode();
+int look_label(int label);// find the label representing the adress
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -187,7 +198,8 @@ static void genStmt( TreeNode * tree,int scope)
 			else if (scope > 0 && !is_basic_type(tree->type,Func))//local variable
 			{
 				insertNode(tree, scope);
-				emitRM("PUSH",0,0,sp,"stack expand");// todo support expand stack
+				int vsize = var_size_of(tree);
+				emitRM("LDA",sp,-vsize,sp,"stack expand");
 			}
 
 			// int x = 1
@@ -276,10 +288,9 @@ static void genExp( TreeNode * tree,int scope)
 			loc = getFunctionAdress(tree->attr.name);
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
-			// after gen the exp
 			popParam(p);
-			// convert the type of return_type and converted_type
 			
+			// ensure the function need to 
 			if (!is_basic_type(tree->type,Void) )
 			{
 				origin_reg = get_reg(getBasicType(tree->type));
@@ -354,7 +365,8 @@ static void genExp( TreeNode * tree,int scope)
 				setInAdressMode();
 				cGen(tree->child[0], scope);
 				restoreAdressMode();
-				cGenPushTemp(var_size_of(tree),
+				cGenPushTemp(
+					var_size_of(tree),
 					get_reg1(tree->converted_type.typekind),
 					get_reg1(tree->type.typekind),
 					ac);
@@ -622,11 +634,15 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 
 	int exp_reg = get_reg(getBasicType(e->converted_type));
 	int par_reg = get_reg(getBasicType(p->type));
-	// todo support remove from memory to memory
+	int vsize = var_size_of(e);
 	// todo support struct pass
-	emitRM("POP", exp_reg, 0, mp, "pop exp ");
-	emitRO("MOV", par_reg, exp_reg, 0, "");
-	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
+	//cgenPushObj(exp_reg, par_reg, vsize);
+
+	while (vsize--){
+		emitRM("POP", exp_reg, 0, mp, "pop exp ");
+		emitRO("MOV", par_reg, exp_reg, 0, "");
+		emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
+	}
 }
 /*pop parameters*/
 void popParam(ParamNode * p)
@@ -634,7 +650,7 @@ void popParam(ParamNode * p)
 	int param_size = 0;
 	while (p != NULL)
 	{
-		param_size += 1;
+		param_size += var_size_of_type(p->type);
 		p = p->next_param;
 	}
 
@@ -667,16 +683,6 @@ void getRealAdressBy( TreeNode* tree)
 	//emitRM("PUSH", ac, 0, mp, "");
 }
 
-void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg)
-{
-	while (offset-- > 0)
-	{
-		emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-		emitRO("MOV", target_reg, origin_reg, 0, "move register ");
-		emitRM("ST", target_reg, offset, target_adress_reg, "copy bytes ");
-	}
-}
-
 void cgen_assign(TreeNode * left,TreeNode * right,int scope)
 {
 	cGen(right, scope);// load value 
@@ -689,15 +695,13 @@ void cgen_assign(TreeNode * left,TreeNode * right,int scope)
 	if (isExp(left,IdK) || isStmt(left,DeclareK))
 	{
 		char * name = left->attr.name;
-		TypeInfo type = st_lookup_type(name);
-
 		int loc = st_lookup(name);// get the memory location of identifier
 		int var_stack_bottom = get_stack_bottom(st_lookup_scope(name));
 		emitRM("LDA", ac1, loc, var_stack_bottom, "move the adress of ID");
 	}
 	else if (isExp(left, SingleOpK))
 	{
-		/*  *..p = ffff */
+		//  *..p = ffff 
 		// todo run in the adress mode
 
 		assert(left->attr.op == UNREF || !"illegal left operand on assign");
@@ -716,7 +720,7 @@ void cgen_assign(TreeNode * left,TreeNode * right,int scope)
 	cgenCopyObj(origin_reg, target_reg, vsize, ac1);
 }
 
-static void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_reg)
+void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_reg)
 {
 	for (int loc = 0; loc < vsize; ++loc)
 	{
@@ -725,4 +729,27 @@ static void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_r
 		emitRO("MOV", target_reg, origin_reg, 0, "move between reg");
 		emitRM("PUSH", target_reg, 0, mp, "push bytes ");
 	}
+}
+
+
+
+// simulate pop and dosomething
+void __cgenPopFromTemp(int origin_reg, int target_reg, int offset,int adress_reg, emitFunc f)
+{
+	while (offset-- > 0)
+	{
+		emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+		emitRO("MOV", target_reg, origin_reg, 0, "copy bytes");
+		f(target_reg, offset, adress_reg);// do something
+	}
+}
+
+void __cGenST(int target_reg, int offset, int target_adress_reg)
+{
+	emitRM("ST", target_reg, offset, target_adress_reg, "copy bytes");
+}
+
+void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
+{
+	emitRM("PUSH", target_reg, 0, target_adress_reg, "PUSH bytes");
 }

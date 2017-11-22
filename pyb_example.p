@@ -1,19 +1,23 @@
 
-int y = 2
-
-int f(int x,int y)
-{	
-	y = 2 + 9
-	return x+y
+struct test
+{
+	int x
+	int y
+	int z
 }
+
+void f(struct test t,struct test *t2)
+{	
+	t = *t2
+}
+
 
 void main()
 {
-	float x
-	int c
-	c = x = 1 + (y = f(2,3))
-	write x
-	write c
-	write y
-
+	struct test t
+	t.x = 12
+	t.y = 2
+	struct test *t2 = &t
+	t = *t2
+	write 1
 }

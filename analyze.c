@@ -126,14 +126,14 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 {
 				 /*
 					 todo :support local procedure
-					 */
+				 */
 				 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
 				 addFunctionType(t->attr.name, new_func_type(t));
 				 insertParam(t->child[0], scope + 1);
 				 insertTree(t->child[1], scope + 1);
 				 deleteParams(t->child[0], scope + 1);
 				 deleteVarOfField(t->child[1], scope + 1);
-				 deleteFuncType(t->attr.name);
+				 //deleteFuncType(t->attr.name);
 				 return;
 			 }
 			 if (scope == 0) //global var
@@ -168,6 +168,10 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 // deal with the exp in line
 		 // todo remove
 		ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK), "empty exp beyond call and assign is not allowed!");
+		if (isExp(t, FuncallK)) { 
+			FuncType type = getFunctionType(t->attr.name);
+			ERROR_IF(is_basic_type(type.return_type, Void), "only function return nothing can be the empty exp");
+		}
 		t->empty_exp = TRUE;
 		break;
 	 }
@@ -255,7 +259,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				if (child1->type.point_type.plevel == 1)
 				{
 					t->type = *child1->type.point_type.pointKind;
-					t->type.sname = child1->type.sname;
 				}
 				else
 				{
@@ -414,7 +417,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				/*
 				todo :remove these  function insert Function
 				*/
-				addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
+				//addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);

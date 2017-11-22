@@ -111,6 +111,7 @@ void main()
 
 /*
 to do list
+1.0 todo support return stmt match check in the function
 1.0 support local function: need to add the stack_depth
 1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token
