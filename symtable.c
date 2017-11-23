@@ -60,6 +60,11 @@ void st_delete(char * name)
 
 void st_insert( char * name, int lineno, int loc,int size,int depth,TypeInfo type)
 {
+	if (is_duplicate_var(name, depth))
+	{
+		printf("%s duplicate var :",name);
+		assert(!" duplicate definition");
+	}
     int h = hash(name);
 	BucketList inserted = construct_node(name, lineno, loc, size,depth, type);
 	hashTable[h] = insert_into_list(hashTable[h],inserted);
@@ -97,11 +102,12 @@ BucketList construct_node(char * name, int lineno, int loc, int size,int depth, 
 	return list;
 }
 
-
 /*return the first node in the list after delete*/
-BucketList del_from_list(BucketList list, char * name){
+BucketList del_from_list(BucketList list, char * name)
+{
 	assert((list != NULL || !"delete failed!"));
-	if (strcmp(list->name, name) == 0){
+	if (strcmp(list->name, name) == 0)
+	{
 		BucketList last = list->next;
 		free_node(list);
 		return last;

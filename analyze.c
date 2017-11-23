@@ -13,10 +13,10 @@
 #include "assert.h"
 /* counter for global variable memory locations */
 static int location = 0;
-static int stack_offset = 0;
+static int stack_offset = -2;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
- */
+*/
 
 static void checkTree(TreeNode * t,char * curretn_function,int scope);
 static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
@@ -69,7 +69,11 @@ static void typeError(TreeNode * t, char * message)
 	 if (scope == 0) return;
 	 while (t != NULL)
 	 {
-		 deleteVar(t, scope);
+		 if (t->nodekind == StmtK && t->kind.exp == DeclareK)
+		 {
+			 deleteVar(t, scope);
+			 stack_offset += var_size_of(t);
+		 }
 		 t = t->sibling;
 	 }
  }
@@ -91,13 +95,8 @@ static void typeError(TreeNode * t, char * message)
 	 case StmtK:
             switch (t->kind.stmt)
         {
-            case DeclareK:
-				if (is_duplicate_var(t->attr.name,scope))
-				{
-					defineError(t, "duplicate definition");
-				}
-				
-				if (is_basic_type(t->type,Func))
+            case DeclareK:				
+				if (is_basic_type(t->type,Func) && scope == 0)
                 {
 					/*
 						todo :support local procedure
@@ -108,6 +107,7 @@ static void typeError(TreeNode * t, char * message)
 					insertTree(t->child[1], scope + 1);
 					deleteVarOfField(t->child[0], scope + 1);
 					deleteVarOfField(t->child[1], scope + 1);
+					deleteFuncType(t->attr.name);
 					return;
 				}
 				if (scope == 0) //global var
@@ -126,11 +126,13 @@ static void typeError(TreeNode * t, char * message)
 				}
                 break;
 			case StructDefineK:
-
-				
-
-
-
+				assert(scope == 0);
+				addStructType(t->attr.name, new_struct_type(t));
+				// to check any duplicate members
+				// todo remove to check duplicate members
+				insertTree(t->child[0], scope + 1);
+				deleteVarOfField(t->child[0], scope + 1);
+				// todo support local struct
 				break;
             default:
                 break;
@@ -143,15 +145,20 @@ static void typeError(TreeNode * t, char * message)
 	 }
 }
 
-/*notice one thing: delete param list after function body,not imediately!*/
+/*notice one thing: delete param list after function body, not imediately!*/
 void deleteVar(TreeNode * t,int scope_depth)
 {
 	if (t == NULL){ return; }
-	if (t->nodekind != StmtK ||( t->kind.stmt != DeclareK && t->kind.stmt != ParamK)) return;
-
-	if (scope_depth > 0)
+	if (t->nodekind != StmtK || ( t->kind.stmt != DeclareK && t->kind.stmt != ParamK)) return;
+	assert(scope_depth > 0);
+	if (is_basic_type(t->type,Func))
 	{
-		st_delete(t->attr.name);
+		assert(0);
+	}
+	else
+	{
+	st_delete(t->attr.name);
+	
 	}
 }
 
@@ -204,28 +211,29 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				if (is_basic_type(child1->type, Pointer))
 				{
 					t->type = child1->type;
-					t->type.plevel = child1->type.plevel + 1;
+					t->type.point_type.plevel = child1->type.point_type.plevel + 1;
 				}
 				else
 				{
-					t->type = createTypeFromBasic(Pointer);
-					t->type.plevel = 1;
-					t->type.pointKind = child1->type.typekind;
+					//free_type(t->type);// in general, t->type should be null
+					t->type = createTypeFromBasic(Pointer);// malloc new memory
+					t->type.point_type.plevel = 1;
+					*t->type.point_type.pointKind = child1->type;//warnning, share same memory
 					t->type.sname = child1->type.sname;
 				}
 			}
 			else if (t->attr.op == UNREF)
 			{
 				assert(is_basic_type(child1->type, Pointer));
-				if (child1->type.plevel == 1)
+				if (child1->type.point_type.plevel == 1)
 				{
-					t->type = createTypeFromBasic(child1->type.pointKind);
+					t->type = *child1->type.point_type.pointKind;
 					t->type.sname = child1->type.sname;
 				}
 				else
 				{
 					t->type = child1->type;
-					t->type.plevel -= 1;
+					t->type.point_type.plevel -= 1;
 				}
 			}
 			t->converted_type = t->type;
@@ -307,6 +315,16 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->type = *(t->child[0]->type.array_type.ele_type);			
 			t->converted_type = t->type;
 			break;
+		case PointK:
+			// setInPointKRecursion
+			// checkIfInPointKRecursion
+			// RestoreInPointKRecursion
+			checkNodeType(t->child[0],current_function, scope);
+			StructType stype = getStructType(t->child[0]->type.sname);
+			Member* member = getMember(stype, t->attr.name);
+			t->type = member->typeinfo;
+			t->converted_type = t->type;
+			break;
 		case FuncallK:
 			assert(t->attr.name != 0);
 			FuncType ftype = getFunctionType(t->attr.name);
@@ -383,14 +401,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 	
 		case DeclareK:
-			stack_offset = -2;
-			if (is_basic_type(t->type,Func))
+			if (is_basic_type(t->type,Func) && scope == 0)
 			{
 				/*
-				todo :remove these to function insertFunction
+				todo :remove these  function insert Function
 				*/
 				addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
-				st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
+				//st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);

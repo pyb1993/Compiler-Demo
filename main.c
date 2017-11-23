@@ -6,7 +6,6 @@
 #include "cgen.h"
 #include "util.h"
 #include "tm.h"
-#include <unistd.h>
 
 int lineno = 0;
 FILE * source;
@@ -23,10 +22,15 @@ int Error = FALSE;
 int done = FALSE;
 
 int main()
+{    
 
+<<<<<<< HEAD
 {
     
 	char *filename = "..//pyb_example.p";
+=======
+	char *filename = "pyb_example.p";
+>>>>>>> b5d6863f6b74c4ea406e9b4b6acecd3856265bb9
 	source = fopen(filename, "r");
 	listing = stdout;
 
@@ -39,7 +43,7 @@ int main()
 
 	 TreeNode *t = parse();
 	 printTree(t);
-	#if 0
+	#if 1
 		if (!Error)
 		{
 			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
@@ -48,7 +52,7 @@ int main()
 		}
 	#endif
 
-#if 0
+#if 1
 	/**compute the length of filename before .tm **/
 	int len = (int)strcspn(filename, ".");
 	char * codeFile = (char *)calloc(len+4,sizeof(char));
@@ -59,14 +63,14 @@ int main()
 	fclose(code);
 #endif
     
-#if 0
+#if 1
 	/* read the program */
 	code = fopen(codeFile, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
 
-#if 0
+#if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do
 	{
@@ -78,4 +82,5 @@ int main()
 #endif
 
 	return 0;
+	
 }

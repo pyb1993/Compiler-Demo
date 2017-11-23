@@ -4,11 +4,19 @@
 #include "assert.h"
 
 #define MAXTYPENUM  100
+// macro to simplify check same name
+#define ensure_not_same_name(name,sname) do {\
+	assert(strcmp(name, sname) != 0 \
+	|| !"duplicate struct/function!!!"); }while (0)
+
 static FuncType FTypeCollection[MAXTYPENUM];
 static StructType STypeCollection[MAXTYPENUM];
 
 
 static int getIndexOfFType(char *key);
+static int getIndexOfSType(char * key);
+static int var_size_of_members(Member* members);
+
 
 void initTypeCollection()
 {
@@ -22,13 +30,14 @@ FuncType new_func_type(TreeNode * tree)
 	FuncType ftype;
 	ftype.return_type = tree->return_type;
 	ftype.params = new_param_node(tree->child[0]);
-	ftype.name = tree->attr.name;
+	ftype.name = copyString(tree->attr.name);
 	return ftype;
 }
 
 StructType new_struct_type(TreeNode * tree)
 {
 	StructType stype;
+	stype.typeinfo = createTypeFromBasic(Struct);
 	stype.members = new_member_list(tree->child[0],0);
 	return stype;
 }
@@ -41,6 +50,8 @@ Type getBasicType(TypeInfo typeinfo)
 TypeInfo createTypeFromBasic(Type basic)
 {
 	TypeInfo typeinfo;
+	typeinfo.typekind = basic;
+
 	switch (basic)
 	{
 	case Integer:
@@ -48,9 +59,10 @@ TypeInfo createTypeFromBasic(Type basic)
 	case Boolean:
 	case Void:
 	case Pointer:
+		typeinfo.point_type.pointKind = (TypeInfo*)malloc(sizeof(TypeInfo));
 	case Func:
 	case Struct:
-		typeinfo.typekind = basic;
+	case ErrorType:
 		break;	
 	default:
 		assert(!"unknown basic type");
@@ -59,6 +71,18 @@ TypeInfo createTypeFromBasic(Type basic)
 	return typeinfo;
 }
 
+void free_type(TypeInfo typeinfo)
+{
+	switch (typeinfo.typekind)
+	{
+	case Pointer:
+		free(typeinfo.point_type.pointKind);
+		break;
+	case Array:
+		free(typeinfo.array_type.ele_type);
+		break;
+	}
+}
 
 ParamNode * new_param_node(TreeNode * tree)
 {
@@ -76,20 +100,19 @@ ParamNode * new_param_node(TreeNode * tree)
 Member * new_member_list(TreeNode * tree,int offset)
 {
 	if (tree == NULL) return NULL;
-	else{
+	else
+	{
 		Member * member = (Member *)malloc(sizeof(Member));
 		if (is_basic_type(tree->type, Struct))
 		{
-			assert(ensure_type_defined(tree->type.sname));
+			assert(ensure_type_defined(tree->type.sname) || "this struct is not defined");
 		}
-		
+
 		member->typeinfo = tree->type;
 		member->offset = offset;
 		member->member_name = copyString(tree->attr.name);
 		offset += var_size_of_type(tree->type);
 	
-
-
 		member->next_member = new_member_list(tree->sibling, offset);
 		return member;
 	}
@@ -151,13 +174,12 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		break;
 	case Pointer:
 		if (b != Pointer) return false;
-		if (a_type.plevel != b_type.plevel) return false;
-		if (!can_convert(createTypeFromBasic(a_type.pointKind), createTypeFromBasic(b_type.pointKind))) return false;
+		if (a_type.point_type.plevel != b_type.point_type.plevel) return false;
+		if (!can_convert(*a_type.point_type.pointKind,*b_type.point_type.pointKind)) return false;
 		return true;
 		break;
 	case Struct:
-		assert(0);
-		return false;
+		return (a == b) && (strcmp(a_type.sname,b_type.sname) == 0);
 		break;
 	case Array:
 		if (b == Array) return true;// the dimension is not cared
@@ -172,16 +194,14 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 }
 
 
-
-
-
-int getIndexOfFType(char *key)
+int
+getIndexOfFType(char *key)
 {
 	assert(key != NULL);
 	for (int i = MAXTYPENUM - 1; i >= 0; --i)
 	{
-		if (FTypeCollection[i].name != NULL &&
-			strcmp(key, FTypeCollection[i].name) == 0)
+		if (FTypeCollection[i].name != NULL
+			&& strcmp(key, FTypeCollection[i].name) == 0)
 		{
 			return i;
 		}
@@ -190,37 +210,91 @@ int getIndexOfFType(char *key)
 	return -1;
 }
 
- FuncType getFunctionType(char * key)
+int
+getIndexOfSType(char * key)
+{
+	int i = 0;
+	while ( i < MAXTYPENUM 
+			&& (STypeCollection[i].members == NULL 
+				|| strcmp(STypeCollection[i].typeinfo.sname,key) != 0))	  
+	{
+		++i;
+	}
+	if (i == MAXTYPENUM){ return -1;}
+	
+	return i;
+}
+
+ FuncType
+ getFunctionType(char * key)
 {
 	int i = getIndexOfFType(key);
 	return FTypeCollection[i];
 }
 
-void addFunctionType(char * key,FuncType ftype)
+ StructType
+	 getStructType(char * key)
+ {
+	int i = getIndexOfSType(key);
+	assert(i != -1 || !"struct type not exist");
+	return STypeCollection[i];
+ }
+
+void
+addFunctionType(char * key,FuncType ftype)
 {
+	for (int j = 0; j < MAXTYPENUM; ++j)
+	{
+		
+		if (FTypeCollection[j].name != NULL){
+			ensure_not_same_name(key, FTypeCollection[j].name);
+		}
+	}
+
 	int i = 0;
-	while (i < MAXTYPENUM && FTypeCollection[i].name == NULL){ i++; }
+	while (i < MAXTYPENUM && FTypeCollection[i].name != NULL){ i++;}
 	assert(i < MAXTYPENUM || "function exceed limit!!!");
 	FTypeCollection[i] = ftype;
 }
 
-void addStructType(char * type_name, StructType stype)
+void
+addStructType(char * type_name, StructType stype)
 {
+	// ensure the type name is not duplicate
+	for (int j = 0; j < MAXTYPENUM; ++j)
+	{
+		if (STypeCollection[j].members != NULL){
+			assert(STypeCollection[j].typeinfo.sname || !"struct name is null");
+			ensure_not_same_name(type_name, STypeCollection[j].typeinfo.sname);
+		}
+	}
 	int i = 0;
-	while (i < MAXTYPENUM && STypeCollection[i].typeinfo.sname == NULL){ i++;}
+	while (i < MAXTYPENUM && STypeCollection[i].typeinfo.sname != NULL){ i++; }
 	assert(i < MAXTYPENUM || "struct exceed limit!!!");
+	stype.typeinfo.sname = type_name;
 	STypeCollection[i] = stype;
 }
 
-void deleteFuncType (char * key)
+void
+deleteFuncType (char * key)
 {
 	int i = getIndexOfFType(key);
 	FTypeCollection[i].name = NULL;
 }
 
+void
+deleteStructType(char * key)
+{
+	int i = getIndexOfSType(key);
+	// todo free members
+	STypeCollection[i].members = NULL;
+	STypeCollection[i].typeinfo = createTypeFromBasic(ErrorType);
+	STypeCollection[i].typeinfo.sname = NULL;
+}
 
 // todo optimize : convert tree to type
-int var_size_of_type(TypeInfo vtype)
+int
+var_size_of_type(TypeInfo vtype)
 {
 	Type type = getBasicType(vtype);
 	if (type == Integer) return 1;
@@ -235,20 +309,43 @@ int var_size_of_type(TypeInfo vtype)
 
 	if (type == Struct)
 	{
-		assert(!"undefined struct size");
-		return 0;
+		StructType stype = getStructType(vtype.sname);
+		return var_size_of_members(stype.members);
 	}
 	assert(!"undefined type size");
 	return 0;
 }
 
-bool is_basic_type(TypeInfo type, Type btype)
+static int
+var_size_of_members(Member* members)
+{
+	if (members == NULL) return 0;
+	int first_var_size = var_size_of_type(members->typeinfo);
+	int remain_size = var_size_of_members(members->next_member);
+	return first_var_size + remain_size;
+}
+
+bool 
+is_basic_type(TypeInfo type, Type btype)
 {
 	return type.typekind == btype;
 }
 
-bool ensure_type_defined(char * key){
-
-    return true;
-
+bool
+ensure_type_defined(char * key)
+{
+	return getIndexOfSType(key) != -1;
 }
+
+Member* 
+getMember(StructType stype,char * name)
+{
+	Member* members = stype.members;
+	while (members != NULL && strcmp(members->member_name, name) != 0)
+	{
+		members = members->next_member;
+	}
+	assert(members != NULL || "member is not defined!");
+	return members;
+}
+

@@ -1,11 +1,24 @@
-struct test{
+struct test1
+{
+	int m	
+
+}
+
+struct test
+{
 	int a
 	int b
-	struct test c
-	void f(int a,int b){}
+	float c
 }
+
 
 void main()
 {
-	int a[10][10]
+	struct test* x
+	struct test t
+
+	x = &t
+	*x.b = 10
+	*x.c = t.b + 5
+	write t.c
 }
