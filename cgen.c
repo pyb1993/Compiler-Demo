@@ -343,7 +343,7 @@ static void genExp( TreeNode * tree,int scope)
 					{
 						cGen(p1, scope);
 						emitRM("POP", ac, 0, mp, "pop the adress");
-						vsize = var_size_of(p1);
+						vsize = var_size_of(tree);
 						TypeInfo ptype = *p1->converted_type.point_type.pointKind;
 						TypeInfo ptype_ori = *p1->type.point_type.pointKind;
 						target_reg = get_reg1(ptype.typekind);
@@ -355,6 +355,8 @@ static void genExp( TreeNode * tree,int scope)
                     assert(!"not implemented single op");
                     break;
 			}
+            if (TraceCode) emitComment("<-Single Op");
+
 			break;
 		case AssignK:
 			if (TraceCode) emitComment("-> assign");

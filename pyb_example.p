@@ -19,5 +19,5 @@ void main()
 	t.y = 2
 	struct test *t2 = &t
 	t = *t2
-	write 1
+	write t.y
 }
