@@ -106,6 +106,7 @@ TreeNode * newExpNode(ExpKind kind)
         t->kind.exp = kind;
         t->lineno = lineno;
 		t->type = createTypeFromBasic(Void);
+		t->empty_exp = false;
     }
     return t;
 }

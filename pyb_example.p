@@ -1,24 +1,23 @@
-struct test1
-{
-	int m	
-
-}
 
 struct test
 {
-	int a
-	int b
-	float c
+	int x
+	int y
+	int z
+}
+
+void f(struct test t,struct test *t2)
+{	
+	t = *t2
 }
 
 
 void main()
 {
-	struct test* x
 	struct test t
-
-	x = &t
-	*x.b = 10
-	*x.c = t.b + 5
-	write t.c
+	t.x = 12
+	t.y = 2
+	struct test *t2 = &t
+	t = *t2
+	write 1
 }

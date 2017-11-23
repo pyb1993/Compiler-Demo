@@ -11,19 +11,18 @@
 #include "analyze.h"
 #include "tinytype.h"
 #include "assert.h"
+
+#define ERROR_IF(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
+
 /* counter for global variable memory locations */
 static int location = 0;
 static int stack_offset = -2;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
-
 static void checkTree(TreeNode * t,char * curretn_function,int scope);
 static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
-
-void insertNode(TreeNode * t, int scope);
-void insertTree(TreeNode * t, int scope);
-void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
+static void check_assign_node(TreeNode *,TreeNode *,TreeNode*, char * current_function, int scope);
 
 static void defineError(TreeNode * t ,char * msg)
 {
@@ -36,6 +35,21 @@ static void typeError(TreeNode * t, char * message)
 {
 	fprintf(listing, "Type error at line %d: %s\n", t->lineno, message);
 	Error = TRUE;
+}
+
+void insertNode(TreeNode * t, int scope);
+void insertTree(TreeNode * t, int scope);
+void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
+
+
+ bool isExp(TreeNode * t, ExpKind ekind)
+{
+	return t->nodekind == ExpK && t->kind.exp == ekind;
+}
+
+ bool isStmt(TreeNode * t, StmtKind skind)
+{
+	return t->nodekind == StmtK && t->kind.exp == skind;
 }
 
 /* Procedure insertNode inserts
@@ -62,20 +76,32 @@ static void typeError(TreeNode * t, char * message)
 	}
 }
 
- // delete all local variable from the stmtseq
- void deleteVarOfField(TreeNode * tree, int scope)
+ void __deleteVarOfField(TreeNode * tree,int scope,bool need_change_stack)
  {
 	 TreeNode * t = tree;
 	 if (scope == 0) return;
 	 while (t != NULL)
 	 {
-		 if (t->nodekind == StmtK && t->kind.exp == DeclareK)
+		 if (isStmt(t, DeclareK) || isStmt(t, ParamK))
 		 {
 			 deleteVar(t, scope);
-			 stack_offset += var_size_of(t);
+			 if (need_change_stack)
+				stack_offset += var_size_of(t);
 		 }
 		 t = t->sibling;
 	 }
+ }
+
+ // delete all local variable from the stmtseq
+ void deleteVarOfField(TreeNode * tree, int scope)
+ {
+	 __deleteVarOfField(tree, scope, true);
+ }
+
+ // delete all local variable from the stmtseq
+ void deleteParams(TreeNode * tree, int scope)
+ {
+	 __deleteVarOfField(tree, scope, false);
  }
 
  void insertTree(TreeNode * t,int scope)
@@ -91,57 +117,63 @@ static void typeError(TreeNode * t, char * message)
 {
 
 	 switch (t->nodekind)
-    { 
+	 {
 	 case StmtK:
-            switch (t->kind.stmt)
-        {
-            case DeclareK:				
-				if (is_basic_type(t->type,Func) && scope == 0)
-                {
-					/*
-						todo :support local procedure
-					*/
-					st_insert(t->attr.name, t->lineno, location--, 1,scope, t->type);// function occupy 4 bytes
-					addFunctionType(t->attr.name, new_func_type(t));
-					insertParam(t->child[0],scope + 1);
-					insertTree(t->child[1], scope + 1);
-					deleteVarOfField(t->child[0], scope + 1);
-					deleteVarOfField(t->child[1], scope + 1);
-					deleteFuncType(t->attr.name);
-					return;
-				}
-				if (scope == 0) //global var
-                {   
-					// todo remove the stackoffset,location to the symtable
-                    int var_szie = var_size_of(t);
-					location -= var_szie;
-					st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope,t->type);
-					return;
-                }
-				else // local variable
-				{
-					int var_szie = var_size_of(t);
-					stack_offset -= var_szie;
-					st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
-				}
-                break;
-			case StructDefineK:
-				assert(scope == 0);
-				addStructType(t->attr.name, new_struct_type(t));
-				// to check any duplicate members
-				// todo remove to check duplicate members
-				insertTree(t->child[0], scope + 1);
-				deleteVarOfField(t->child[0], scope + 1);
-				// todo support local struct
-				break;
-            default:
-                break;
-        }
-            break;
-        case ExpK:
-			if ((t->kind.exp == IdK || t->kind.exp == FuncallK) && st_lookup(t->attr.name) == NOTFOUND)
-				defineError(t,"undefined variable");			
-			break;
+		 switch (t->kind.stmt)
+		 {
+		 case DeclareK:
+			 if (is_basic_type(t->type, Func) && scope == 0)
+			 {
+				 /*
+					 todo :support local procedure
+				 */
+				 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
+				 addFunctionType(t->attr.name, new_func_type(t));
+				 insertParam(t->child[0], scope + 1);
+				 insertTree(t->child[1], scope + 1);
+				 deleteParams(t->child[0], scope + 1);
+				 deleteVarOfField(t->child[1], scope + 1);
+				 //deleteFuncType(t->attr.name);
+				 return;
+			 }
+			 if (scope == 0) //global var
+			 {
+				 // todo remove the stackoffset,location to the symtable
+				 int var_szie = var_size_of(t);
+				 location -= var_szie;
+				 st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope, t->type);
+				 return;
+			 }
+			 else // local variable
+			 {
+				 int var_szie = var_size_of(t);
+				 stack_offset -= var_szie;
+				 st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
+			 }
+			 break;
+		 case StructDefineK:
+			 assert(scope == 0);
+			 addStructType(t->attr.name, new_struct_type(t));
+			 // to check any duplicate members
+			 // todo remove to check duplicate members
+			 insertTree(t->child[0], scope + 1);
+			 deleteVarOfField(t->child[0], scope + 1);
+			 // todo support local struct
+			 break;
+		 default:
+			 break;
+		 }
+		 break;
+	 case ExpK:
+		 // deal with the exp in line
+		 // todo remove
+		ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK), "empty exp beyond call and assign is not allowed!");
+		if (isExp(t, FuncallK)) { 
+			FuncType type = getFunctionType(t->attr.name);
+			ERROR_IF(is_basic_type(type.return_type, Void), "only function return nothing can be the empty exp");
+		}
+		t->empty_exp = TRUE;
+		break;
 	 }
 }
 
@@ -157,8 +189,7 @@ void deleteVar(TreeNode * t,int scope_depth)
 	}
 	else
 	{
-	st_delete(t->attr.name);
-	
+		st_delete(t->attr.name);
 	}
 }
 
@@ -169,6 +200,7 @@ void buildSymtab(TreeNode * syntaxTree)
 { 
 	initTypeCollection();
 	insertTree(syntaxTree, 0);// insert node and check them
+	printf("insert tree is done\n");
 	checkTree(syntaxTree, NULL, 0);
 }
 
@@ -176,7 +208,6 @@ int var_size_of(TreeNode* tree)
 {
 	return var_size_of_type(tree->type);
 }
-
 
 void checkTree(TreeNode * t,char * current_function, int scope)
 {
@@ -228,7 +259,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				if (child1->type.point_type.plevel == 1)
 				{
 					t->type = *child1->type.point_type.pointKind;
-					t->type.sname = child1->type.sname;
 				}
 				else
 				{
@@ -239,36 +269,11 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->converted_type = t->type;
 			return;// important! skip set_converted_type
 			break;
+
 		case AssignK:
-			// todo optimize bad smell
 			checkNodeType(t->child[0], current_function, scope);
 			checkNodeType(t->child[1], current_function, scope);
-			assert(t->child[0]->nodekind == ExpK && t->child[1]->nodekind == ExpK);
-			assert(t->child[0]->type.typekind != Array);
-			TypeInfo exp_type = t->child[1]->converted_type;
-			if (t->child[0]->kind.exp == IdK)
-			{
-				assert(st_lookup(t->child[0]->attr.name) != NOTFOUND);
-				TypeInfo id_type = st_lookup_type(t->child[0]->attr.name);
-				t->type = id_type;
-				if (!can_convert(exp_type, id_type))
-				{
-					assert(!"conversion is not allowed for this two types");
-				}
-			}
-			else
-			{
-				// *..p = xx || a[exp] = xxx
-				TreeNode * unref_child = t->child[0];
-				assert(unref_child->child[0] != NULL);
-				assert(can_convert(exp_type,unref_child->type));
-				if (unref_child->kind.exp == IndexK)
-				{
-					assert(!is_basic_type(unref_child->type, Array)|| 
-						   !"Const array cannot be left operand");
-				}
-			}
-			t->converted_type = t->type;
+			check_assign_node(t, t->child[0], t->child[1], current_function, scope);
 			break;
 
 		case OpK:
@@ -301,6 +306,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 
 		case IdK:
+			ERROR_IF(st_lookup(t->attr.name) != NOTFOUND, "undefined variable");
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
@@ -309,10 +315,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[1], current_function, scope);
 			assert(can_convert(t->child[1]->converted_type, createTypeFromBasic(Integer)));
 			assert(is_basic_type(t->child[0]->converted_type, Array) || 
+				   is_basic_type(t->child[0]->converted_type, Pointer) ||
 				   !"left expression is not array or pointer");
 			
-			// change the array to pointer
-			t->type = *(t->child[0]->type.array_type.ele_type);			
+			if (is_basic_type(t->child[0]->converted_type, Array)){
+				t->type = *(t->child[0]->type.array_type.ele_type);
+			}
+			else{
+				t->type = *(t->child[0]->type.point_type.pointKind);
+			}
 			t->converted_type = t->type;
 			break;
 		case PointK:
@@ -406,15 +417,19 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				/*
 				todo :remove these  function insert Function
 				*/
-				addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
-				//st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
+				//addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
 				// remove this to function deleteFunction
-				deleteVarOfField(t->child[0], scope + 1);
+				deleteParams(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
-				deleteFuncType(t->attr.name);
+				//deleteFuncType(t->attr.name);
+			}
+			if (t->child[2] != NULL)// int x = 100
+			{
+				checkNodeType(t->child[2], current_function, scope);
+				check_assign_node(t, t, t->child[2], current_function, scope);
 			}
 			break;
 		default:
@@ -434,7 +449,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 /*assert the node is exp*/
 static TypeInfo get_converted_type(TreeNode * t)
 {
-	assert(t != NULL);
+	ERROR_IF(t != NULL,"try to get type of null node");
 	
 	switch (t->kind.exp)
 	{
@@ -448,7 +463,7 @@ static TypeInfo get_converted_type(TreeNode * t)
 		return st_lookup_type(t->attr.name);
 		break;
 	case FuncallK:
-		assert(t->attr.name != NULL);
+		ERROR_IF(t->attr.name != NULL,"function not found");
 		FuncType ftype = getFunctionType(t->attr.name);
 		TypeInfo return_type = ftype.return_type;
 		return return_type;
@@ -488,3 +503,31 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	TypeInfo converted_type = get_converted_type(tree);
 	set_convertd_type(tree, converted_type);
 }
+
+  void check_assign_node(TreeNode * t,TreeNode * left,TreeNode * right, char * current_function, int scope)
+ {
+	  ERROR_IF(right->nodekind == ExpK,"illegal assign");
+	  assert(!is_basic_type(left->type,Array));
+	  TypeInfo exp_type = right->converted_type;
+	  if (isExp(left,IdK) || isStmt(t,DeclareK))
+	  {
+		  ERROR_IF(st_lookup(left->attr.name) != NOTFOUND,"variable not defined");
+		  TypeInfo id_type = st_lookup_type(left->attr.name);
+		  t->type = id_type;
+		  ERROR_IF(can_convert(exp_type, id_type),
+					"conversion is not allowed for this two types");
+	  }
+	  else
+	  {
+		  // *..p = xx || a[exp] = xxx
+		  TreeNode * unref_child = t->child[0];
+		  ERROR_IF(left->child[0] != NULL,"illegal assgin stmt");
+		  ERROR_IF(can_convert(exp_type, unref_child->type),"not converted type in assign");
+		  if (isExp(unref_child,IndexK))
+		  {
+			  ERROR_IF(!is_basic_type(unref_child->type, Array),
+						"Const array cannot be left operand");
+		  }
+	  }
+	  t->converted_type = t->type;
+ }

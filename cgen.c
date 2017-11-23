@@ -1,12 +1,3 @@
-/****************************************************/
-/* File: cgen.c                                     */
-/* The code generator implementation                */
-/* for the TINY compiler                            */
-/* (generates code for the TM machine)              */
-/* Compiler Construction: Principles and Practice   */
-/* Kenneth C. Louden                                */
-/****************************************************/
-
 #include "globals.h"
 #include "symtable.h"
 #include "code.h"
@@ -16,21 +7,49 @@
 #include "assert.h"
 #include "analyze.h"
 
+typedef void(*emitFunc)(int, int, int);
+
+#define TRY_ADRESS_MODE(tree,proc) do {\
+restoreAdressMode();\
+if (is_basic_type(tree->converted_type, Pointer)){\
+	proc; \
+}\
+else{\
+	setInAdressMode(); \
+	proc; \
+	emitRM("PUSH", ac, 0, mp, "sotre lhs adress");\
+	restoreAdressMode(); \
+}\
+}while(0)
+
 
 /* tmpOffset is the memory offset for temps
  It is decremented each time a temp is
  stored, and incremeted when loaded again
- */
+*/
+
 static int label_table[1024];//label table
 static bool in_adressMode = FALSE;
 static char * current_function = NULL;
 static int  genLabel();
 static void addLabel();// add label to the labelTabel
-int look_label(int label);// find the label representing the adress
+static void cgen_assign(TreeNode *,TreeNode *,int);
+static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
 
-/* prototype for internal recursive code generator */
-static void cGen (TreeNode * tree,int scope);
-/*function used to get the relative register  */
+static void __cGenST(int , int , int );
+static void __cGenPUSH(int ,int, int );
+static void __cgenPopFromTemp(int, int, int,int, emitFunc);
+static void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg)
+{
+	__cgenPopFromTemp(origin_reg, target_reg, offset, target_adress_reg, __cGenST);
+}
+static void cgenPushObj(int origin_reg, int target_reg, int offset)
+{
+	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
+}
+static void cGen(TreeNode * tree, int scope);
+
+/*function used to get the relative register of specific type  */
 static int get_reg(Type type);
 static int get_reg1(Type type);
 /*get the current env's stack*/
@@ -45,6 +64,7 @@ static void getRealAdressBy(TreeNode* tree);
 void setInAdressMode();
 bool checkInAdressMode();
 void restoreAdressMode();
+int look_label(int label);// find the label representing the adress
 
 /* Procedure genStmt generates code at a statement node */
 static void genStmt( TreeNode * tree,int scope)
@@ -132,7 +152,7 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRO("MOV", get_reg(getBasicType(return_type)), get_reg(getBasicType(ctype)), 0, "move register reg(s) tp reg(r)");
 				emitRM("PUSH", get_reg(getBasicType(return_type)), 0, mp, "op: push left");
 			}
-			//todo // support label, so the function can retrun directly
+
 			emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 			emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
 			emitRO("RETURN", 0, -1, sp, "return to the caller");
@@ -144,7 +164,9 @@ static void genStmt( TreeNode * tree,int scope)
 			{
 				emitComment("function entry");
 				insertParam(tree->child[0], scope + 1);
-				addFunctionType(tree->attr.name, new_func_type(tree));
+				// warnning: pop param is executed in outside
+
+				//addFunctionType(tree->attr.name, new_func_type(tree));
 				char * last_current = current_function;
 				current_function = tree->attr.name;
 
@@ -157,9 +179,11 @@ static void genStmt( TreeNode * tree,int scope)
 
 				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
 				emitRM("PUSH", ac,  0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
-						
-				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
 				
+				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
+				deleteParams(tree->child[0], scope + 1);
+				deleteVarOfField(tree->child[1], scope + 1);
+
 				//todo this should be moved to return node
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
@@ -169,16 +193,20 @@ static void genStmt( TreeNode * tree,int scope)
 				emitBackup(skip_adress);
 				emitRM_Abs("LDA",pc,leave_adress,"skip the function body");
 				emitRestore();
-				//deleteVarOfField(tree->child[1], scope + 1);
-				//deleteVarOfField (tree->child[0], scope + 1);
-				//deleteFuncType(tree->attr.name);
 				current_function = last_current;
 			}
 			else if (scope > 0 && !is_basic_type(tree->type,Func))//local variable
 			{
 				insertNode(tree, scope);
-				emitRM("PUSH",0,0,sp,"stack expand");// todo support expand stack
+				int vsize = var_size_of(tree);
+				emitRM("LDA",sp,-vsize,sp,"stack expand");
 			}
+
+			// int x = 1
+			if (tree->child[2] != NULL){
+				cgen_assign(tree, tree->child[2], scope);
+			}
+
 			break;
 		case StructDefineK:
 //			addStructType(tree->attr.name,new_struct_type(tree->child[0]));
@@ -227,17 +255,26 @@ static void genExp( TreeNode * tree,int scope)
             if (TraceCode) emitComment("-> Id");
             loc = st_lookup(tree->attr.name);
 			
-			if (checkInAdressMode() || tree->type.typekind == Array)
+			if (checkInAdressMode())
+			{
+				restoreAdressMode();
+				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
+			}
+			else if (is_basic_type(tree->converted_type, Array))
 			{
 				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
+				emitRM("PUSH", ac, 0, mp, "push array adress to mp");
 			}
 			else
 			{
-				emitRM("LD", get_reg(getBasicType(tree->type)), loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
-				emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
-				emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
+				int vsize = var_size_of(tree);
+				for (int i = 0; i < vsize; ++i)
+				{
+					emitRM("LD", get_reg(getBasicType(tree->type)), loc + i, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
+					emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
+					emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
+				}
 			}
-			
 			if (TraceCode)  emitComment("<- Id");
             break; /* IdK */
 		case FuncallK:
@@ -251,10 +288,9 @@ static void genExp( TreeNode * tree,int scope)
 			loc = getFunctionAdress(tree->attr.name);
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
-			// after gen the exp
 			popParam(p);
-			// convert the type of return_type and converted_type
 			
+			// ensure the function need to 
 			if (!is_basic_type(tree->type,Void) )
 			{
 				origin_reg = get_reg(getBasicType(tree->type));
@@ -308,16 +344,11 @@ static void genExp( TreeNode * tree,int scope)
 						cGen(p1, scope);
 						emitRM("POP", ac, 0, mp, "pop the adress");
 						vsize = var_size_of(p1);
-						for (loc = 0; loc < vsize; ++loc)
-						{
-							TypeInfo ptype = *p1->converted_type.point_type.pointKind;
-							bool is_basic = is_basic_type(ptype, Integer) || is_basic_type(ptype, Float);
-							target_reg = is_basic ? get_reg1(ptype.typekind) : ac1;
-
-							// todo optimize : move memory to memory
-							emitRM("LD", target_reg, loc, ac, "load bytes");//
-							emitRM("PUSH", target_reg, 0, mp, "push bytes ");
-						}
+						TypeInfo ptype = *p1->converted_type.point_type.pointKind;
+						TypeInfo ptype_ori = *p1->type.point_type.pointKind;
+						target_reg = get_reg1(ptype.typekind);
+						origin_reg = get_reg1(ptype_ori.typekind);
+						cGenPushTemp(vsize, target_reg, origin_reg, ac);
 					}
 					break;
 				default:
@@ -327,110 +358,33 @@ static void genExp( TreeNode * tree,int scope)
 			break;
 		case AssignK:
 			if (TraceCode) emitComment("-> assign");
-			cGen(tree->child[1], scope);// load value in register ac or fac 
-			// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
-			// todo optimize the code :bad smell
-			TypeInfo exp_type = tree->child[1]->converted_type;
-
-			int origin_reg = get_reg(getBasicType(exp_type));
-			vsize = 1;
-			if (tree->child[0]->kind.exp == IdK)
+			cgen_assign(tree->child[0], tree->child[1], scope);
+			if (!tree->empty_exp)
 			{
-				char * name = tree->child[0]->attr.name;
-				type = st_lookup_type(name);
-				int target_reg = get_reg(getBasicType(type));
-
-				vsize = var_size_of(tree);
-				loc = st_lookup(name);// get the memory location of identifier
-				int var_stack_bottom = get_stack_bottom(st_lookup_scope(name));
-				while (vsize-- > 0)
-				{
-					// move bytes tmpOffset to dMem[ac]
-					// todo optimize
-					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
-					emitRM("ST", target_reg, loc + vsize, var_stack_bottom, "copy bytes ");
-				}
-			}
-			else if (tree->child[0]->kind.exp == SingleOpK && tree->child[0]->attr.op == UNREF)
-			{
-				/*  *..p = ffff */
-				TreeNode *unref = tree->child[0];
-				type = unref->type;
-				int target_reg = get_reg(getBasicType(type));
-				vsize = var_size_of(unref);
-
-				cGen(unref->child[0], scope);				
-				emitRM("POP", ac1, 0, mp, "move the adress of referenced");
-				while (vsize-- > 0)
-				{
-					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
-					emitRM("ST", target_reg, vsize, ac1, "copy bytes ");
-				}
-			}
-			else if (tree->child[0]->kind.exp == IndexK)
-			{
-				// analyze.c ensure the left operand is not pointed to array
-				// todo: optimize the code: IndexK should run in the AdressMode
-				TreeNode *unref = tree->child[0];
-				vsize = var_size_of(unref);
-
-				setInAdressMode();
-				cGen(unref,scope);// now the adress is in ac
-				restoreAdressMode();
-			
-				emitRM("POP", ac1, 0, mp, "load exp value");
-				emitRM("ST", ac1, 0, ac, "store value");
-
-				/*
-				cGen(unref->child[0], scope);
-				cGen(unref->child[1], scope);
-				emitRM("POP", ac, 0, mp, "load index value to ac");
-				emitRO("LDC", ac1, vsize, 0, "load array size");
-				emitRO("MUL", ac, ac1, ac, "compute the offset");
-				emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
-				emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
-				
-				//
-				emitRM("POP", ac1, 0, mp, "load exp value");
-				emitRM("ST", ac1, 0, ac,"store value");
-				*/
-			}
-			else if (tree->child[0]->nodekind == ExpK 
-					&& tree->child[0]->kind.exp == PointK)
-			{
-				cGen(tree->child[1], scope);
-
+				// generate value for x = y
 				setInAdressMode();
 				cGen(tree->child[0], scope);
 				restoreAdressMode();
-
-				vsize = var_size_of(tree->child[0]);
-				type = tree->child[0]->converted_type;
-				int target_reg = get_reg(getBasicType(type));
-				emitRO("MOV", ac1, ac, 0, "move adress to ac1");
-				while (vsize-- > 0)
-				{
-					emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-					emitRO("MOV", target_reg, origin_reg, 0, "move register(convert) ");
-					emitRM("ST", target_reg, vsize, ac1, "copy bytes ");
-				}
+				cGenPushTemp(
+					var_size_of(tree),
+					get_reg1(tree->converted_type.typekind),
+					get_reg1(tree->type.typekind),
+					ac);
 			}
 			if (TraceCode)  emitComment("<- assign");
 			break; /* assign_k */
 		case IndexK:
 			if (TraceCode) emitComment("->index k");
+			
 			vsize = var_size_of(tree);
 			// todo skip the adress
 			bool adress_mode = checkInAdressMode() \
 				|| is_basic_type(tree->converted_type, Array);
-
-			setInAdressMode();
-			cGen(tree->child[0], scope);
-			emitRM("PUSH", ac, 0, mp, "sotre lhs adress");
-			restoreAdressMode();
-
+			
+			TRY_ADRESS_MODE(tree->child[0], do {
+				cGen(tree->child[0], scope);
+			} while (0));
+			
 			cGen(tree->child[1], scope);
 			emitRM("POP", ac, 0, mp, "load index value to ac");
 			emitRO("LDC", ac1, vsize, 0, "load array size");
@@ -441,8 +395,9 @@ static void genExp( TreeNode * tree,int scope)
 			
 			if (!adress_mode)
 			{
-				emitRM("LD", ac1, 0, ac, "load value");
-				emitRM("PUSH", ac1, 0, mp, "");
+				origin_reg = get_reg1(getBasicType(tree->type));
+				target_reg = get_reg1(getBasicType(tree->converted_type));
+				cGenPushTemp(vsize, target_reg, origin_reg, ac);
 			}
 			break;
 		case PointK:
@@ -450,10 +405,12 @@ static void genExp( TreeNode * tree,int scope)
 			{
 				setInAdressMode();// enter the adress mode,eg:A.x will only create the adress of A!
 				cGen(tree->child[0], scope);//generate the adress
+				restoreAdressMode();
+
 				getRealAdressBy(tree);
 				// now need to produce the real value rather than Adress
-				origin_reg = get_reg(getBasicType(tree->type));
-				target_reg = get_reg(getBasicType(tree->converted_type));
+				origin_reg = get_reg1(getBasicType(tree->type));
+				target_reg = get_reg1(getBasicType(tree->converted_type));
 				vsize = var_size_of(tree);
 				
 				for (int i = 0; i < vsize; ++i)
@@ -464,13 +421,13 @@ static void genExp( TreeNode * tree,int scope)
 					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
 					emitRM("PUSH", target_reg, 0, mp, "push a.x value into tmp");
 				}
-				restoreAdressMode();
 			}
 			else
 			{
 				// copy from memory to memory
 				cGen(tree->child[0], scope);//generate the adress
 				getRealAdressBy(tree);
+				restoreAdressMode();
 			}
 			break;
 		case OpK :
@@ -677,11 +634,15 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 
 	int exp_reg = get_reg(getBasicType(e->converted_type));
 	int par_reg = get_reg(getBasicType(p->type));
-	// todo support remove from memory to memory
+	int vsize = var_size_of(e);
 	// todo support struct pass
-	emitRM("POP", exp_reg, 0, mp, "pop exp ");
-	emitRO("MOV", par_reg, exp_reg, 0, "");
-	emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
+	//cgenPushObj(exp_reg, par_reg, vsize);
+
+	while (vsize--){
+		emitRM("POP", exp_reg, 0, mp, "pop exp ");
+		emitRO("MOV", par_reg, exp_reg, 0, "");
+		emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
+	}
 }
 /*pop parameters*/
 void popParam(ParamNode * p)
@@ -689,9 +650,10 @@ void popParam(ParamNode * p)
 	int param_size = 0;
 	while (p != NULL)
 	{
-		param_size += 1;
+		param_size += var_size_of_type(p->type);
 		p = p->next_param;
 	}
+
 	emitRM("LDA",sp, param_size, sp, "pop parameters");
 }
 
@@ -719,4 +681,75 @@ void getRealAdressBy( TreeNode* tree)
 	emitRO("LDC", ac, loc, 0, "load offset of member");
 	emitRO("ADD", ac, ac, ac1, "compute the real adress if pointK");
 	//emitRM("PUSH", ac, 0, mp, "");
+}
+
+void cgen_assign(TreeNode * left,TreeNode * right,int scope)
+{
+	cGen(right, scope);// load value 
+
+	// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
+	int origin_reg = get_reg(getBasicType(right->converted_type));
+	int target_reg = get_reg(getBasicType(left->converted_type));
+	int vsize = var_size_of(left);
+
+	if (isExp(left,IdK) || isStmt(left,DeclareK))
+	{
+		char * name = left->attr.name;
+		int loc = st_lookup(name);// get the memory location of identifier
+		int var_stack_bottom = get_stack_bottom(st_lookup_scope(name));
+		emitRM("LDA", ac1, loc, var_stack_bottom, "move the adress of ID");
+	}
+	else if (isExp(left, SingleOpK))
+	{
+		//  *..p = ffff 
+		// todo run in the adress mode
+
+		assert(left->attr.op == UNREF || !"illegal left operand on assign");
+		cGen(left->child[0], scope);
+		emitRM("POP", ac1, 0, mp, "move the adress of referenced");
+	}
+	else if (isExp(left, IndexK) || isExp(left,PointK))
+	{
+		// todo: optimize the code: IndexK should run in the AdressMode
+		setInAdressMode();
+		cGen(left, scope);
+		emitRO("MOV", ac1, ac, 0, "move adress to ac1");
+		restoreAdressMode();
+	}
+
+	cgenCopyObj(origin_reg, target_reg, vsize, ac1);
+}
+
+void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_reg)
+{
+	for (int loc = 0; loc < vsize; ++loc)
+	{
+		// todo optimize : move memory to memory
+		emitRM("LD", target_reg, loc, adress_reg, "load bytes");//
+		emitRO("MOV", target_reg, origin_reg, 0, "move between reg");
+		emitRM("PUSH", target_reg, 0, mp, "push bytes ");
+	}
+}
+
+
+
+// simulate pop and dosomething
+void __cgenPopFromTemp(int origin_reg, int target_reg, int offset,int adress_reg, emitFunc f)
+{
+	while (offset-- > 0)
+	{
+		emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+		emitRO("MOV", target_reg, origin_reg, 0, "copy bytes");
+		f(target_reg, offset, adress_reg);// do something
+	}
+}
+
+void __cGenST(int target_reg, int offset, int target_adress_reg)
+{
+	emitRM("ST", target_reg, offset, target_adress_reg, "copy bytes");
+}
+
+void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
+{
+	emitRM("PUSH", target_reg, 0, target_adress_reg, "PUSH bytes");
 }
