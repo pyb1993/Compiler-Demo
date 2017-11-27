@@ -25,6 +25,9 @@ typedef enum {
 	opSUB,    /* RR     reg(r) = reg(s)-reg(t) */
 	opMUL,    /* RR     reg(r) = reg(s)*reg(t) */
 	opDIV,    /* RR     reg(r) = reg(s)/reg(t) */
+	opLAEBL,    /* RR   label num*/
+	opGO,    /* RR     go to the label num*/
+
 	opRRLim,   /* limit of RR opcodes */
 
 	/* RM instructions */

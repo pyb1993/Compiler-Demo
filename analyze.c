@@ -17,13 +17,17 @@
 /* counter for global variable memory locations */
 static int location = 0;
 static int stack_offset = -2;
+static int while_depth = 0;
+static bool allowed_empty_exp = false;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
 static void checkTree(TreeNode * t,char * curretn_function,int scope);
 static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
 static void check_assign_node(TreeNode *,TreeNode *,TreeNode*, char * current_function, int scope);
-
+static bool checkInWhile();
+static void incrWhileDepth(int);
+static void checkEmptyExp(TreeNode *);
 static void defineError(TreeNode * t ,char * msg)
 {
     fprintf(listing,"Define error at line %d: %s\n",t->lineno,msg);
@@ -115,7 +119,6 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 
  void insertNode( TreeNode * t,int scope)
 {
-
 	 switch (t->nodekind)
 	 {
 	 case StmtK:
@@ -151,6 +154,24 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 				 st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
 			 }
 			 break;
+		 case RepeatK:
+			 incrWhileDepth(1);
+			 allowed_empty_exp = TRUE;
+			 insertNode(t->child[0],scope + 1);
+			 allowed_empty_exp = FALSE;
+			 insertTree(t->child[1], scope + 1);
+			 incrWhileDepth(-1);
+			 break;
+		 case IfK:
+			 allowed_empty_exp = TRUE;
+			 insertNode(t->child[0], scope + 1);
+			 allowed_empty_exp = FALSE;
+			 insertTree(t->child[1], scope + 1);
+			 insertTree(t->child[2], scope + 1);
+			 break;
+		 case BreakK:
+			 ERROR_IF(checkInWhile(),"break can only be in while");
+			 break;
 		 case StructDefineK:
 			 assert(scope == 0);
 			 addStructType(t->attr.name, new_struct_type(t));
@@ -165,14 +186,7 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 }
 		 break;
 	 case ExpK:
-		 // deal with the exp in line
-		 // todo remove
-		ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK), "empty exp beyond call and assign is not allowed!");
-		if (isExp(t, FuncallK)) { 
-			FuncType type = getFunctionType(t->attr.name);
-			ERROR_IF(is_basic_type(type.return_type, Void), "only function return nothing can be the empty exp");
-		}
-		t->empty_exp = TRUE;
+		 checkEmptyExp(t);
 		break;
 	 }
 }
@@ -347,7 +361,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			{
 				if (param_node == NULL)
 				{
-					typeError(param_node, "parameter num doesn't match the function definition");
+					assert(!"parameter num cannot match ");
 					break;
 				}
 
@@ -355,12 +369,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 				if (!can_convert(param_node->converted_type, param_type_node->type))
 				{
-					assert(param_node || !"parameter cannot match the function definition");
+					assert(!"parameter cannot match the function definition");
 					break;
 				}
 				param_type_node = param_type_node->next_param;
 				param_node = param_node->sibling;
 			}
+			ERROR_IF(param_node == NULL, "parameter num cannot match ");
 			t->converted_type = t->type;
 			break;
 		case ConstK:
@@ -530,4 +545,23 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 		  }
 	  }
 	  t->converted_type = t->type;
+ }
+
+ bool checkInWhile()
+  {
+	  return while_depth > 0;
+  }
+ void incrWhileDepth(int delta)
+  {
+	  while_depth += delta;
+  }
+
+ void checkEmptyExp(TreeNode * t){
+	 if (allowed_empty_exp) return;// eg: while(exp),if(exp)
+	 ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK), "empty exp beyond call and assign is not allowed!");
+	 if (isExp(t, FuncallK)) {
+		 FuncType type = getFunctionType(t->attr.name);
+		 ERROR_IF(is_basic_type(type.return_type, Void), "only function return nothing can be the empty exp");
+	 }
+	 t->empty_exp = TRUE;
  }

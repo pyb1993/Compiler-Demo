@@ -2,6 +2,8 @@
 #include "assert.h"
 #include "code.h"
 
+int labelLocMap[1024];// the label and location mapping
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -33,7 +35,7 @@ int dMem[DADDR_SIZE];
 int reg[NO_REGS];
 
 char * opCodeTab[]
-= { "HALT", "IN", "OUT","MOV","NEG","ADD", "SUB", "MUL", "DIV", "????",
+= { "HALT", "IN", "OUT","MOV","NEG","ADD", "SUB", "MUL", "DIV","LABEL","GO", "????",
 /* RR opcodes */
 "LD", "ST","PUSH","POP","????", /* RM opcodes */
 "LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????"
@@ -296,11 +298,23 @@ int readInstructions(FILE *pgm)
 			if (strncmp(opCodeTab[op], word, 4) != 0)
 				return error("Illegal opcode", lineNo, loc);
 			
+
+
 			switch (opClass(op))
 			{
 			case opclRR:
 				/***********************************/
-				if ((!getNum()) || (num < 0) || (num >= NO_REGS))
+				// process the label related
+				if (loc == 48)
+				{
+					int b = 1000;
+				}
+				if (strncmp("LABEL", word, 5) == 0)
+				{
+					getNum();
+					labelLocMap[num] = loc;
+				}
+				else if ((!getNum()) || (num < 0) || (num >= NO_REGS))
 					return error("Bad first register", lineNo, loc);
 				arg1 = num;
 				if (!skipCh(','))
@@ -365,7 +379,7 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-	if (pc_pos == 64)
+	if (pc_pos == 48)
 	{
 		ok = 100;
 	}
@@ -463,6 +477,8 @@ STEPRESULT stepTM(void)
 		/***********************************/
 		if (operand(r, s, t, '/') != srOKAY) return srZERODIVIDE;
 		break;
+	case opGO:	   reg[PC_REG] = labelLocMap[r]; break;
+	case opLAEBL: break;
 
 		/*************** RM instructions ********************/
 	case opLD:    reg[r] = dMem[m];  break;

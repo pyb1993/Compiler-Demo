@@ -28,11 +28,13 @@ else{\
  stored, and incremeted when loaded again
 */
 
-static int label_table[1024];//label table
+
 static bool in_adressMode = FALSE;
 static char * current_function = NULL;
 static int  genLabel();
-static void addLabel();// add label to the labelTabel
+static void emitLabel(int);
+static void emitGoto(int);
+
 static void cgen_assign(TreeNode *,TreeNode *,int);
 static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
 
@@ -67,7 +69,7 @@ void restoreAdressMode();
 int look_label(int label);// find the label representing the adress
 
 /* Procedure genStmt generates code at a statement node */
-static void genStmt( TreeNode * tree,int scope)
+static void genStmt( TreeNode * tree,int scope,int label)
 {
     TreeNode * p1, * p2, * p3;
     int savedLoc1,savedLoc2,currentLoc;
@@ -81,11 +83,11 @@ static void genStmt( TreeNode * tree,int scope)
             p2 = tree->child[1] ;
             p3 = tree->child[2] ;
             /* generate code for test expression */
-            cGen(p1,scope+1);
+            cGen(p1,scope+1,label);
             savedLoc1 = emitSkip(1) ;
             emitComment("if: jump to else belongs here");
             /* recurse on then part */
-            cGen(p2,scope+1);
+            cGen(p2,scope+1,label);
             savedLoc2 = emitSkip(1);
             emitComment("if: jump to end belongs here");
             currentLoc = emitSkip(0) ;
@@ -95,7 +97,7 @@ static void genStmt( TreeNode * tree,int scope)
             emitRM_Abs("JEQ",ac,currentLoc,"if: jmp to else");
             emitRestore() ;
             /* recurse on else part */
-            cGen(p3,scope+1);
+            cGen(p3,scope+1,label);
             currentLoc = emitSkip(0) ;
             emitBackup(savedLoc2);
             emitRM_Abs("LDA",pc,currentLoc,"jmp to end") ;
@@ -105,23 +107,28 @@ static void genStmt( TreeNode * tree,int scope)
             
         case RepeatK:/*gen code for while statement*/
             if (TraceCode) emitComment("-> repeat");
+			int new_lab = genLabel();
 			p1 = tree->child[0];
 			p2 = tree->child[1] ;
             emitComment("repeat: jump after body comes back here");
 			savedLoc2 = emitSkip(0);
-			cGen(p1,scope + 1);// create code for test
-			savedLoc1 = emitSkip(1);
+
+			cGen(p1,scope + 1,new_lab);// create code for test
+			savedLoc1 = emitSkip(3);
 			/* generate code for body */
-			cGen(p2,scope + 1);
+			cGen(p2,scope + 1,new_lab);
 			currentLoc = emitSkip(0);
 			emitRM("LDA", pc, (savedLoc2 - (currentLoc + 1)), pc, "unconditional jmp");
 			currentLoc = emitSkip(0);
             emitBackup(savedLoc1);
             emitRM_Abs("JEQ",ac,currentLoc,"repeat: jmp to the out of while");
             emitRestore();
-            if (TraceCode)  emitComment("<- repeat") ;
+			emitLabel(new_lab);// generate a label
+			if (TraceCode)  emitComment("<- repeat") ;
             break; /* repeat */
-                  
+		case BreakK:
+			emitGoto(label);
+			break;
         case ReadK:
             loc = st_lookup(tree->attr.name);
 			type = st_lookup_type(tree->attr.name);
@@ -132,7 +139,7 @@ static void genStmt( TreeNode * tree,int scope)
     
 		case WriteK:
             /* generate code for expression to write */
-			cGen(tree->child[0], scope);
+			cGen(tree->child[0], scope,label);
 			type = tree->child[0]->type;
 			emitRM("POP", get_reg(getBasicType(type)), 0, mp, "move result to register");
 			emitRO("OUT", get_reg(getBasicType(type)), 0, 0, "output value in register[ac / fac]");
@@ -140,7 +147,7 @@ static void genStmt( TreeNode * tree,int scope)
 		case ReturnK:
 			if (tree->child[0] != NULL) 
 			{ 
-				cGen(tree->child[0], scope);
+				cGen(tree->child[0], scope,label);
 				// now the result is in the ac or fac or tmpOffset according to the type 
 				TypeInfo ctype = tree->child[0]->converted_type;
 				TypeInfo return_type = getFunctionType(current_function).return_type;
@@ -180,7 +187,7 @@ static void genStmt( TreeNode * tree,int scope)
 				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
 				emitRM("PUSH", ac,  0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
 				
-				cGen(tree->child[1], scope + 1);// generate code for the function body,insert local variable
+				cGen(tree->child[1], scope + 1,label);// generate code for the function body,insert local variable
 				deleteParams(tree->child[0], scope + 1);
 				deleteVarOfField(tree->child[1], scope + 1);
 
@@ -217,7 +224,7 @@ static void genStmt( TreeNode * tree,int scope)
 } /* genStmt */
 
 /* Procedure genExp generates code at an expression node */
-static void genExp( TreeNode * tree,int scope)
+static void genExp( TreeNode * tree,int scope,int label)
 {
 	int loc;
 	TokenType op;
@@ -310,7 +317,7 @@ static void genExp( TreeNode * tree,int scope)
 			// if the p1 is a struct and op is unref, the size is more than 1;
 			if (tree->attr.op != ADRESS && tree->attr.op != UNREF)
 			{
-				cGen(p1, scope);
+				cGen(p1, scope,label);
 				origin_reg = get_reg(getBasicType(p1->converted_type));
 				target_reg = get_reg(getBasicType(type));
 				emitRM("POP", origin_reg, 0, mp, "pop right");
@@ -336,12 +343,12 @@ static void genExp( TreeNode * tree,int scope)
 					if (checkInAdressMode())
 					{
 						restoreAdressMode();
-						cGen(p1, scope);
+						cGen(p1, scope,label);
 						emitRM("POP", ac, 0, mp, "pop the adress");
 					}
 					else
 					{
-						cGen(p1, scope);
+						cGen(p1, scope,label);
 						emitRM("POP", ac, 0, mp, "pop the adress");
 						vsize = var_size_of(tree);
 						TypeInfo ptype = *p1->converted_type.point_type.pointKind;
@@ -365,7 +372,7 @@ static void genExp( TreeNode * tree,int scope)
 			{
 				// generate value for x = y
 				setInAdressMode();
-				cGen(tree->child[0], scope);
+				cGen(tree->child[0], scope,label);
 				restoreAdressMode();
 				cGenPushTemp(
 					var_size_of(tree),
@@ -384,10 +391,10 @@ static void genExp( TreeNode * tree,int scope)
 				|| is_basic_type(tree->converted_type, Array);
 			
 			TRY_ADRESS_MODE(tree->child[0], do {
-				cGen(tree->child[0], scope);
+				cGen(tree->child[0], scope,label);
 			} while (0));
 			
-			cGen(tree->child[1], scope);
+			cGen(tree->child[1], scope,label);
 			emitRM("POP", ac, 0, mp, "load index value to ac");
 			emitRO("LDC", ac1, vsize, 0, "load array size");
 			emitRO("MUL", ac, ac1, ac, "compute the offset");
@@ -406,7 +413,7 @@ static void genExp( TreeNode * tree,int scope)
 			if (!checkInAdressMode())
 			{
 				setInAdressMode();// enter the adress mode,eg:A.x will only create the adress of A!
-				cGen(tree->child[0], scope);//generate the adress
+				cGen(tree->child[0], scope,label);//generate the adress
 				restoreAdressMode();
 
 				getRealAdressBy(tree);
@@ -427,7 +434,7 @@ static void genExp( TreeNode * tree,int scope)
 			else
 			{
 				// copy from memory to memory
-				cGen(tree->child[0], scope);//generate the adress
+				cGen(tree->child[0], scope,label);//generate the adress
 				getRealAdressBy(tree);
 				restoreAdressMode();
 			}
@@ -437,8 +444,8 @@ static void genExp( TreeNode * tree,int scope)
             p1 = tree->child[0];
             p2 = tree->child[1];
             /* gen code for ac = left arg */
-            cGen(p1,scope);
-			cGen(p2, scope);
+            cGen(p1,scope,label);
+			cGen(p2, scope,label);
 			
 			origin_reg = get_reg(getBasicType(p1->converted_type));
 			int origin_reg1 = get_reg1(getBasicType(p2->converted_type));
@@ -518,21 +525,21 @@ static void genExp( TreeNode * tree,int scope)
 /* Procedure cGen recursively generates code by
  * tree traversal
  */
-static void cGen( TreeNode * tree,int scope)
+static void cGen( TreeNode * tree,int scope,int label)
 { if (tree != NULL)
 	{ 
 		switch (tree->nodekind) 
 		{
 			case StmtK:
-				genStmt(tree,scope);			
+				genStmt(tree,scope,label);			
 				break;
 			case ExpK:
-				genExp(tree,scope);
+				genExp(tree,scope,-1);
 				break;
 			default:
 				break;
 		}
-		cGen(tree->sibling,scope);
+		cGen(tree->sibling,scope,label);
 	}
 }
 
@@ -563,7 +570,7 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 	emitRM("ST", ac, 2, ac, "clear location 2");
     emitComment("End of standard prelude.");
 	/* generate code for TINY program */
-	cGen(syntaxTree,0);
+	cGen(syntaxTree,0,-1);
 	
 	
 	emitComment("call main function");
@@ -581,14 +588,16 @@ int genLabel(void)
 	return label++; 
 }
 
-void addLabel(int label,int pc_loc)
+void emitLabel(int label)
 {
-	label_table[label] = pc_loc;
+	assert(label >= 0);
+	emitRO("LABEL", label++, 0, 0, "generate label");// finish
 }
 
-int look_label(int label)
+void emitGoto(int label)
 {
-	return label_table[label];
+	assert(label >= 0 );
+	emitRO("GO", label, 0, 0, "go to label");// finish
 }
 
 int get_reg(Type type)
@@ -632,7 +641,7 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 		assert(p == NULL);
 		return;
 	}
-	genExp(e, scope);// very important! cannot use cGen to avoid cGen generate exp list automatically
+	genExp(e, scope,-1);// very important! cannot use cGen to avoid cGen generate exp list automatically
 
 	int exp_reg = get_reg(getBasicType(e->converted_type));
 	int par_reg = get_reg(getBasicType(p->type));
@@ -687,7 +696,7 @@ void getRealAdressBy( TreeNode* tree)
 
 void cgen_assign(TreeNode * left,TreeNode * right,int scope)
 {
-	cGen(right, scope);// load value 
+	cGen(right, scope,-1);// load value 
 
 	// emit COPY tmp to dMem[reg[(gp or fp) + loc] from tmpOffset(in reverse) vsize bytes
 	int origin_reg = get_reg(getBasicType(right->converted_type));
@@ -707,14 +716,14 @@ void cgen_assign(TreeNode * left,TreeNode * right,int scope)
 		// todo run in the adress mode
 
 		assert(left->attr.op == UNREF || !"illegal left operand on assign");
-		cGen(left->child[0], scope);
+		cGen(left->child[0], scope,-1);
 		emitRM("POP", ac1, 0, mp, "move the adress of referenced");
 	}
 	else if (isExp(left, IndexK) || isExp(left,PointK))
 	{
 		// todo: optimize the code: IndexK should run in the AdressMode
 		setInAdressMode();
-		cGen(left, scope);
+		cGen(left, scope,-1);
 		emitRO("MOV", ac1, ac, 0, "move adress to ac1");
 		restoreAdressMode();
 	}

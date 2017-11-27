@@ -26,7 +26,7 @@ int main()
 
 
     
-	char *filename = "..//pyb_example.p";
+	char *filename = "pyb_example.p";
 
 	source = fopen(filename, "r");
 	listing = stdout;
@@ -75,7 +75,7 @@ int main()
 	} while (!done);
 	printf("Simulation done.\n");
 	fclose(code);
-
+	
 #endif
 	return 0;
 	
