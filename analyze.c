@@ -170,6 +170,7 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 insertTree(t->child[2], scope + 1);
 			 break;
 		 case BreakK:
+		 case ContinueK:
 			 ERROR_IF(checkInWhile(),"break can only be in while");
 			 break;
 		 case StructDefineK:
@@ -297,11 +298,10 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			TokenType op = t->attr.op;
 			
 			if (   (!can_convert(t->child[0]->type, createTypeFromBasic(Integer)) &&
-				   !can_convert(t->child[0]->type, createTypeFromBasic(Pointer))
+				    !can_convert(t->child[0]->type, createTypeFromBasic(Pointer))
 				   ) 
 				   || 
-				   (
-				   !can_convert(t->child[1]->type, createTypeFromBasic(Integer)) &&
+				   (!can_convert(t->child[1]->type, createTypeFromBasic(Integer)) &&
 				   !can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
 				   )
 				)

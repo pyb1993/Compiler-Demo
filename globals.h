@@ -32,11 +32,11 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, ELSE,ELSIF, END, WHILE,BREAK,RETURN,UNTIL, READ, WRITE,LINEEND,
+	IF, ELSE,ELSIF, END, WHILE,BREAK,CONTINUE,RETURN,UNTIL, READ, WRITE,LINEEND,
 	/* multicharacter tokens */
 	ID,NEG,ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE, PLUS, MINUS, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS,PPLUS,PLUSASSIGN, MINUS,MMINUS,MINUSASSIGN, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
 	POINT, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,STRUCT,
 	/*variable type*/
 	INT,FLOAT,VOID,FUN
@@ -51,7 +51,7 @@ extern int lineno; /* source line number for listing */
 /**************************************************/
 
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,DefineK,StructDefineK,ParamK,BreakK,ReturnK } StmtKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,DefineK,StructDefineK,ParamK,BreakK,ContinueK,ReturnK } StmtKind;
 typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ConstK, IdK, FuncallK } ExpKind;
 /* ExpType is used for type checking */
 typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue

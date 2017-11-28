@@ -31,6 +31,7 @@ static TreeNode * read_stmt();
 static TreeNode * write_stmt();
 static TreeNode * declare_stmt();
 static TreeNode * break_stmt();
+static TreeNode * continue_stmt();
 static TreeNode * return_stmt();
 static TreeNode * parseExp();
 static TreeNode * parsePointExp(TreeNode*);
@@ -137,6 +138,7 @@ TreeNode * statement(void)
   {
 	case IF: t = if_stmt(); break;
 	case WHILE: t = while_stmt(); break;
+	case CONTINUE: t = continue_stmt(); break;
     case BREAK: t = break_stmt();break;
 	case RETURN:t = return_stmt(); break;
 	case LPAREN:t = lparenStartstmt();break;
@@ -211,6 +213,13 @@ TreeNode * break_stmt(void)
     TreeNode * t = newStmtNode(BreakK);
     match(BREAK);
     return t;
+}
+
+TreeNode * continue_stmt(void)
+{
+	TreeNode * t = newStmtNode(ContinueK);
+	match(CONTINUE);
+	return t;
 }
 
 // return / return x;
@@ -569,16 +578,34 @@ TreeNode * compare_exp(void)
 TreeNode * simple_exp(void)
 {
 	TreeNode * t = term();
-	while ((token == PLUS) || (token == MINUS))
+	while (token == PLUS || token == MINUS || token == PLUSASSIGN || token == MINUSASSIGN)
 	{
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) 
 		{
-			p->child[0] = t;
-			p->attr.op = token;
-			t = p;
-			matchWithoutSkipLineEnd(token);
-			t->child[1] = term();//
+			// convert x += y to x = x + y
+			if (token == PLUSASSIGN || token == MINUSASSIGN)
+			{
+				TreeNode * assign_left = t;
+				t = newExpNode(AssignK);
+				t->child[0] = assign_left;
+	
+				// parse the y of x += y
+				p->attr.op = token;
+				p->child[0] = newExpNode(IdK);
+				p->child[0]->attr.name = copyString(assign_left->attr.name);
+				matchWithoutSkipLineEnd(token);
+				p->child[1] = term();
+				t->child[1] = p;
+			}
+			else
+			{
+				p->child[0] = t;
+				p->attr.op = token;
+				t = p;
+				matchWithoutSkipLineEnd(token);
+				t->child[1] = term();//
+			}
 		}
 	}
 

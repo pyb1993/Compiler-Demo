@@ -67,6 +67,7 @@ int main()
 		exit(1);
 #endif
 
+
 #if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do

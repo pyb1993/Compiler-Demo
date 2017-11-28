@@ -1,16 +1,9 @@
 
-
-
-
 void main()
 {
-	int x = 20
-	while(x > 3)
+	int cnt = 0
+	while(cnt < 10)
 	{
-		write x
-		if (x < 10)
-			break
-		x = x - 2
+		write cnt = (cnt += 1) + 3
 	}
-	
 }

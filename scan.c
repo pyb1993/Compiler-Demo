@@ -10,17 +10,17 @@ typedef enum
 {
 	START, INASSIGN, INCOMMENT, INMULCOMMENT, INNUM, INFLOATNUM, INID, OVER_OR_COMMENT,
 	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,IN_STR,
+	PLUS_START,
 	DONE
-}
-StateType;
-
+} StateType;
 
 /* BUFLEN = length of the input buffer for
 source code lines */
 #define setStateMinus() do{currentToken = MINUS; ungetNextChar(); state = DONE;} while (0)
+#define SET_CUR_TOKEN(tok) do {state = DONE; currentToken = tok;}while(0)
+#define SET_CUR_TOKEN_AND_UNGET(tok) do{ungetNextChar();SET_CUR_TOKEN(tok);}while(0)
 
 #define BUFLEN 256
-
 static char lineBuf[BUFLEN]; /* holds the current line */
 static int linepos = 0; /* current position in LineBuf */
 static int bufsize = 0; /* current size of buffer string */
@@ -75,8 +75,8 @@ static struct
 	TokenType tok;
 } reservedWords[MAXRESERVED]
 = {	  { "if", IF }, { "else", ELSE }, { "end", END },
-	  { "while", WHILE }, { "break", BREAK }, {"return", RETURN},
-	  { "until", UNTIL }, { "read", READ },{ "write", WRITE },
+	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
+	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
 	  { "int", INT }, { "float", FLOAT }, { "void", VOID },
 	  { "def", FUN }, {"struct",STRUCT}
   };
@@ -87,7 +87,7 @@ static TokenType reservedLookup(char * s)
 {
 	int i;
 	for (i = 0; i<MAXRESERVED; i++)
-	if (reservedWords[i].str!=NULL && !strcmp(s, reservedWords[i].str))
+	if (reservedWords[i].str != NULL && !strcmp(s, reservedWords[i].str))
 		return reservedWords[i].tok;
 	return ID;
 }
@@ -120,39 +120,33 @@ TokenType getToken(void)
 				state = INID;
 			else if (c == '=')
 				state = INASSIGN_OR_EQ;
-			else if ((c == ' ') || (c == '\t'))
+			else if ((c == ' ') || (c == '\t')){
 				save = FALSE;
-			else if (c == '\n')
-			{
+			}
+			else if (c == '\n'){
 				save = FALSE;
-				state = DONE;
-				currentToken = LINEEND;
+				SET_CUR_TOKEN(LINEEND);
 			}
-			else if (c == '-')
-			{
-				state = DONE;
-				currentToken = MINUS;
+			else if (c == '-'){
+				SET_CUR_TOKEN(MINUS);
 			}
-			else if (c == '&')
-			{
-				state = DONE;
-				currentToken = BITAND;
+			else if (c == '&'){
+				SET_CUR_TOKEN(BITAND);
 			}
-		
-			else if (c == '/')
-			{
+			else if (c == '/'){
 				state = OVER_OR_COMMENT;
 			}
-			else if (c == '<')
-			{
+			else if (c == '<'){
 				state = LT_OR_LE;
 			}
-			else if (c == '>')
-			{
+			else if (c == '>'){
 				state = GT_OR_GE;
 			}
 			else if (c == '"'){
 				state = IN_STR;
+			}
+			else if (c == '+'){
+				state = PLUS_START;
 			}
 			//consider specific case
 			else
@@ -163,9 +157,6 @@ TokenType getToken(void)
 				case EOF:
 					save = FALSE;
 					currentToken = ENDFILE;
-					break;
-				case '+':
-					currentToken = PLUS;
 					break;
 				case '*':
 					currentToken = TIMES;
@@ -203,6 +194,19 @@ TokenType getToken(void)
 				}
 			}
 			break;
+		case PLUS_START:
+			if (c == '+'){
+				SET_CUR_TOKEN(PPLUS);
+			}
+			else if (c == '='){
+				SET_CUR_TOKEN(PLUSASSIGN);
+			}
+			else{
+				save = false;
+				SET_CUR_TOKEN_AND_UNGET(PLUS);
+			}
+			
+			break;
 		case INCOMMENT:
 			save = FALSE;
 			if (c == EOF)
@@ -220,18 +224,15 @@ TokenType getToken(void)
 			}
 			else
 			{ /* backup in the input */
-				ungetNextChar();
 				save = FALSE;
-				currentToken = ASSIGN;
+				SET_CUR_TOKEN_AND_UNGET(ASSIGN);
 			}
 			break;
 		case INNUM:
 			if (!isdigit(c) && c != '.')
-			{ /* backup in the input */
-				ungetNextChar();
+			{ 
 				save = FALSE;
-				state = DONE;
-				currentToken = NUM;
+				SET_CUR_TOKEN_AND_UNGET(NUM);
 			}
 			else if (c == '.')
 			{
@@ -242,40 +243,17 @@ TokenType getToken(void)
 		case INFLOATNUM:
 			if (!isdigit(c))
 			{
-				ungetNextChar();
 				save = FALSE;
-				state = DONE;
-				currentToken = FlOATNUM;
+				SET_CUR_TOKEN_AND_UNGET(FlOATNUM);
 			}
 			break;
 		case INID:
 		
 			if (!(isAplhaUnderscore(c))){ /* backup in the input */
-				ungetNextChar();
 				save = FALSE;
-				currentToken = ID;
-				state = DONE;
+				SET_CUR_TOKEN_AND_UNGET(ID);
 			}
-			break;
-
-			// - or -100
-		case MINUS_OR_NEG:
-		/*	if (isdigit(c))
-			{
-				if (checkPreBlank(linepos)) { state = INNUM;}// -1
-				else setStateMinus(); // n-1 || n   -   1 || n   -1 
-			}
-			else if (isAplhaUnderscore(c))
-			{
-				if (checkPreBlank(linepos)){ currentToken = NEG;state = DONE; }// -x || -   x
-				else  setStateMinus(); //n-x || n -x || n - x
-			}
-			else
-			{
-				 fprintf(listing, "Scanner Error: -%c", c);
-			}
-			break;
-		*/
+			break;	
 		case OVER_OR_COMMENT:
 			if (c == '/'){
 				state = INCOMMENT;
@@ -287,19 +265,14 @@ TokenType getToken(void)
 				ungetTokenstring(&tokenStringIndex);
 				save = FALSE;
 			}
-			else {
-				//over
-				state = DONE;
-				ungetNextChar();
-				currentToken = OVER;
+			else {		
+				SET_CUR_TOKEN_AND_UNGET(OVER);//over
 			}
 			break;
 		case INMULCOMMENT:
 			save = FALSE;
-			if (c == EOF)
-			{
-				state = DONE;
-				currentToken = ENDFILE;
+			if (c == EOF){
+				SET_CUR_TOKEN(ENDFILE);
 			}
 			if (c == '*' ){
 				if (getNextChar() == '/'){
@@ -311,41 +284,36 @@ TokenType getToken(void)
 		break;
 		case LT_OR_LE:
 			if (c == '='){
-				currentToken = LE;
+				SET_CUR_TOKEN(LE);
 			}
 			else{
 				save = FALSE;
-				ungetNextChar();
-				currentToken = LT;
+				SET_CUR_TOKEN_AND_UNGET(LT);
 			}
-			state = DONE;
 			break;
 		case GT_OR_GE:
 			if (c == '=')
-				currentToken = GE;
+			{
+				SET_CUR_TOKEN(GE);
+			}
 			else
 			{
 				save = FALSE;
-				ungetNextChar();
-				currentToken = GT;
+				SET_CUR_TOKEN_AND_UNGET(GT);
 			}
-			state = DONE;
 			break;
 		case IN_STR:
 			if (c == EOF){
-				state = DONE;
-				currentToken = ENDFILE;
+				SET_CUR_TOKEN(ENDFILE);
 			}
 			else if (c == '"'){
-				state = DONE;
-				currentToken = STRING;
+				SET_CUR_TOKEN(STRING);
 			}
 			break;
 		case DONE:
 		default: /* should never happen */
 			fprintf(listing, "Scanner Bug: state= %d\n", state);
-			state = DONE;
-			currentToken = ERROR;
+			SET_CUR_TOKEN(ERROR);
 			break;
 		}
 		if ((save) && (tokenStringIndex <= MAXTOKENLEN))
@@ -366,8 +334,3 @@ TokenType getToken(void)
 	}
 	return currentToken;
 } /* end getToken */
-
-
-
-
-
