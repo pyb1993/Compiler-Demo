@@ -449,10 +449,30 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label)
             if (TraceCode) emitComment("-> Op") ;
             p1 = tree->child[0];
             p2 = tree->child[1];
-            /* gen code for ac = left arg */
-            cGen(p1,scope,start_label,end_label);
-			cGen(p2, scope,start_label,end_label);
+			/* gen code for ac = left arg */
+			cGen(p1, scope, start_label, end_label);
+			cGen(p2, scope, start_label, end_label);
+			// todo
+			if (is_basic_type(tree->converted_type, Pointer))
+			{
+				int vsize = vsize = var_size_of(tree);
+				switch (tree->attr.op)
+
+				{
+				case PLUS:
+					emitRM("POP", ac, 0, mp, "load index value to ac");
+					emitRO("LDC", ac1, vsize, 0, "load pointkind size");
+					emitRO("MUL", ac, ac1, ac, "compute the offset");
+
+					emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
+					emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
+					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+					break;
+				}
+				return;
+			}
 			
+
 			origin_reg = get_reg(getBasicType(p1->converted_type));
 			int origin_reg1 = get_reg1(getBasicType(p2->converted_type));
 			int reg = get_reg(getBasicType(type));
@@ -463,6 +483,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label)
 			
 			emitRM("POP", origin_reg, 0, mp, "pop left");
 			emitRO("MOV", reg, origin_reg, 0, "convert type");
+
 
 			switch (tree->attr.op) 
 			{

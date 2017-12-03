@@ -297,14 +297,12 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			// todo optimize bad smell
 			TokenType op = t->attr.op;
 			
-			if (   (!can_convert(t->child[0]->type, createTypeFromBasic(Integer)) &&
-				    !can_convert(t->child[0]->type, createTypeFromBasic(Pointer))
-				   ) 
-				   || 
-				   (!can_convert(t->child[1]->type, createTypeFromBasic(Integer)) &&
-				   !can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
-				   )
-				)
+			if (   !((can_convert(t->child[0]->type, createTypeFromBasic(Integer)) ||
+				    can_convert(t->child[0]->type, createTypeFromBasic(Pointer))) 
+				   && 
+				   (can_convert(t->child[1]->type, createTypeFromBasic(Integer)) ||
+				    can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
+				    )))
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
 				t->type = createTypeFromBasic(Boolean);
@@ -312,6 +310,18 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				     (is_basic_type(t->child[1]->type, Float))
 					 )
 				t->type = createTypeFromBasic(Float);
+			else if (is_basic_type(t->child[0]->type, Pointer) || is_basic_type(t->child[1]->type, Pointer))
+			{
+				// swap
+				if (is_basic_type(t->child[1]->type, Pointer))
+				{
+					TreeNode * p = t->child[0];
+					t->child[0] = t->child[1];
+					t->child[1] = p;
+				}
+
+				t->type = is_basic_type(t->child[0]->type, Pointer) ? t->child[0]->type : t->child[1]->type;
+			}
 			else{
 				t->type = createTypeFromBasic(Integer);
 			}
@@ -492,7 +502,7 @@ static TypeInfo get_converted_type(TreeNode * t)
 				return createTypeFromBasic(Float);
 			}
 		}
-		return t->child[0]->type;
+		return t->type;
 		break;
 	default:
 		assert(!"undefined exp !");
@@ -516,7 +526,16 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
  void gen_converted_type(TreeNode * tree)
 {
 	TypeInfo converted_type = get_converted_type(tree);
-	set_convertd_type(tree, converted_type);
+	
+	// todo optimize
+	if (is_basic_type(converted_type, Pointer)){
+		assert(is_basic_type(tree->child[0]->type, Pointer));
+		tree->converted_type = converted_type;
+		set_convertd_type(tree->child[0], converted_type);
+		set_convertd_type(tree->child[1], createTypeFromBasic(Integer));// todo
+	}
+	else
+		set_convertd_type(tree, converted_type);
 }
 
   void check_assign_node(TreeNode * t,TreeNode * left,TreeNode * right, char * current_function, int scope)

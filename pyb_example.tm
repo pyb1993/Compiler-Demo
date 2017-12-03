@@ -15,115 +15,56 @@
  11:   PUSH  0,0(3) 	push the return adress
  12:    LDA  3,-1(3) 	stack expand
 * -> Const
- 13:    LDC  0,0(0) 	load integer const
+ 13:    LDC  0,3(0) 	load integer const
  14:   PUSH  0,0(6) 	store exp
 * <- Const
  15:    LDA  1,-2(2) 	move the adress of ID
  16:    POP  0,0(6) 	copy bytes
  17:     ST  0,0(1) 	copy bytes
-* -> repeat
- 18:  LABEL  0,0,0 	generate label
-* repeat: jump after body comes back here
-* -> Op
-* -> Id
- 19:     LD  0,-2(2) 	load id value
+ 18:    LDA  3,-1(3) 	stack expand
+* -> Const
+ 19:    LDC  0,2(0) 	load integer const
  20:   PUSH  0,0(6) 	store exp
-* <- Id
-* -> Const
- 21:    LDC  0,10(0) 	load integer const
- 22:   PUSH  0,0(6) 	store exp
 * <- Const
- 23:    POP  1,0(6) 	pop right
- 24:    POP  0,0(6) 	pop left
- 25:    SUB  0,0,1 	op <
- 26:    JLT  0,2(7) 	br if true
- 27:    LDC  0,0(0) 	false case
- 28:    LDA  7,1(7) 	unconditional jmp
- 29:    LDC  0,1(0) 	true case
- 30:   PUSH  0,0(6) 	op: load left
-* <- Op
-* -> if
+ 21:    LDA  1,-3(2) 	move the adress of ID
+ 22:    POP  0,0(6) 	copy bytes
+ 23:     ST  0,0(1) 	copy bytes
+ 24:    LDA  3,-1(3) 	stack expand
+* ->Single Op
+ 25:    LDA  0,-3,2 	LDA the var adress
+ 26:   PUSH  0,0(6) 	op: load left
+* <-Single Op
+ 27:    LDA  1,-4(2) 	move the adress of ID
+ 28:    POP  0,0(6) 	copy bytes
+ 29:     ST  0,0(1) 	copy bytes
+* ->Single Op
 * -> Op
 * -> Id
- 32:     LD  0,-2(2) 	load id value
+ 30:     LD  0,-4(2) 	load id value
+ 31:   PUSH  0,0(6) 	store exp
+* <- Id
+* -> Const
+ 32:    LDC  0,1(0) 	load integer const
  33:   PUSH  0,0(6) 	store exp
-* <- Id
-* -> Const
- 34:    LDC  0,8(0) 	load integer const
- 35:   PUSH  0,0(6) 	store exp
 * <- Const
- 36:    POP  1,0(6) 	pop right
- 37:    POP  0,0(6) 	pop left
- 38:    SUB  0,0,1 	op ==, convertd_type
- 39:    JEQ  0,2(7) 	br if true
- 40:    LDC  0,0(0) 	false case
- 41:    LDA  7,1(7) 	unconditional jmp
- 42:    LDC  0,1(0) 	true case
- 43:   PUSH  0,0(6) 	op: load left
-* <- Op
-* if: jump to else
- 46:     GO  0,0,0 	go to label
-* if: jump to end
- 44:    POP  0,0(6) 	pop the condition value
- 45:    JEQ  0,2(7) 	if: jmp to else
- 47:    LDA  7,0(7) 	jmp to end
-* <- if
-* -> assign
-* -> Op
-* -> assign
-* -> Op
-* -> Id
- 48:     LD  0,-2(2) 	load id value
- 49:   PUSH  0,0(6) 	store exp
-* <- Id
-* -> Const
- 50:    LDC  0,1(0) 	load integer const
- 51:   PUSH  0,0(6) 	store exp
-* <- Const
- 52:    POP  1,0(6) 	pop right
- 53:    POP  0,0(6) 	pop left
- 54:    ADD  0,0,1 	op +
- 55:   PUSH  0,0(6) 	op: load left
-* <- Op
- 56:    LDA  1,-2(2) 	move the adress of ID
- 57:    POP  0,0(6) 	copy bytes
- 58:     ST  0,0(1) 	copy bytes
-* -> Id
- 59:    LDA  0,-2(2) 	load id adress
-* <- Id
- 60:     LD  1,0(0) 	load bytes
- 61:   PUSH  1,0(6) 	push bytes 
-* <- assign
-* -> Const
- 62:    LDC  0,3(0) 	load integer const
- 63:   PUSH  0,0(6) 	store exp
-* <- Const
- 64:    POP  1,0(6) 	pop right
- 65:    POP  0,0(6) 	pop left
- 66:    ADD  0,0,1 	op +
- 67:   PUSH  0,0(6) 	op: load left
-* <- Op
- 68:    LDA  1,-2(2) 	move the adress of ID
- 69:    POP  0,0(6) 	copy bytes
- 70:     ST  0,0(1) 	copy bytes
-* -> Id
- 71:    LDA  0,-2(2) 	load id adress
-* <- Id
- 72:     LD  1,0(0) 	load bytes
- 73:   PUSH  1,0(6) 	push bytes 
-* <- assign
- 74:    POP  0,0(6) 	move result to register
- 75:    OUT  0,0,0 	output value in register[ac / fac]
- 76:    LDA  7,-58(7) 	unconditional jmp
- 31:    JEQ  0,45(7) 	repeat: jmp to the out of while
- 77:  LABEL  1,0,0 	generate label
-* <- repeat
- 78:    MOV  3,2,0 	restore the caller sp
- 79:     LD  2,0(2) 	resotre the caller fp
- 80:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 34:    POP  0,0(6) 	load index value to ac
+ 35:    LDC  1,1,0 	load pointkind size
+ 36:    MUL  0,1,0 	compute the offset
+ 37:    POP  1,0(6) 	load lhs adress to ac1
+ 38:    ADD  0,0,1 	compute the real index adress a[index]
+ 39:   PUSH  0,0(6) 	op: load left
+ 40:    POP  0,0(6) 	pop the adress
+ 41:     LD  1,0(0) 	load bytes
+ 42:   PUSH  1,0(6) 	push bytes 
+* <-Single Op
+ 43:    POP  0,0(6) 	move result to register
+ 44:    OUT  0,0,0 	output value in register[ac / fac]
+ 45:    MOV  3,2,0 	restore the caller sp
+ 46:     LD  2,0(2) 	resotre the caller fp
+ 47:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-  7:    LDA  7,73(7) 	skip the function body
+  7:    LDA  7,40(7) 	skip the function body
 * call main function
- 81:    LDC  0,83(0) 	store the return adress
- 82:    LDC  7,8(0) 	ujp to the function body
- 83:   HALT  0,0,0 	
+ 48:    LDC  0,50(0) 	store the return adress
+ 49:    LDC  7,8(0) 	ujp to the function body
+ 50:   HALT  0,0,0 	

@@ -174,8 +174,6 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		break;
 	case Pointer:
 		if (b != Pointer) return false;
-		if (a_type.point_type.plevel != b_type.point_type.plevel) return false;
-		if (!can_convert(*a_type.point_type.pointKind,*b_type.point_type.pointKind)) return false;
 		return true;
 		break;
 	case Struct:

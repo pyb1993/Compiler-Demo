@@ -1,9 +1,9 @@
 
 void main()
 {
-	int cnt = 0
-	while(cnt < 10)
-	{
-		write cnt = (cnt += 1) + 3
-	}
+	int a = 3
+	int c = 2
+	int * p = &c
+	//p = p + 1
+	write *(p + 1)
 }
