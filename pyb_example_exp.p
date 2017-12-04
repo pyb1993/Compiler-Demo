@@ -124,4 +124,5 @@ to do list
 8  define variable
 9  auto x = 10; auto inference
 10 import other file
+11 change checkAdressMode
 */

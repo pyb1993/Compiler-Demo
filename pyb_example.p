@@ -1,9 +1,9 @@
 
 void main()
 {
-	int a = 3
-	int c = 2
-	int * p = &c
-	//p = p + 1
-	write *(p + 1)
+	int a[10][10]
+	a[2][2] = 32
+	int *p = a[2]
+	write a[2][2]
+	write p[2]
 }

@@ -433,7 +433,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[0],current_function,scope);
 			TypeInfo exp_type = t->child[0]->converted_type;
 			assert(can_convert(exp_type, createTypeFromBasic(Integer)) || 
-				   is_basic_type(exp_type,Pointer) || "can only write bool,integer,float");
+				   is_basic_type(exp_type,Pointer) || "can only write bool,integer,float,pointer");
 			break;
 	
 		case DeclareK:
