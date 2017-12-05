@@ -705,7 +705,7 @@ TreeNode * factor(void)
 		else
 		{
 			t = newExpNode(SingleOpK);
-			t->child[0] = factor();
+			t->child[0] = piexp();
 			t->attr.op = ADRESS;
 		}
 		break;

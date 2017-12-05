@@ -340,7 +340,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				case ADRESS:
 					// todo support &p[1][2] || &(*(xxxx))
 					cGenInAdressMode(p1, scope, start_label, end_label);
-					loc = st_lookup(p1->attr.name);
+					//loc = st_lookup(p1->attr.name);
 					//emitRO("LDA", ac, loc, get_stack_bottom(st_lookup_scope(p1->attr.name)),"LDA the var adress");
 					//emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 					break;
@@ -426,7 +426,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 		case PointK:
 			if (!checkInAdressMode())
 			{
-				cGenInValueMode(tree->child[0], scope,start_label,end_label);//generate the adress
+				cGenInAdressMode(tree->child[0], scope,start_label,end_label);//generate the adress
 				getRealAdressBy(tree);
 				emitRM("POP", ac, 0, mp, "load adress from mp");
 				// now need to produce the real value rather than Adress

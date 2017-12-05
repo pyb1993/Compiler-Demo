@@ -1,9 +1,22 @@
+struct t2{
+	int c
+}
+
+struct test{
+	int a[3]
+	int b
+	struct t2 tt
+
+
+}
+
 
 void main()
 {
-	int a[10][10]
-	a[2][2] = 32
-	int *p = a[2]
-	write a[2][2]
-	write p[2]
+	struct test t
+	int *p = &t.tt.c
+	*p = 33
+	write p
+	write t.b
+	write t.tt.c
 }

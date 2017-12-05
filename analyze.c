@@ -253,7 +253,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			else if (t->attr.op == ADRESS)
 			{
-				assert(child1->kind.exp == IdK);
 				if (is_basic_type(child1->type, Pointer))
 				{
 					t->type = child1->type;
