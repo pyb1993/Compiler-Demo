@@ -74,23 +74,32 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		}
 
 		int var_size = var_size_of(t);
-		st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type);
+		if (is_basic_type(t->type, Array)){
+			var_size = 1;
+			TypeInfo point_type; // not use createTypeInfoFromBasic to avoid alloc and free memory
+			point_type.typekind = Pointer;
+			point_type.point_type.pointKind = t->type.array_type.ele_type;
+			point_type.point_type.plevel = 1;
+			st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, point_type);
+		}
+		else{
+			st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type);
+		}
 		offset += var_size;
 		t = t->sibling;
 	}
 }
 
- void __deleteVarOfField(TreeNode * tree,int scope,bool need_change_stack)
+ void __deleteVarOfField(TreeNode * tree,int scope)
  {
 	 TreeNode * t = tree;
 	 if (scope == 0) return;
 	 while (t != NULL)
 	 {
-		 if (isStmt(t, DeclareK) || isStmt(t, ParamK))
+		 if (isStmt(t, DeclareK))
 		 {
 			 deleteVar(t, scope);
-			 if (need_change_stack)
-				stack_offset += var_size_of(t);
+			stack_offset += var_size_of(t);
 		 }
 		 t = t->sibling;
 	 }
@@ -99,21 +108,27 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
  // delete all local variable from the stmtseq
  void deleteVarOfField(TreeNode * tree, int scope)
  {
-	 __deleteVarOfField(tree, scope, true);
+	 __deleteVarOfField(tree, scope);
  }
 
- // delete all local variable from the stmtseq
+ // delete all params from the stmtseq
  void deleteParams(TreeNode * tree, int scope)
  {
-	 __deleteVarOfField(tree, scope, false);
+	 TreeNode * t = tree;
+	 if (scope == 0) return;
+	 while (t != NULL)
+	 {
+		deleteVar(t, scope);
+		t = t->sibling;
+	 }
  }
 
  void insertTree(TreeNode * t,int scope)
  {
 	 while (t != NULL)
 	 {
-		 insertNode(t, scope);
-		 t = t->sibling;
+		insertNode(t, scope);
+		t = t->sibling;
 	 }
  }
 
@@ -127,9 +142,7 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 case DeclareK:
 			 if (is_basic_type(t->type, Func) && scope == 0)
 			 {
-				 /*
-					 todo :support local procedure
-				 */
+				 /* todo : support local procedure */
 				 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
 				 addFunctionType(t->attr.name, new_func_type(t));
 				 insertParam(t->child[0], scope + 1);
@@ -204,7 +217,7 @@ void deleteVar(TreeNode * t,int scope_depth)
 	}
 	else
 	{
-		st_delete(t->attr.name);
+			st_delete(t->attr.name);
 	}
 }
 

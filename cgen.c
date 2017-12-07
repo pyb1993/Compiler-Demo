@@ -269,12 +269,8 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
             if (TraceCode) emitComment("-> Id");
             loc = st_lookup(tree->attr.name);
 			
-			if (checkInAdressMode())
-			{
-				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
-				emitRM("PUSH", ac, 0, mp, "push array adress to mp");
-			}
-			else if (is_basic_type(tree->converted_type, Array))
+
+			if (checkInAdressMode() || is_basic_type(tree->converted_type, Array))
 			{
 				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
 				emitRM("PUSH", ac, 0, mp, "push array adress to mp");
@@ -679,14 +675,17 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	int exp_reg = get_reg(getBasicType(e->converted_type));
 	int par_reg = get_reg(getBasicType(p->type));
 	int vsize = var_size_of(e);
-	// todo support struct pass
-	//cgenPushObj(exp_reg, par_reg, vsize);
-
+	if (is_basic_type(e->type, Array))
+		vsize = 1;
+	cgenPushObj(exp_reg, par_reg, vsize);
+	
+	/*
 	while (vsize--){
 		emitRM("POP", exp_reg, 0, mp, "pop exp ");
 		emitRO("MOV", par_reg, exp_reg, 0, "");
 		emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
 	}
+	*/
 }
 /*pop parameters*/
 void popParam(ParamNode * p)

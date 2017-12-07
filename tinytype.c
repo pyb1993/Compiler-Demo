@@ -291,8 +291,7 @@ deleteStructType(char * key)
 }
 
 // todo optimize : convert tree to type
-int
-var_size_of_type(TypeInfo vtype)
+int var_size_of_type(TypeInfo vtype)
 {
 	Type type = getBasicType(vtype);
 	if (type == Integer) return 1;
