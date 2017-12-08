@@ -117,12 +117,13 @@ to do list
 	the easy way is to call getToken with replaced tokenString and return the replaced token
 	which is the preporcessor !
 	to implement the procedure, we need to save the linebuf,
-2. implement break
 3. implement !,and,or
 6  support three value expression
 6  support switch case
-8  define variable
 9  auto x = 10; auto inference
 10 import other file
-11 change checkAdressMode
+11 support ++,--
+12 support p->
+13 support local function
+14 support block field
 */

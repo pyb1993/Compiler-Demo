@@ -9,21 +9,6 @@
 
 typedef void(*emitFunc)(int, int, int);
 #define checkInAdressMode() (in_adress_mode)
-
-#define TRY_ADRESS_MODE(tree,proc) do {\
-restoreAdressMode();\
-if (is_basic_type(tree->converted_type, Pointer)){\
-	proc; \
-}\
-else{\
-	setInAdressMode(); \
-	proc; \
-	emitRM("PUSH", ac, 0, mp, "sotre lhs adress");\
-	restoreAdressMode(); \
-}\
-}while(0)
-
-
 /* tmpOffset is the memory offset for temps
  It is decremented each time a temp is
  stored, and incremeted when loaded again
@@ -42,17 +27,13 @@ static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
 static void __cGenST(int , int , int );
 static void __cGenPUSH(int ,int, int );
 static void __cgenPopFromTemp(int, int, int,int, emitFunc);
-static void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg)
-{
-	__cgenPopFromTemp(origin_reg, target_reg, offset, target_adress_reg, __cGenST);
-}
-static void cgenPushObj(int origin_reg, int target_reg, int offset)
-{
-	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
-}
+
+static void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg);
+static void cgenPushObj(int origin_reg, int target_reg, int offset);
+
 static void cGen(TreeNode * tree, int scope,int start_label,int end_label,bool in_adress_mode);
 static void cGenInAdressMode(TreeNode * tree, int scope, int start_label, int end_label);
-void cGenInValueMode(TreeNode * tree, int scope, int start_label, int end_label);
+static void cGenInValueMode(TreeNode * tree, int scope, int start_label, int end_label);
 /*function used to get the relative register of specific type  */
 static int get_reg(Type type);
 static int get_reg1(Type type);
@@ -65,8 +46,8 @@ static void popParam(ParamNode * p);
 // get the A.x from tmpOffset
 static void getRealAdressBy(TreeNode* tree);
 
-void setInAdressMode();
-void restoreAdressMode();
+static void setInAdressMode();
+static void restoreAdressMode();
 int look_label(int start_label,int end_label);// find the label representing the adress
 
 /* Procedure genStmt generates code at a statement node */
@@ -155,16 +136,16 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			if (tree->child[0] != NULL) 
 			{ 
 				cGenInValueMode(tree->child[0], scope, start_label, end_label);
-				// now the result is in the ac or fac or tmpOffset according to the type 
 				TypeInfo ctype = tree->child[0]->converted_type;
 				TypeInfo return_type = getFunctionType(current_function).return_type;
-				assert(ctype.typekind != Struct);
-				
-				// convert the type!
-				// todo : construct the function copy_tmpOffset_to_register(origin_type,target_type)
-				emitRM("POP", get_reg(getBasicType(ctype)), 0, mp, "op: POP left");
-				emitRO("MOV", get_reg(getBasicType(return_type)), get_reg(getBasicType(ctype)), 0, "move register reg(s) tp reg(r)");
-				emitRM("PUSH", get_reg(getBasicType(return_type)), 0, mp, "op: push left");
+				int vsize = var_size_of_type(return_type);			
+				int origin_reg = get_reg(getBasicType(ctype));
+				int target_reg = get_reg(getBasicType(return_type));
+				if (vsize == 1 && origin_reg != target_reg){
+					emitRM("POP",origin_reg,  0, mp, "op: POP left");
+					emitRO("MOV", target_reg,origin_reg, 0, "move register reg(s) tp reg(r)");
+					emitRM("PUSH", target_reg, 0, mp, "op: push left");
+				}
 			}
 
 			emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
@@ -223,7 +204,6 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 
 			break;
 		case StructDefineK:
-//			addStructType(tree->attr.name,new_struct_type(tree->child[0]));
 			break;
         default:
             break;
@@ -299,19 +279,6 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
 			popParam(p);
-			
-			// ensure the function need to 
-			if (!is_basic_type(tree->type,Void) )
-			{
-				origin_reg = get_reg(getBasicType(tree->type));
-				target_reg = get_reg(getBasicType(tree->converted_type));
-				if (origin_reg != target_reg) 
-				{
-					emitRM("POP", origin_reg, 0, mp, "");
-					emitRO("MOV", target_reg, origin_reg, mp, "convert tmpOffset");// reg[ac] = Mem[reg[gp] + loc]
-					emitRM("PUSH", target_reg, 0, mp, "store exp");
-				}
-			}
 			break;
 		case SingleOpK:
 			if (TraceCode) emitComment("->Single Op");
@@ -600,8 +567,7 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     emitComment("End of standard prelude.");
 	/* generate code for TINY program */
 	cGen(syntaxTree,0,-1,-1,false);
-	
-	
+		
 	emitComment("call main function");
 	int adress = getFunctionAdress("main");
 	int endLoc = emitSkip(0) + 2;
@@ -647,7 +613,7 @@ int get_reg(Type type)
 	}
 }
 
-static int get_reg1(Type type)
+int get_reg1(Type type)
 {
 	return get_reg(type) + 1;
 }
@@ -678,14 +644,6 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	if (is_basic_type(e->type, Array))
 		vsize = 1;
 	cgenPushObj(exp_reg, par_reg, vsize);
-	
-	/*
-	while (vsize--){
-		emitRM("POP", exp_reg, 0, mp, "pop exp ");
-		emitRO("MOV", par_reg, exp_reg, 0, "");
-		emitRM("PUSH", par_reg, 0, sp, "push parameter into stack");
-	}
-	*/
 }
 /*pop parameters*/
 void popParam(ParamNode * p)
@@ -797,3 +755,14 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 	emitRM("PUSH", target_reg, 0, target_adress_reg, "PUSH bytes");
 }
 
+// pop from mp and store to adress
+ void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg)
+{
+	__cgenPopFromTemp(origin_reg, target_reg, offset, target_adress_reg, __cGenST);
+}
+
+ // pop from mp and push to sp
+ void cgenPushObj(int origin_reg, int target_reg, int offset)
+{
+	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
+}
