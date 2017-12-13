@@ -35,6 +35,7 @@ static TreeNode * continue_stmt();
 static TreeNode * return_stmt();
 static TreeNode * parseExp();
 static TreeNode * parsePointExp(TreeNode*);
+static TreeNode * parseArrowExp(TreeNode*);
 static TreeNode * compare_exp();
 static TreeNode * simple_exp();
 static TreeNode * term();
@@ -144,6 +145,8 @@ TreeNode * statement(void)
 	case LPAREN:t = lparenStartstmt();break;
 	case ID:
 	case TIMES:
+	case PPLUS:
+	case MMINUS:
 		t = parseExp();
 		break;
 	case READ: t = read_stmt(); break;
@@ -583,7 +586,7 @@ TreeNode * simple_exp(void)
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) 
 		{
-			// convert x += y to x = x + y
+			// convert x += y to x = x + y || a[3] += 4
 			if (token == PLUSASSIGN || token == MINUSASSIGN)
 			{
 				TreeNode * assign_left = t;
@@ -593,7 +596,7 @@ TreeNode * simple_exp(void)
 				// parse the y of x += y
 				p->attr.op = token;
 				p->child[0] = newExpNode(IdK);
-				p->child[0]->attr.name = copyString(assign_left->attr.name);
+				*p->child[0] = *assign_left;// copy attr of assign left
 				matchWithoutSkipLineEnd(token);
 				p->child[1] = term();
 				t->child[1] = p;
@@ -615,17 +618,28 @@ TreeNode * simple_exp(void)
 TreeNode * term(void)
 {
 	TreeNode * t = piexp();
-	while ((token == TIMES) || (token == OVER) || (token == BITAND))
+	while ((token == TIMES) || (token == OVER) || (token == BITAND) || token == PPLUS)
 	{
-		TreeNode * p = newExpNode(OpK);
-		if (p != NULL) 
+		if (token == PPLUS || token == MMINUS)
 		{
+
+			TreeNode * p = newExpNode(SingleOpK);
+			p->child[0] = t;
+			p->return_type.typekind = After;
+			p->attr.op = token;
+			t = p;
+			matchWithoutSkipLineEnd(token);
+		}
+		else
+		{
+			TreeNode * p = newExpNode(OpK);
 			p->child[0] = t;
 			p->attr.op = token;
 			t = p;
 			matchWithoutSkipLineEnd(token);
 			p->child[1] = piexp();
 		}
+		
 	}
 	return t;
 }
@@ -635,20 +649,15 @@ TreeNode * term(void)
 TreeNode * piexp()
 {
 	TreeNode * t = factor();
-	while (token == POINT || token == LSQUARE)
+	while (token == POINT || token == LSQUARE || token == ARROW)
 	{
 		// eg (p+5)[i] || f(123)[j][k] || s[x].y
-		if (token == POINT)
+		switch (token)
 		{
-			t = parsePointExp(t);
+		case POINT:t = parsePointExp(t); break;
+		case LSQUARE: t = parseIndexNode(t); break;
+		case ARROW: t = parseArrowExp(t); break;
 		}
-
-		// A.x[k] so this case must behind point
-		if (token == LSQUARE)
-		{
-			t = parseIndexNode(t);
-		}
-		// eg (f()).x
 	}
 	return t;
 }
@@ -661,53 +670,30 @@ TreeNode * factor(void)
 	switch (token) 
 	{
 	case MINUS:
-        last_token = getLastTokenWithoutSkipLineEnd();
 		matchWithoutSkipLineEnd(MINUS);
-		// todo remove this to help function
-		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
-		{
-			t =  parseExp();
-		}
-		else
-		{
-			t = newExpNode(SingleOpK);
-			t->child[0] = factor();
-			t->attr.op = NEG;
-		}
+		t = newExpNode(SingleOpK);
+		t->child[0] = factor();
+		t->attr.op = NEG;
 		break;
 	case TIMES:
-		last_token = getLastTokenWithoutSkipLineEnd();
 		matchWithoutSkipLineEnd(TIMES);
-		// the last token are part of exp; exp -
-		// so the minus is just substract!
-		// todo remove this to help function
-		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
-		{
-			t =  parseExp();
-		}
-		else
-		{
-			t = newExpNode(SingleOpK);
-			t->child[0] = factor();
-			t->attr.op = UNREF;
-		}
+		t = newExpNode(SingleOpK);
+		t->child[0] = factor();
+		t->attr.op = UNREF;
 		break;
 	case BITAND:
-		last_token = getLastTokenWithoutSkipLineEnd();
-		matchWithoutSkipLineEnd(BITAND);
-		// the last token are part of exp; exp -
-		// so the minus is just substract!
-		// todo remove this to help function
-		if (last_token == RBRACKET || last_token == ID || last_token == RSQUARE || last_token == NUM)
-		{
-			t =  parseExp();
-		}
-		else
-		{
-			t = newExpNode(SingleOpK);
-			t->child[0] = piexp();
-			t->attr.op = ADRESS;
-		}
+		matchWithoutSkipLineEnd(BITAND);		
+		t = newExpNode(SingleOpK);
+		t->child[0] = piexp();
+		t->attr.op = ADRESS;
+		break;
+	case MMINUS:
+	case PPLUS:// ++x, ++a[i], ++s.x
+		t = newExpNode(SingleOpK);
+		t->attr.op = token;
+		t->return_type.typekind = Before;
+		matchWithoutSkipLineEnd(token);
+		t->child[0] = piexp();
 		break;
 	case NUM:
 		t = newExpNode(ConstK);
@@ -716,11 +702,11 @@ TreeNode * factor(void)
 		matchWithoutSkipLineEnd(NUM);
 		break;
     case FlOATNUM:
-            t = newExpNode(ConstK);
-			t->attr.val.flt = (float)atof(tokenString);
-			t->type = createTypeFromBasic(Float);
-			matchWithoutSkipLineEnd(FlOATNUM);
-            break;
+        t = newExpNode(ConstK);
+		t->attr.val.flt = (float)atof(tokenString);
+		t->type = createTypeFromBasic(Float);
+		matchWithoutSkipLineEnd(FlOATNUM);
+        break;
 	case ID:
 		// todo, remove code to other
 		if (tryNextToken() == LPAREN) {
@@ -801,6 +787,7 @@ TreeNode * parseIndexNode(TreeNode * lhs_exp)
 	return parseIndexNode(t);
 }
 
+
 TreeNode * parseStruct()
 {
 
@@ -848,12 +835,10 @@ TreeNode * parseStructDef()
 	return t;
 }
 
+// todo remove this to one function
  TreeNode * parsePointExp(TreeNode* lhs_exp)
 {
-	 if (token != POINT)
-	 {
-		 return lhs_exp;
-	 }
+	 if (token != POINT) { return lhs_exp; }
 	 TreeNode * t = newExpNode(PointK);
 	 matchWithoutSkipLineEnd(POINT);
 	 t->child[0] = lhs_exp;
@@ -861,6 +846,18 @@ TreeNode * parseStructDef()
 	 matchWithoutSkipLineEnd(ID);
 	 return parsePointExp(t);
 }
+
+ TreeNode * parseArrowExp(TreeNode* lhs_exp)
+ {
+	 if (token != ARROW) { return lhs_exp; }
+	 TreeNode * t = newExpNode(ArrowK);
+	 matchWithoutSkipLineEnd(ARROW);
+	 t->child[0] = lhs_exp;
+	 t->attr.name = copyString(tokenString);
+	 matchWithoutSkipLineEnd(ID);
+	 return parseArrowExp(t);
+ }
+
 
  void rollback(int pos_backup) 
  {

@@ -259,10 +259,11 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			// todo optimize following code to functio. bad smell
 			child1 = t->child[0];
 			checkNodeType(child1,current_function,scope);
-			if (t->attr.op == NEG)
+			if (t->attr.op == NEG || t->attr.op == PPLUS || t->attr.op == MMINUS)
 			{
 				t->type = child1->type;
-				assert(can_convert(child1->converted_type,createTypeFromBasic(Integer)));
+				assert(can_convert(child1->converted_type,createTypeFromBasic(Integer)) ||
+					   is_basic_type(child1->type,Pointer));
 			}
 			else if (t->attr.op == ADRESS)
 			{
@@ -316,15 +317,20 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				    can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
 				    )))
 				typeError(t, "Op applied to type beyond bool,integer,float");
-			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE))
+			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE)){
 				t->type = createTypeFromBasic(Boolean);
-			else if ((is_basic_type(t->child[0]->type,Float)) || 
-				     (is_basic_type(t->child[1]->type, Float))
-					 )
+				t->converted_type = t->type;
+			}
+			else if ((is_basic_type(t->child[0]->type, Float)) ||
+				(is_basic_type(t->child[1]->type, Float))
+				)
+			{
 				t->type = createTypeFromBasic(Float);
+				gen_converted_type(t); // set the attribute converted_type 
+			}
 			else if (is_basic_type(t->child[0]->type, Pointer) || is_basic_type(t->child[1]->type, Pointer))
 			{
-				// swap
+				// swap the pointer to the first child. it's handy to check in remain steps
 				if (is_basic_type(t->child[1]->type, Pointer))
 				{
 					TreeNode * p = t->child[0];
@@ -333,12 +339,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				}
 
 				t->type = is_basic_type(t->child[0]->type, Pointer) ? t->child[0]->type : t->child[1]->type;
+				t->converted_type = t->type;
 			}
 			else{
 				t->type = createTypeFromBasic(Integer);
+				gen_converted_type(t); // set the attribute converted_type 
 			}
 
-			gen_converted_type(t); // set the attribute converted_type 
 			break;
 
 		case IdK:
@@ -362,16 +369,26 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			t->converted_type = t->type;
 			break;
+		case ArrowK:{
+			checkNodeType(t->child[0], current_function, scope);
+			TypeInfo lhs_type = t->child[0]->type;
+			ERROR_IF(is_basic_type(lhs_type, Pointer) && lhs_type.point_type.plevel == 1, "illegal arrow: lhs must be pointer");
+			ERROR_IF(is_basic_type(*lhs_type.point_type.pointKind, Struct), "illegal arrow: lhs must point to struct");
+			StructType stype = getStructType(lhs_type.point_type.pointKind->sname);
+			Member* member = getMember(stype, t->attr.name);
+			t->type = member->typeinfo;
+			t->converted_type = t->type;
+			break;
+		}
 		case PointK:
-			// setInPointKRecursion
-			// checkIfInPointKRecursion
-			// RestoreInPointKRecursion
-			checkNodeType(t->child[0],current_function, scope);
+		{
+			checkNodeType(t->child[0], current_function, scope);
 			StructType stype = getStructType(t->child[0]->type.sname);
 			Member* member = getMember(stype, t->attr.name);
 			t->type = member->typeinfo;
 			t->converted_type = t->type;
 			break;
+		}
 		case FuncallK:
 			assert(t->attr.name != 0);
 			FuncType ftype = getFunctionType(t->attr.name);
@@ -537,8 +554,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 
  void gen_converted_type(TreeNode * tree)
 {
-	TypeInfo converted_type = get_converted_type(tree);
-	
+	TypeInfo converted_type = get_converted_type(tree);	
 	// todo optimize
 	if (is_basic_type(converted_type, Pointer)){
 		assert(is_basic_type(tree->child[0]->type, Pointer));
@@ -589,10 +605,13 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 
  void checkEmptyExp(TreeNode * t){
 	 if (allowed_empty_exp) return;// eg: while(exp),if(exp)
-	 ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK), "empty exp beyond call and assign is not allowed!");
+	 ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK) || 
+			  (isExp(t,SingleOpK) && (t->attr.op == PPLUS || t->attr.op == MMINUS)),
+			  "empty exp beyond call and assign or ++/-- is not allowed!");
 	 if (isExp(t, FuncallK)) {
 		 FuncType type = getFunctionType(t->attr.name);
-		 ERROR_IF(is_basic_type(type.return_type, Void), "only function return nothing can be the empty exp");
+		 ERROR_IF(is_basic_type(type.return_type, Void), 
+			 "only function return nothing can be the empty exp");
 	 }
 	 t->empty_exp = TRUE;
  }

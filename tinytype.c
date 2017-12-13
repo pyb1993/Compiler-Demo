@@ -54,18 +54,8 @@ TypeInfo createTypeFromBasic(Type basic)
 
 	switch (basic)
 	{
-	case Integer:
-	case Float:
-	case Boolean:
-	case Void:
 	case Pointer:
 		typeinfo.point_type.pointKind = (TypeInfo*)malloc(sizeof(TypeInfo));
-	case Func:
-	case Struct:
-	case ErrorType:
-		break;	
-	default:
-		assert(!"unknown basic type");
 		break;
 	}
 	return typeinfo;

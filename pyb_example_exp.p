@@ -123,7 +123,6 @@ to do list
 9  auto x = 10; auto inference
 10 import other file
 11 support ++,--
-12 support p->
 13 support local function
 14 support block field
 */

@@ -9,7 +9,7 @@ char tokenString[MAXTOKENLEN + 5];
 typedef enum
 {
 	START, INASSIGN, INCOMMENT, INMULCOMMENT, INNUM, INFLOATNUM, INID, OVER_OR_COMMENT,
-	INASSIGN_OR_EQ, MINUS_OR_NEG, LT_OR_LE, GT_OR_GE,IN_STR,
+	INASSIGN_OR_EQ, MINUS_START, LT_OR_LE, GT_OR_GE,IN_STR,
 	PLUS_START,
 	DONE
 } StateType;
@@ -127,14 +127,14 @@ TokenType getToken(void)
 				save = FALSE;
 				SET_CUR_TOKEN(LINEEND);
 			}
-			else if (c == '-'){
-				SET_CUR_TOKEN(MINUS);
-			}
 			else if (c == '&'){
 				SET_CUR_TOKEN(BITAND);
 			}
 			else if (c == '/'){
 				state = OVER_OR_COMMENT;
+			}
+			else if (c == '-'){
+				state = MINUS_START;
 			}
 			else if (c == '<'){
 				state = LT_OR_LE;
@@ -205,7 +205,21 @@ TokenType getToken(void)
 				save = false;
 				SET_CUR_TOKEN_AND_UNGET(PLUS);
 			}
-			
+			break;
+		case MINUS_START:
+			if (c == '-'){
+				SET_CUR_TOKEN(MMINUS);
+			}
+			else if (c == '='){
+				SET_CUR_TOKEN(MINUSASSIGN);
+			}
+			else if (c == '>'){
+				SET_CUR_TOKEN(ARROW);
+			}
+			else{
+				save = false;
+				SET_CUR_TOKEN_AND_UNGET(MINUS);
+			}
 			break;
 		case INCOMMENT:
 			save = FALSE;

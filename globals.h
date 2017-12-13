@@ -36,8 +36,8 @@ typedef enum
 	/* multicharacter tokens */
 	ID,NEG,ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE, PLUS,PPLUS,PLUSASSIGN, MINUS,MMINUS,MINUSASSIGN, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
-	POINT, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,STRUCT,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
+	POINT,ARROW, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,STRUCT,
 	/*variable type*/
 	INT,FLOAT,VOID,FUN
 } TokenType;
@@ -52,9 +52,10 @@ extern int lineno; /* source line number for listing */
 
 typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,DefineK,StructDefineK,ParamK,BreakK,ContinueK,ReturnK } StmtKind;
-typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ConstK, IdK, FuncallK } ExpKind;
+typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK } ExpKind;
 /* ExpType is used for type checking */
-typedef enum { ErrorType, Void,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+// Before, After is used to check x++ or ++x
+typedef enum { ErrorType, Void,Before, After,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
 
 #define MAXCHILDREN 3
@@ -87,9 +88,9 @@ typedef struct _TypeInfo
 
 typedef struct treeNode
 {
+	int lineno;
 	struct treeNode * child[MAXCHILDREN];
 	struct treeNode * sibling;
-	int lineno;
 	bool empty_exp;
 	NodeKind nodekind;
 	union { StmtKind stmt; ExpKind exp; } kind;

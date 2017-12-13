@@ -27,6 +27,7 @@ static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
 static void __cGenST(int , int , int );
 static void __cGenPUSH(int ,int, int );
 static void __cgenPopFromTemp(int, int, int,int, emitFunc);
+static void cgenOp(TreeNode*, TreeNode*, TokenType, int, int, int);
 
 static void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg);
 static void cgenPushObj(int origin_reg, int target_reg, int offset);
@@ -214,8 +215,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool in_adress_mode)
 {
 	int loc;
-	TokenType op;
-    TreeNode * p1, * p2;
+    TreeNode * p1;
 	TypeInfo type = tree->converted_type;
 	int integer;
 	float float_num;
@@ -249,7 +249,6 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
             if (TraceCode) emitComment("-> Id");
             loc = st_lookup(tree->attr.name);
 			
-
 			if (checkInAdressMode() || is_basic_type(tree->converted_type, Array))
 			{
 				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
@@ -300,6 +299,34 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
                     emitRO("NEG", target_reg, 0, 0, "single op (-)");// fac = -fac || ac = -ac
                     emitRM("PUSH", target_reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
                     break;
+				case MMINUS:
+				case PPLUS:// ++x => x = x + 1 || --x => x - 1
+				{
+					TreeNode * op_node = newExpNode(OpK);
+					TreeNode * const_node = newExpNode(ConstK);
+					const_node->type = createTypeFromBasic(Integer);
+					const_node->converted_type = const_node->type;
+					const_node->attr.val.integer = 1;
+
+					op_node->child[0] = tree->child[0];
+					op_node->child[1] = const_node;
+					op_node->attr.op = tree->attr.op;
+					op_node->converted_type = op_node->type = tree->child[0]->converted_type;
+
+					if (tree->return_type.typekind == Before){
+						cgen_assign(tree->child[0], op_node, scope);
+						if (!tree->empty_exp) genExp(tree->child[0], scope, start_label, end_label, false);// generate value
+					}
+					else
+					{
+						if (!tree->empty_exp) genExp(tree->child[0], scope, start_label, end_label, false);// generate value
+						cgen_assign(tree->child[0], op_node, scope);
+					}
+					free(const_node);
+					free(op_node);
+					break;
+				}
+	
 				case ADRESS:
 					// todo support &p[1][2] || &(*(xxxx))
 					cGenInAdressMode(p1, scope, start_label, end_label);
@@ -341,9 +368,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			if (!tree->empty_exp)
 			{
 				// generate value for write  x = y
-				setInAdressMode();
 				cGenInValueMode(tree->child[0], scope, start_label, end_label);
-				restoreAdressMode();
 				cGenPushTemp(
 					var_size_of(tree),
 					get_reg1(tree->converted_type.typekind),
@@ -386,6 +411,34 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				emitRM("PUSH", ac, 0, mp, "push the adress mode into mp");
 			}
 			break;
+		case ArrowK:
+			// todo merge Arrow and point
+			if (!checkInAdressMode())
+			{
+				cGenInValueMode(tree->child[0], scope, start_label, end_label);//get pointer
+				getRealAdressBy(tree);
+				emitRM("POP", ac, 0, mp, "load adress from mp");
+				// now need to produce the real value rather than Adress
+				origin_reg = get_reg1(getBasicType(tree->type));
+				target_reg = get_reg1(getBasicType(tree->converted_type));
+				vsize = var_size_of(tree);
+
+				for (int i = 0; i < vsize; ++i)
+				{
+					// move bytes tmpOffset to tmpOffset
+					// todo optimize
+					emitRM("LD", origin_reg, i, ac, "copy bytes");//reg[ac] =  dMem[reg[ac]]
+					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
+					emitRM("PUSH", target_reg, 0, mp, "push a.x value into tmp");
+				}
+			}
+			else
+			{
+				// copy from memory to memory
+				cGenInValueMode(tree->child[0], scope, start_label, end_label);//generate the adress
+				getRealAdressBy(tree);
+			}
+			break;
 		case PointK:
 			if (!checkInAdressMode())
 			{
@@ -415,101 +468,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			break;
 		case OpK :
             if (TraceCode) emitComment("-> Op") ;
-            p1 = tree->child[0];
-            p2 = tree->child[1];
-			/* gen code for ac = left arg */
-			cGenInValueMode(p1, scope, start_label, end_label);
-			cGenInValueMode(p2, scope, start_label, end_label);
-			// todo
-			if (is_basic_type(tree->converted_type, Pointer))
-			{
-				int vsize = vsize = var_size_of(tree);
-				switch (tree->attr.op)
-
-				{
-				case PLUS:
-					emitRM("POP", ac, 0, mp, "load index value to ac");
-					emitRO("LDC", ac1, vsize, 0, "load pointkind size");
-					emitRO("MUL", ac, ac1, ac, "compute the offset");
-
-					emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
-					emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
-					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-					break;
-				}
-				return;
-			}
-			
-
-			origin_reg = get_reg(getBasicType(p1->converted_type));
-			int origin_reg1 = get_reg1(getBasicType(p2->converted_type));
-			int reg = get_reg(getBasicType(type));
-			int reg1 = get_reg1(getBasicType(type));
-
-			emitRM("POP", origin_reg1,0,mp,"pop right");
-			emitRO("MOV", reg1, origin_reg1, 0, "convert type");
-			
-			emitRM("POP", origin_reg, 0, mp, "pop left");
-			emitRO("MOV", reg, origin_reg, 0, "convert type");
-
-
-			switch (tree->attr.op) 
-			{
-				case PLUSASSIGN:
-                case PLUS :
-					emitRO("ADD", reg,reg, reg1, "op +");// ac = ac1 op ac
-					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-                    break;
-                case MINUS :
-					emitRO("SUB", reg, reg, reg1, "op -");
-					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-					break;
-                case TIMES :
-					emitRO("MUL", reg, reg, reg1, "op *");
-					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-					break;
-                case OVER :
-					emitRO("DIV", reg, reg, reg1, "op /");
-					emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-					break;
-                case LT :
-				case GT :
-				case LE :
-				case GE :
-					op = tree->attr.op;
-					char op_code[4] = "JLT";
-
-					if (op == LT || op == LE)
-					{
-						emitRO("SUB", reg, reg, reg1, "op <");
-						op_code[2] = (op == LT ? 'T' : 'E');
-					}
-					else
-					{
-						emitRO("SUB", reg, reg, reg1, "op <");
-						op_code[1] = 'G';
-						op_code[2] = (op == GT ? 'T' : 'E');
-					}
-
-					/* now the op_code is JLE,JLT,GLE,GLT*/
-					emitRM(op_code, ac, 2, pc, "br if true");
-					emitRM("LDC", ac, 0, ac, "false case");
-					emitRM("LDA", pc, 1, pc, "unconditional jmp");
-					emitRM("LDC", ac, 1, ac, "true case");
-					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-					break;
-                case EQ :
-					emitRO("SUB", reg, reg, reg1, "op ==, convertd_type");
-					emitRM("JEQ", ac, 2, pc, "br if true");
-					emitRM("LDC", ac, 0, ac, "false case" );
-					emitRM("LDA", pc, 1, pc, "unconditional jmp");
-					emitRM("LDC", ac, 1, ac, "true case");
-					emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-					break;
-                default:
-                    emitComment("BUG: Unknown operator");
-                    break;
-            } /* case op */
+			cgenOp(tree->child[0],tree->child[1], tree->attr.op, scope, start_label, end_label);
             if (TraceCode)  emitComment("<- Op") ;
             break; /* OpK */
             
@@ -671,7 +630,16 @@ void restoreAdressMode()
 // compute and store Adress of A.x in ac
 void getRealAdressBy( TreeNode* tree)
 {
-	StructType stype = getStructType(tree->child[0]->type.sname);
+	StructType stype;
+	switch (tree->kind.exp)
+	{
+	case PointK:
+		 stype = getStructType(tree->child[0]->type.sname);
+		break;
+	case ArrowK:
+		 stype = getStructType(tree->child[0]->type.point_type.pointKind->sname);
+		break;
+	}
 	Member* member = getMember(stype, tree->attr.name);
 	int loc = member->offset;
 	emitRO("POP", ac1, 0, mp, "load adress of lhs struct");
@@ -700,19 +668,122 @@ void cgen_assign(TreeNode * left,TreeNode * right,int scope)
 	{
 		//  *..p = ffff 
 		// todo run in the adress mode
-
 		assert(left->attr.op == UNREF || !"illegal left operand on assign");
 		cGenInValueMode(left->child[0], scope, -1, -1);
 		emitRM("POP", ac1, 0, mp, "move the adress of referenced");
 	}
-	else if (isExp(left, IndexK) || isExp(left,PointK))
+	else if (isExp(left, IndexK) || isExp(left,PointK) || isExp(left,ArrowK))
 	{
-		// todo: optimize the code: IndexK should run in the AdressMode
 		cGenInAdressMode(left, scope, -1, -1);
 		emitRM("POP", ac1, 0, mp, "move the adress of referenced");
 	}
 	cgenCopyObj(origin_reg, target_reg, vsize, ac1);
 }
+
+void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_label, int end_label)
+{
+	TreeNode *p1 = left;
+	TreeNode *p2 = right;
+	TypeInfo type = p1->converted_type;
+	/* gen code for ac = left arg */
+	cGenInValueMode(p1, scope, start_label, end_label);
+	cGenInValueMode(p2, scope, start_label, end_label);
+	// todo
+
+	if (is_basic_type(left->type, Pointer))
+	{
+		int vsize = vsize = var_size_of_type(*left->type.point_type.pointKind);
+		switch (op)
+		{
+		case PLUS:
+		case PPLUS:
+		case PLUSASSIGN:
+			emitRM("POP", ac, 0, mp, "load index value to ac");
+			emitRO("LDC", ac1, vsize, 0, "load pointkind size");
+			emitRO("MUL", ac, ac1, ac, "compute the offset");
+
+			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
+			emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
+			emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+			break;
+		}
+		return;
+	}
+
+
+	int origin_reg = get_reg(getBasicType(p1->converted_type));
+	int origin_reg1 = get_reg1(getBasicType(p2->converted_type));
+	int reg = get_reg(getBasicType(type));
+	int reg1 = get_reg1(getBasicType(type));
+
+	emitRM("POP", origin_reg1, 0, mp, "pop right");
+	emitRO("MOV", reg1, origin_reg1, 0, "convert type");
+
+	emitRM("POP", origin_reg, 0, mp, "pop left");
+	emitRO("MOV", reg, origin_reg, 0, "convert type");
+	
+	switch (op)
+	{
+	case PPLUS:
+	case PLUSASSIGN:
+	case PLUS:
+		emitRO("ADD", reg, reg, reg1, "op +");// ac = ac1 op ac
+		emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	case MMINUS:
+	case MINUSASSIGN:
+	case MINUS:
+		emitRO("SUB", reg, reg, reg1, "op -");
+		emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	case TIMES:
+		emitRO("MUL", reg, reg, reg1, "op *");
+		emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	case OVER:
+		emitRO("DIV", reg, reg, reg1, "op /");
+		emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	case LT:
+	case GT:
+	case LE:
+	case GE:
+	{
+		char op_code[4] = "JLT";
+		if (op == LT || op == LE)
+		{
+			emitRO("SUB", reg, reg, reg1, "op <");
+			op_code[2] = (op == LT ? 'T' : 'E');
+		}
+		else
+		{
+			emitRO("SUB", reg, reg, reg1, "op <");
+			op_code[1] = 'G';
+			op_code[2] = (op == GT ? 'T' : 'E');
+		}
+
+		/* now the op_code is JLE,JLT,GLE,GLT*/
+		emitRM(op_code, ac, 2, pc, "br if true");
+		emitRM("LDC", ac, 0, ac, "false case");
+		emitRM("LDA", pc, 1, pc, "unconditional jmp");
+		emitRM("LDC", ac, 1, ac, "true case");
+		emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	}
+	case EQ:
+		emitRO("SUB", reg, reg, reg1, "op ==, convertd_type");
+		emitRM("JEQ", ac, 2, pc, "br if true");
+		emitRM("LDC", ac, 0, ac, "false case");
+		emitRM("LDA", pc, 1, pc, "unconditional jmp");
+		emitRM("LDC", ac, 1, ac, "true case");
+		emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	default:
+		emitComment("BUG: Unknown operator");
+		break;
+	} /* case op */
+}
+
 
 void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_reg)
 {
