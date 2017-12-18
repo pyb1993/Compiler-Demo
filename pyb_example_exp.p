@@ -115,14 +115,13 @@ to do list
 1.0 support local function: need to add the stack_depth
 1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token
-	which is the preporcessor !
+	which is the preporcessor!
 	to implement the procedure, we need to save the linebuf,
 3. implement !,and,or
 6  support three value expression
 6  support switch case
 9  auto x = 10; auto inference
 10 import other file
-11 support ++,--
 13 support local function
 14 support block field
 */

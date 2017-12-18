@@ -42,7 +42,7 @@ static TreeNode * term();
 static TreeNode * piexp();
 static TreeNode * factor();
 static TreeNode * lparenStartstmt();
-
+static TreeNode * block_stmt();
 
 //help function
 static TreeNode * parseOneVar();
@@ -149,6 +149,7 @@ TreeNode * statement(void)
 	case MMINUS:
 		t = parseExp();
 		break;
+	case LBRACKET: t = block_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
 	case INT:  
@@ -204,9 +205,16 @@ TreeNode * while_stmt(void)
 	match(WHILE);
 	if (t != NULL) t->child[0] = parseExp(); //child[0] for test
 	skipLineEnd();
+	t->child[1] = block_stmt();
+	return t;
+}
+
+TreeNode * block_stmt(void)
+{
+	TreeNode * t = newStmtNode(BlockK);
 	bool in_block = match_possible_lbracket();
-	t->child[1] = in_block ? stmt_sequence() : statement(); // child[1] for body
-    match_possible_rbracket(in_block);
+	t->child[0] = in_block ? stmt_sequence() : statement(); // child[1] for body
+	match_possible_rbracket(in_block);
 	return t;
 }
 
@@ -618,7 +626,7 @@ TreeNode * simple_exp(void)
 TreeNode * term(void)
 {
 	TreeNode * t = piexp();
-	while ((token == TIMES) || (token == OVER) || (token == BITAND) || token == PPLUS)
+	while ((token == TIMES) || (token == OVER) || (token == BITAND) || token == PPLUS || token  == MMINUS)
 	{
 		if (token == PPLUS || token == MMINUS)
 		{

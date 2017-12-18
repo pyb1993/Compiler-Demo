@@ -13,55 +13,54 @@
   9:    MOV  2,3,0 	exchang the stack(context)
  10:   PUSH  1,0(3) 	push the caller fp
  11:   PUSH  0,0(3) 	push the return adress
- 12:    LDA  3,-10(3) 	stack expand
- 13:    LDA  3,-1(3) 	stack expand
-* ->Single Op
-* -> Id
- 14:    LDA  0,-11(2) 	load id adress
- 15:   PUSH  0,0(6) 	push array adress to mp
-* <- Id
-* <-Single Op
- 16:    LDA  1,-12(2) 	move the adress of ID
- 17:    POP  0,0(6) 	copy bytes
- 18:     ST  0,0(1) 	copy bytes
-* ->Single Op
-* -> Id
- 19:     LD  0,-12(2) 	load id value
- 20:   PUSH  0,0(6) 	store exp
-* <- Id
- 21:    POP  0,0(6) 	pop right
-* -> Op
-* -> Id
- 22:     LD  0,-12(2) 	load id value
- 23:   PUSH  0,0(6) 	store exp
-* <- Id
+ 12:    LDA  3,-1(3) 	stack expand
 * -> Const
- 24:    LDC  0,1(0) 	load integer const
- 25:   PUSH  0,0(6) 	store exp
+ 13:    LDC  0,3(0) 	load integer const
+ 14:   PUSH  0,0(6) 	store exp
 * <- Const
- 26:    POP  0,0(6) 	load index value to ac
- 27:    LDC  1,10,0 	load pointkind size
- 28:    MUL  0,1,0 	compute the offset
- 29:    POP  1,0(6) 	load lhs adress to ac1
- 30:    ADD  0,0,1 	compute the real index adress a[index]
- 31:   PUSH  0,0(6) 	op: load left
-* <- Op
- 32:    LDA  1,-12(2) 	move the adress of ID
- 33:    POP  0,0(6) 	copy bytes
- 34:     ST  0,0(1) 	copy bytes
-* <-Single Op
+ 15:    LDA  1,-2(2) 	move the adress of ID
+ 16:    POP  0,0(6) 	copy bytes
+ 17:     ST  0,0(1) 	copy bytes
+ 18:    LDA  3,-1(3) 	stack expand
+* -> Const
+ 19:    LDC  0,1(0) 	load integer const
+ 20:   PUSH  0,0(6) 	store exp
+* <- Const
+ 21:    LDA  1,-3(2) 	move the adress of ID
+ 22:    POP  0,0(6) 	copy bytes
+ 23:     ST  0,0(1) 	copy bytes
+ 24:    LDA  3,-1(3) 	stack expand
+* -> Const
+ 25:    LDC  0,4(0) 	load integer const
+ 26:   PUSH  0,0(6) 	store exp
+* <- Const
+ 27:    LDA  1,-4(2) 	move the adress of ID
+ 28:    POP  0,0(6) 	copy bytes
+ 29:     ST  0,0(1) 	copy bytes
 * -> Id
- 35:     LD  0,-12(2) 	load id value
- 36:   PUSH  0,0(6) 	store exp
+ 30:     LD  0,-4(2) 	load id value
+ 31:   PUSH  0,0(6) 	store exp
 * <- Id
- 37:    POP  0,0(6) 	move result to register
- 38:    OUT  0,0,0 	output value in register[ac / fac]
- 39:    MOV  3,2,0 	restore the caller sp
- 40:     LD  2,0(2) 	resotre the caller fp
- 41:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 32:    POP  0,0(6) 	move result to register
+ 33:    OUT  0,0,0 	output value in register[ac / fac]
+* -> Id
+ 34:     LD  0,-3(2) 	load id value
+ 35:   PUSH  0,0(6) 	store exp
+* <- Id
+ 36:    POP  0,0(6) 	move result to register
+ 37:    OUT  0,0,0 	output value in register[ac / fac]
+* -> Id
+ 38:     LD  0,-2(2) 	load id value
+ 39:   PUSH  0,0(6) 	store exp
+* <- Id
+ 40:    POP  0,0(6) 	move result to register
+ 41:    OUT  0,0,0 	output value in register[ac / fac]
+ 42:    MOV  3,2,0 	restore the caller sp
+ 43:     LD  2,0(2) 	resotre the caller fp
+ 44:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-  7:    LDA  7,34(7) 	skip the function body
+  7:    LDA  7,37(7) 	skip the function body
 * call main function
- 42:    LDC  0,44(0) 	store the return adress
- 43:    LDC  7,8(0) 	ujp to the function body
- 44:   HALT  0,0,0 	
+ 45:    LDC  0,47(0) 	store the return adress
+ 46:    LDC  7,8(0) 	ujp to the function body
+ 47:   HALT  0,0,0 	

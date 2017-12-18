@@ -102,7 +102,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			cGenInValueMode(p1, scope + 1, new_start_label, new_end_label);// create code for test
 			savedLoc1 = emitSkip(1);
 			/* generate code for body */
-			cGenInValueMode(p2, scope + 1, new_start_label, new_end_label);
+			cGenInValueMode(p2, scope, new_start_label, new_end_label);
 			currentLoc = emitSkip(0);
 			emitRM("LDA", pc, (savedLoc2 - (currentLoc + 1)), pc, "unconditional jmp");
 			currentLoc = emitSkip(0);
@@ -114,6 +114,10 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
             break; /* repeat */
 		case BreakK:
 			emitGoto(start_label);
+			break;
+		case BlockK:
+			cGen(tree->child[0], scope + 1, start_label, end_label, in_adress_mode);
+			deleteVarOfField(tree->child[0], scope + 1);
 			break;
 		case ContinueK:
 			emitGoto(start_label);
@@ -198,7 +202,6 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitRM("LDA",sp,-vsize,sp,"stack expand");
 			}
 
-			// int x = 1
 			if (tree->child[2] != NULL){
 				cgen_assign(tree, tree->child[2], scope);
 			}
@@ -209,7 +212,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
         default:
             break;
     }
-} /* genStmt */
+}
 
 /* Procedure genExp generates code at an expression node */
 static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool in_adress_mode)
@@ -369,11 +372,11 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			{
 				// generate value for write  x = y
 				cGenInValueMode(tree->child[0], scope, start_label, end_label);
-				cGenPushTemp(
+				/*cGenPushTemp(
 					var_size_of(tree),
 					get_reg1(tree->converted_type.typekind),
 					get_reg1(tree->type.typekind),
-					ac);
+					ac);*/
 			}
 			if (TraceCode)  emitComment("<- assign");
 			break; /* assign_k */
@@ -703,7 +706,18 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 			emitRO("MUL", ac, ac1, ac, "compute the offset");
 
 			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
-			emitRO("ADD", ac, ac, ac1, "compute the real index adress a[index]");
+			emitRO("ADD", ac, ac1, ac, "compute the real index adress");
+			emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+			break;
+		case MINUS:
+		case MMINUS:
+		case MINUSASSIGN:
+			emitRM("POP", ac, 0, mp, "load index value to ac");
+			emitRO("LDC", ac1, vsize, 0, "load pointkind size");
+			emitRO("MUL", ac, ac1, ac, "compute the offset");
+
+			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
+			emitRO("SUB", ac, ac1, ac, "compute the real index adress");
 			emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 			break;
 		}
@@ -789,7 +803,6 @@ void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_reg)
 {
 	for (int loc = 0; loc < vsize; ++loc)
 	{
-		// todo optimize : move memory to memory
 		emitRM("LD", target_reg, loc, adress_reg, "load bytes");//
 		emitRO("MOV", target_reg, origin_reg, 0, "move between reg");
 		emitRM("PUSH", target_reg, 0, mp, "push bytes ");

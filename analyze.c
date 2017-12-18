@@ -99,7 +99,7 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 if (isStmt(t, DeclareK))
 		 {
 			 deleteVar(t, scope);
-			stack_offset += var_size_of(t);
+			 stack_offset += var_size_of(t);
 		 }
 		 t = t->sibling;
 	 }
@@ -172,8 +172,12 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 allowed_empty_exp = TRUE;
 			 insertNode(t->child[0],scope + 1);
 			 allowed_empty_exp = FALSE;
-			 insertTree(t->child[1], scope + 1);
+			 insertNode(t->child[1], scope);
 			 incrWhileDepth(-1);
+			 break;
+		 case BlockK:
+			 insertTree(t->child[0],scope + 1);
+			 deleteVarOfField(t->child[0], scope + 1);
 			 break;
 		 case IfK:
 			 allowed_empty_exp = TRUE;
@@ -217,7 +221,7 @@ void deleteVar(TreeNode * t,int scope_depth)
 	}
 	else
 	{
-			st_delete(t->attr.name);
+		st_delete(t->attr.name);
 	}
 }
 
@@ -452,7 +456,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;		
 		case RepeatK:
 			checkNodeType(t->child[0],current_function, scope + 1);
-			checkTree(t->child[1],current_function, scope + 1);
+			checkTree(t->child[1],current_function, scope);
 			if (!is_basic_type(t->child[0]->type,Boolean))
 			{
 				typeError(t->child[0], "repeat test is not Boolean");
@@ -468,23 +472,27 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case DeclareK:
 			if (is_basic_type(t->type,Func) && scope == 0)
 			{
-				/*
-				todo :remove these  function insert Function
-				*/
-				//addFunctionType(t->attr.name, new_func_type(t)); // insert Functype
+				/*todo :remove these  function insert Function*/
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
 				// remove this to function deleteFunction
 				deleteParams(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
-				//deleteFuncType(t->attr.name);
 			}
-			if (t->child[2] != NULL)// int x = 100
+			else if (is_basic_type(t->type, Func) && scope > 0){ assert(0); }
+	
+
+			else if (t->child[2] != NULL)// int x = 100
 			{
 				checkNodeType(t->child[2], current_function, scope);
 				check_assign_node(t, t, t->child[2], current_function, scope);
 			}
+			break;
+		case BlockK:
+			insertTree(t->child[0], scope + 1);
+			checkTree(t->child[0], current_function, scope + 1);
+			deleteVarOfField(t->child[0], scope + 1);
 			break;
 		default:
 			for (int i = 0; i < MAXCHILDREN; ++i)
@@ -571,6 +579,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	  ERROR_IF(right->nodekind == ExpK,"illegal assign");
 	  assert(!is_basic_type(left->type,Array));
 	  TypeInfo exp_type = right->converted_type;
+	  
 	  if (isExp(left,IdK) || isStmt(t,DeclareK))
 	  {
 		  ERROR_IF(st_lookup(left->attr.name) != NOTFOUND,"variable not defined");
@@ -585,6 +594,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 		  TreeNode * unref_child = t->child[0];
 		  ERROR_IF(left->child[0] != NULL,"illegal assgin stmt");
 		  ERROR_IF(can_convert(exp_type, unref_child->type),"not converted type in assign");
+		  t->type = unref_child->type;
 		  if (isExp(unref_child,IndexK))
 		  {
 			  ERROR_IF(!is_basic_type(unref_child->type, Array),

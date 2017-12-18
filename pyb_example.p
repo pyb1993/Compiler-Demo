@@ -1,7 +1,16 @@
+int a
+
 void main()
 {
-	int a[10]
-	(int[10]) * p = &a
-	p++
-	write p	
+	int x = 3
+	{
+		int x = 1
+		{
+			int x = 4
+			write x
+		}
+		write x
+	}
+	write x
+
 }
