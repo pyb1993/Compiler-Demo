@@ -28,6 +28,7 @@ static void check_assign_node(TreeNode *,TreeNode *,TreeNode*, char * current_fu
 static bool checkInWhile();
 static void incrWhileDepth(int);
 static void checkEmptyExp(TreeNode *);
+static void checkEmptyExpOfTree(TreeNode *);
 static void defineError(TreeNode * t ,char * msg)
 {
     fprintf(listing,"Define error at line %d: %s\n",t->lineno,msg);
@@ -140,18 +141,26 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 switch (t->kind.stmt)
 		 {
 		 case DeclareK:
-			 if (is_basic_type(t->type, Func) && scope == 0)
+			 if (is_basic_type(t->type, Func))
 			 {
 				 /* todo : support local procedure */
-				 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
-				 addFunctionType(t->attr.name, new_func_type(t));
+				 t->type.func_type = new_func_type(t);
+				 if (scope == 0){
+					 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
+					 location -= 1;
+				 }
+				 else{
+					 st_insert(t->attr.name, t->lineno, stack_offset + 1, 1, scope, t->type);
+					 stack_offset -= 1;
+				 }
+				 
 				 insertParam(t->child[0], scope + 1);
 				 insertTree(t->child[1], scope + 1);
 				 deleteParams(t->child[0], scope + 1);
 				 deleteVarOfField(t->child[1], scope + 1);
-				 //deleteFuncType(t->attr.name);
 				 return;
 			 }
+		
 			 if (scope == 0) //global var
 			 {
 				 // todo remove the stackoffset,location to the symtable
@@ -191,12 +200,10 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 ERROR_IF(checkInWhile(),"break can only be in while");
 			 break;
 		 case StructDefineK:
-			 assert(scope == 0);
-			 addStructType(t->attr.name, new_struct_type(t));
-			 // to check any duplicate members
-			 // todo remove to check duplicate members
+			 ERROR_IF(scope == 0, "only support global struct define stmt");
 			 insertTree(t->child[0], scope + 1);
 			 deleteVarOfField(t->child[0], scope + 1);
+			 addStructType(t->attr.name, new_struct_type(t));
 			 // todo support local struct
 			 break;
 		 default:
@@ -215,14 +222,7 @@ void deleteVar(TreeNode * t,int scope_depth)
 	if (t == NULL){ return; }
 	if (t->nodekind != StmtK || ( t->kind.stmt != DeclareK && t->kind.stmt != ParamK)) return;
 	assert(scope_depth > 0);
-	if (is_basic_type(t->type,Func))
-	{
-		assert(0);
-	}
-	else
-	{
-		st_delete(t->attr.name);
-	}
+	st_delete(t->attr.name);
 }
 
 /* Function buildSymtab constructs the symbol
@@ -231,9 +231,12 @@ void deleteVar(TreeNode * t,int scope_depth)
 void buildSymtab(TreeNode * syntaxTree)
 { 
 	initTypeCollection();
+	printf("insert tree is done %d \n", stack_offset);
 	insertTree(syntaxTree, 0);// insert node and check them
-	printf("insert tree is done\n");
+	printf("insert tree is done %d \n",stack_offset);
 	checkTree(syntaxTree, NULL, 0);
+	printf("check tree is done %d \n", stack_offset);
+
 }
 
 int var_size_of(TreeNode* tree)
@@ -395,8 +398,9 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		}
 		case FuncallK:
 			assert(t->attr.name != 0);
-			FuncType ftype = getFunctionType(t->attr.name);
-			t->type = ftype.return_type;// set the function return type
+			checkNodeType(t->child[1], current_function, scope);
+			FuncType ftype = t->child[1]->type.func_type;
+			t->type = *ftype.return_type;// set the function return type
 			/*check the paramter type is legal*/
 			ParamNode *param_type_node = ftype.params;
 			TreeNode * param_node = t->child[0];
@@ -410,7 +414,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 				checkNodeType(param_node, current_function, scope + 1);
 
-				if (!can_convert(param_node->converted_type, param_type_node->type))
+				if (!can_convert(param_node->converted_type, *param_type_node->type))
 				{
 					assert(!"parameter cannot match the function definition");
 					break;
@@ -446,8 +450,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case ReturnK:
 			assert(current_function != NULL);
 			checkNodeType(t->child[0],current_function,scope);
-			FuncType function_type = getFunctionType(current_function);
-			TypeInfo function_return_type = function_type.return_type;
+		
+			TypeInfo function_return_type = *st_lookup_type(current_function).func_type.return_type;
 			TypeInfo return_exp_type = t->child[0] == NULL ? createTypeFromBasic(Void) : t->child[0]->type;
 			if (!can_convert(return_exp_type, function_return_type))
 			{
@@ -470,19 +474,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 	
 		case DeclareK:
-			if (is_basic_type(t->type,Func) && scope == 0)
+			if (is_basic_type(t->type,Func))
 			{
 				/*todo :remove these  function insert Function*/
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
-				// remove this to function deleteFunction
 				deleteParams(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
-			}
-			else if (is_basic_type(t->type, Func) && scope > 0){ assert(0); }
-	
-
+			}	
 			else if (t->child[2] != NULL)// int x = 100
 			{
 				checkNodeType(t->child[2], current_function, scope);
@@ -526,8 +526,7 @@ static TypeInfo get_converted_type(TreeNode * t)
 		break;
 	case FuncallK:
 		ERROR_IF(t->attr.name != NULL,"function not found");
-		FuncType ftype = getFunctionType(t->attr.name);
-		TypeInfo return_type = ftype.return_type;
+		TypeInfo return_type = *t->type.func_type.return_type;
 		return return_type;
 		break;
 	case AssignK:
@@ -618,10 +617,13 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	 ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK) || 
 			  (isExp(t,SingleOpK) && (t->attr.op == PPLUS || t->attr.op == MMINUS)),
 			  "empty exp beyond call and assign or ++/-- is not allowed!");
-	 if (isExp(t, FuncallK)) {
-		 FuncType type = getFunctionType(t->attr.name);
-		 ERROR_IF(is_basic_type(type.return_type, Void), 
-			 "only function return nothing can be the empty exp");
+	 if (isExp(t, FuncallK)) 
+	 {
+		 TreeNode * function_format = t->child[1];
+		 if (function_format->kind.exp == IdK){
+			 ERROR_IF(is_basic_type(*st_lookup_type(t->attr.name).func_type.return_type, Void),
+				 "only function return nothing can be the empty exp");
+		 }
 	 }
 	 t->empty_exp = TRUE;
  }

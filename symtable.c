@@ -11,15 +11,7 @@
 /* SHIFT is the power of two used as multiplierin hash function  */
 #define SHIFT 4
 
-typedef struct BucketListRec
-{
-	char * name;
-	int memloc; /* memory location for variable */
-	int mem_size;/* memory size for this variable */
-	int scope_depth;// the scope depth
-	TypeInfo  var_type;
-	struct BucketListRec * next;
-} *BucketList;
+
 
 /* the hash table */
 static BucketList hashTable[SIZE];
@@ -29,7 +21,6 @@ static BucketList construct_node(char * name, int lineno, int loc, int size,int 
 static BucketList insert_into_list( BucketList list,BucketList inserted);
 static BucketList del_from_list(BucketList list, char * name);
 static void free_node(BucketList node);
-static BucketList st_get_node(char * name);
 
 /*insert the node into the hashtable */
 /* the hash function */
@@ -149,7 +140,7 @@ int st_lookup ( char * name )
 TypeInfo st_lookup_type(char * name)
 {
 	BucketList l = st_get_node(name);
-	assert(l != NULL);
+	//assert(l != NULL);
 	return l->var_type;
 }
 
@@ -172,7 +163,7 @@ bool is_duplicate_var(char * name, int depth)
 }
 
 /*assume name must exist*/
-static BucketList st_get_node(char * name)
+BucketList st_get_node(char * name)
 {
 	int h = hash(name);
 	BucketList l = hashTable[h];
@@ -207,14 +198,3 @@ void printSymTab(FILE * listing)
      
     }
 } /* printSymTab */
-
-void setFunctionAdress(char * name,int adress){
-	BucketList l = st_get_node(name);
-	assert((l != NULL) || !"function should not be null");
-	l->memloc = adress;
-}
-
-int getFunctionAdress(char * name){
-	return st_lookup(name);
-
-}

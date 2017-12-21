@@ -6,7 +6,6 @@
 /****************************************************/
 
 #include "globals.h"
-#include "tinytype.h"
 #include "util.h"
 #include "scan.h"
 #include "assert.h"
@@ -251,15 +250,15 @@ TreeNode * return_stmt(void)
 	return t;
 }
 
-TreeNode * funcall_exp(void)
+TreeNode * funcall_exp(TreeNode * t)
 {
-
-	TreeNode *t = newExpNode(FuncallK);
-	t->attr.name = copyString(tokenString);//function name
+	TreeNode * function = newExpNode(FuncallK);
+	function->attr.name = copyString(t->attr.name);
 	match(ID);
 	match(LPAREN);
-	t->child[0] = param_pass();
-	return t;
+	function->child[0] = param_pass();
+	function->child[1] = t;
+	return function;
 }
 
  TreeNode * param_pass(void)
@@ -518,8 +517,8 @@ TreeNode* parseOneExp()
 		 matchWithoutSkipLineEnd(ASSIGN);// can ignore empty line
 		t->child[2] = parseExp();
 	 }
-	 skipLineEnd();
 
+	 skipLineEnd();
 	 return t;
  }
  
@@ -626,7 +625,8 @@ TreeNode * simple_exp(void)
 TreeNode * term(void)
 {
 	TreeNode * t = piexp();
-	while ((token == TIMES) || (token == OVER) || (token == BITAND) || token == PPLUS || token  == MMINUS)
+	while ((token == TIMES) || (token == OVER) || (token == BITAND) || token == PPLUS || token  == MMINUS
+		   || token == LPAREN)
 	{
 		if (token == PPLUS || token == MMINUS)
 		{
@@ -637,6 +637,11 @@ TreeNode * term(void)
 			p->attr.op = token;
 			t = p;
 			matchWithoutSkipLineEnd(token);
+		}
+		else if (token == LPAREN)
+		{
+			unGetToken();
+			t = funcall_exp(t);
 		}
 		else
 		{
@@ -717,14 +722,10 @@ TreeNode * factor(void)
         break;
 	case ID:
 		// todo, remove code to other
-		if (tryNextToken() == LPAREN) {
-			t = funcall_exp();
-		}
-		else {
-			t = newExpNode(IdK);
-			t->attr.name = copyString(tokenString);
-			matchWithoutSkipLineEnd(ID);
-		}
+		t = newExpNode(IdK);
+		t->attr.name = copyString(tokenString);
+		matchWithoutSkipLineEnd(ID);
+		
 		break;
 	case LPAREN:
 		// todo support comma expression, backup the pos, and restore!!!

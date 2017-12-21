@@ -1,7 +1,7 @@
-
-#include "globals.h"
 #ifndef _UTIL_H_
 #define _UTIL_H_
+#include "globals.h"
+#include "tinytype.h"
 
 /* Procedure printToken prints a token
 * and its lexeme to the listing file
@@ -27,5 +27,4 @@ char * copyString(char *);
 * listing file using indentation to indicate subtrees
 */
 void printTree(TreeNode *);
-
 #endif

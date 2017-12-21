@@ -123,5 +123,9 @@ to do list
 9  auto x = 10; auto inference
 10 import other file
 13 support local function
-14 support block field
+14 支持函数使用不依赖定义的顺序,依靠label来实现
+15 支持first class
+	TypeInfo return_type = st_lookup_type(current_function); 这里注意，需要把attr.name 和 function name区分开
+	TypeInfo function_return_type = *st_lookup_type(current_function).func_type.return_type; #需要注意
+
 */

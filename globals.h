@@ -11,9 +11,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #ifndef FALSE
 #define FALSE 0
@@ -27,20 +27,6 @@
 #define MAXRESERVED 20
 #define MEMUNITSCALE 4      // the bytes of mem unit 
 #define NOTFOUND    (404 * 404)
-typedef enum
-/* book-keeping tokens */
-{
-	ENDFILE, ERROR,
-	/* reserved words */
-	IF, ELSE,ELSIF, END, WHILE,BREAK,CONTINUE,RETURN,UNTIL, READ, WRITE,LINEEND,
-	/* multicharacter tokens */
-	ID,NEG,ADRESS, UNREF, NUM, FlOATNUM,
-	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
-	POINT,ARROW, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING,STRUCT,
-	/*variable type*/
-	INT,FLOAT,VOID,FUN
-} TokenType;
 
 extern FILE* source; /* source code text file */
 extern FILE* listing; /* listing output text file */
@@ -50,70 +36,7 @@ extern int lineno; /* source line number for listing */
 /***********   Syntax tree for parsing ************/
 /**************************************************/
 
-typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, ReadK, WriteK,DeclareK,BlockK,DefineK,StructDefineK,ParamK,BreakK,ContinueK,ReturnK } StmtKind;
-typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK } ExpKind;
-/* ExpType is used for type checking */
-// Before, After is used to check x++ or ++x
-typedef enum { ErrorType, Void,Before, After,Boolean, Integer, Float, Pointer,Array,Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
-
-
 #define MAXCHILDREN 3
-struct _dimension;
-typedef struct _dimension
-{
-	int dim; // used for array
-	struct _dimension* next_dim;
-} DimensionList;
-
-typedef struct _ArrayType
-{
-	struct _TypeInfo* ele_type;
-	int ele_num;
-} ArrayType;
-
-typedef struct _PointType
-{
-	int plevel;
-	struct _TypeInfo * pointKind; // Integer,Float,Boolean,Struct
-} PointType;
-
-typedef struct _TypeInfo
-{
-	Type typekind;
-	ArrayType array_type;
-	PointType point_type;
-	char *sname;
-} TypeInfo;
-
-typedef struct treeNode
-{
-	int lineno;
-	struct treeNode * child[MAXCHILDREN];
-	struct treeNode * sibling;
-	bool empty_exp;
-	NodeKind nodekind;
-	union { StmtKind stmt; ExpKind exp; } kind;
-	union {
-		TokenType op;//eg < > == + - * /
-		char * name;// the id name
-        union {
-			int integer;
-			float flt;
-			char *str;
-		} val;// constk should contain one of three values
-	} attr;
-    
-    TypeInfo type; // if type is not the elementary type;
-	TypeInfo return_type; // used only for the return type of function || pointer_type
-	TypeInfo converted_type; // used for exp
-} TreeNode;
-
-
-/**************************************************/
-/***********   Flags for tracing       ************/
-/**************************************************/
-
 /* EchoSource = TRUE causes the source program to
 * be echoed to the listing file with line numbers
 * during parsing

@@ -379,7 +379,7 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-	if (pc_pos == 48)
+	if (pc_pos == 13)
 	{
 		ok = 100;
 	}

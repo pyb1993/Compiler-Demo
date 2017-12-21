@@ -1,16 +1,13 @@
-int a
+struct test 
+{
+	int a
+	void hi(){write 123}
+}
+
 
 void main()
 {
-	int x = 3
-	{
-		int x = 1
-		{
-			int x = 4
-			write x
-		}
-		write x
-	}
-	write x
-
+	struct test t
+	t.hi()	
+		
 }

@@ -1,28 +1,89 @@
 #ifndef tinytype_h
 #define tinytype_h
-
 #include "globals.h"
 
+typedef enum
+/* book-keeping tokens */
+{
+	ENDFILE, ERROR,
+	/* reserved words */
+	IF, ELSE, ELSIF, END, WHILE, BREAK, CONTINUE, RETURN, UNTIL, READ, WRITE, LINEEND,
+	/* multicharacter tokens */
+	ID, NEG, ADRESS, UNREF, NUM, FlOATNUM,
+	/* special symbols */
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
+	POINT, ARROW, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING, STRUCT,
+	/*variable type*/
+	INT, FLOAT, VOID, FUN
+} TokenType;
+
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
-int var_size_of_type(TypeInfo);
+typedef enum { StmtK, ExpK } NodeKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK } StmtKind;
+typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK } ExpKind;
+typedef enum { ErrorType, Void, Before, After, Boolean, Integer, Float, Pointer, Array, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
+/**************         function type      *********************/
+/**************         function type      *********************/
+/**************         function type      *********************/
+typedef struct _TypeInfo TypeInfo;
 
-/*
-	the parmaNode must be declared before FuncType
-*/
 typedef struct _ParamNode{
-	TypeInfo type;
+	TypeInfo * type;
 	struct _ParamNode * next_param;
 }  ParamNode;
 
-
-typedef struct _FuncType{
-	TypeInfo return_type;
+typedef struct _FuncType
+{
+	TypeInfo * return_type;
 	ParamNode * params;
 	char * name;
 	int scope_depth;
+	int adress;
 } FuncType;
 
+
+/**************         Array type      *********************/
+/**************         Array type      *********************/
+/**************         Array type      *********************/
+struct _dimension;
+typedef struct _dimension
+{
+	int dim; // used for array
+	struct _dimension* next_dim;
+} DimensionList;
+
+typedef struct _ArrayType
+{
+	struct _TypeInfo* ele_type;
+	int ele_num;
+} ArrayType;
+
+/**************         Pointer type      *********************/
+
+typedef struct _PointType
+{
+	int plevel;
+	struct _TypeInfo * pointKind; // Integer,Float,Boolean,Struct
+} PointType;
+
+
+/**************   TypeInfo       *********************/
+/**************   TypeInfo       *********************/
+/**************   TypeInfo       *********************/
+
+typedef struct _TypeInfo
+{
+	Type typekind;
+	ArrayType array_type;
+	PointType point_type;
+	FuncType func_type;
+	char *sname;
+} TypeInfo;
+
+/**************         struct type      *********************/
+/**************         struct type      *********************/
+/**************         struct type      *********************/
 typedef struct _member
 {
 	TypeInfo typeinfo;
@@ -33,76 +94,62 @@ typedef struct _member
 
 typedef struct _Struct
 {
-    // struct BasicType * basic_type;//  -> LFloat -> LBoolean and so on;
-	TypeInfo typeinfo;
+	TypeInfo typeinfo;  // struct BasicType * basic_type;//  -> LFloat -> LBoolean and so on;
 	int scope_depth;
-    Member * members; // only meaningful when typeinfo is struct
+	Member * members; // only meaningful when typeinfo is struct
 } StructType;
-/*
-	how to analyze the struct?
-	parse.c part
-	parseStructDef:
-		[1] first , when enter the keyword struct
-			(1) definition:
-					crate the structType of this definition by call parseStruct recursively
-					insert the <sname,structtype> to the structType array
-			(2) declaration
-				parseStructDeclare:				
-					create a member
-					<1> find if the struct is declared, if not, abort
-					<2> else get the typeInfo and member_name,created complete
-				end
-				append the member to the members
-
-*/
 
 
-/*
-how to access Stu.x
-// analyze.c part
- convert the type of Stu.x
- [1] find the x in next list
- [2] find the _StructType and then return it's name(note TypeInfo will not contain detail of Structure)
- [3] how to set the name ?
+/**************         Tree Node       *********************/
+/**************         Tree Node       *********************/
 
+typedef struct treeNode
+{
+	int lineno;
+	struct treeNode * child[MAXCHILDREN];
+	struct treeNode * sibling;
+	bool empty_exp;
+	NodeKind nodekind;
+	union { StmtKind stmt; ExpKind exp; } kind;
+	union {
+		TokenType op;//eg < > == + - * /
+		char * name;// the id name
+		union {
+			int integer;
+			float flt;
+			char *str;
+		} val;// constk should contain one of three values
+	} attr;
 
-[1]. find the structure of Stu S
-[2]. find the loc of Stu
-[3]. compute the offset of x in the S
-[4]. compute the location of x 
+	TypeInfo type; // if type is not the elementary type;
+	TypeInfo return_type; // used only for the return type of function || pointer_type
+	TypeInfo converted_type; // used for exp
+} TreeNode;
 
-*/
-
-/*
-	how to acces p->x
-	[1]assert p is a pointer, assert PointKind is a struct
-	[2]find the PointKind(structure) of p
-	[3]find the value of p(adress of real ref)
-	[4]the same thing above
-*/
-
+/************************  FUNCTION ****************************************/
 int integer_from_node(TreeNode * t);
 float float_from_node(TreeNode * t);
 bool can_convert(TypeInfo a, TypeInfo b);
-bool is_basic_type(TypeInfo type, Type btype);
+bool is_basic_type(TypeInfo , Type );
+int var_size_of_type(TypeInfo);
 
 FuncType new_func_type(TreeNode * tree);
 StructType new_struct_type(TreeNode * tree);
 ParamNode * new_param_node(TreeNode * tree);
+Type getBasicType(TypeInfo);
 Member * new_member_list(TreeNode * tree,int offset);
-Member* getMember(StructType stype, char * name);
-FuncType getFunctionType(char * name);
+Member * getMember(StructType, char * name);
 StructType getStructType(char * name);
-
-
-
-Type getBasicType(TypeInfo typeinfo);
 TypeInfo createTypeFromBasic(Type basic);
-void free_type(TypeInfo typeinfo);
-void addFunctionType(char * key, FuncType ftype);
+
+void free_type(TypeInfo );
 void addStructType(char * key, StructType stype);
-void deleteFuncType(char * key);
+void freeFuncType(FuncType * ftype);
+void freeParamNode(ParamNode * p);
+
 void deleteStructType(char * key);
 void initTypeCollection();
+void setFunctionAdress(char * ,char *, int adress);
+int getFunctionAdress(char *, char *);
 bool ensure_type_defined(char * key);
 #endif /* tinytype_h */

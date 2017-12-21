@@ -42,7 +42,7 @@ static int get_reg1(Type type);
 static int get_stack_bottom(int scope);
 static void pushParam(TreeNode * t,ParamNode * p, int scope);
 static void popParam(ParamNode * p);
-
+static char * setStructInfo(char *, int mode);
 // help
 // get the A.x from tmpOffset
 static void getRealAdressBy(TreeNode* tree);
@@ -142,7 +142,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			{ 
 				cGenInValueMode(tree->child[0], scope, start_label, end_label);
 				TypeInfo ctype = tree->child[0]->converted_type;
-				TypeInfo return_type = getFunctionType(current_function).return_type;
+				TypeInfo return_type = *st_lookup_type(current_function).func_type.return_type;
 				int vsize = var_size_of_type(return_type);			
 				int origin_reg = get_reg(getBasicType(ctype));
 				int target_reg = get_reg(getBasicType(return_type));
@@ -160,20 +160,21 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 		
 		case DeclareK:
 			/*deal with the function  */
-			if (scope == 0 && is_basic_type(tree->type,Func)) 
+			if (is_basic_type(tree->type,Func)) 
 			{
 				emitComment("function entry");
-				insertParam(tree->child[0], scope + 1);
-				// warnning: pop param is executed in outside
-
-				//addFunctionType(tree->attr.name, new_func_type(tree));
 				char * last_current = current_function;
+				if (scope > 0){
+					st_insert(tree->attr.name, 0, 0, 1, scope, tree->type);
+				}
+
+				insertParam(tree->child[0], scope + 1);
 				current_function = tree->attr.name;
 
 				int skip_adress = emitSkip(1);
 				// load function adress
-				setFunctionAdress(tree->attr.name, emitSkip(0));
-				// assume the caller  move return adress in reg[ac]
+				setFunctionAdress(tree->attr.name,setStructInfo(NULL,0), emitSkip(0));
+				// assume the caller move return adress in reg[ac]
 				emitRO("MOV", ac1, fp, 0,"store the caller fp temporarily");// store the caller fp
 				emitRO("MOV", fp,  sp, 0, "exchang the stack(context)");//reg[fp] = reg[sp]
 
@@ -195,7 +196,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitRestore();
 				current_function = last_current;
 			}
-			else if (scope > 0 && !is_basic_type(tree->type,Func))//local variable
+			else if (scope > 0 )//local variable
 			{
 				insertNode(tree, scope);
 				int vsize = var_size_of(tree);
@@ -208,7 +209,12 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 
 			break;
 		case StructDefineK:
+		{
+			char * last_sname = setStructInfo(tree->attr.name,1);
+			cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);
+			setStructInfo(last_sname, 1);//restore
 			break;
+		}
         default:
             break;
     }
@@ -273,11 +279,13 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			//todo :tail recursion optimize
 			assert(tree->attr.name != NULL);
 			TreeNode *e = tree->child[0];
-			FuncType ftype = getFunctionType(tree->attr.name);
+			FuncType ftype = tree->child[1]->type.func_type;
 			ParamNode *p = ftype.params;
 			pushParam(e, p, scope + 1);
+			emitComment("call function: ");
+			emitComment(tree->attr.name);
 
-			loc = getFunctionAdress(tree->attr.name);
+			loc = ftype.adress;
 			emitRM("LDA", ac, 1, pc, "store the return adress");
 			emitRM("LDC", pc, loc, 0, "ujp to the function body");
 			popParam(p);
@@ -333,13 +341,9 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				case ADRESS:
 					// todo support &p[1][2] || &(*(xxxx))
 					cGenInAdressMode(p1, scope, start_label, end_label);
-					//loc = st_lookup(p1->attr.name);
-					//emitRO("LDA", ac, loc, get_stack_bottom(st_lookup_scope(p1->attr.name)),"LDA the var adress");
-					//emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 					break;
 				case UNREF:
 					// todo remove the bad smell
-					// todo support *(&p)
 					assert(p1 != NULL);
 					if (checkInAdressMode())
 					{
@@ -372,11 +376,6 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			{
 				// generate value for write  x = y
 				cGenInValueMode(tree->child[0], scope, start_label, end_label);
-				/*cGenPushTemp(
-					var_size_of(tree),
-					get_reg1(tree->converted_type.typekind),
-					get_reg1(tree->type.typekind),
-					ac);*/
 			}
 			if (TraceCode)  emitComment("<- assign");
 			break; /* assign_k */
@@ -531,7 +530,7 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 	cGen(syntaxTree,0,-1,-1,false);
 		
 	emitComment("call main function");
-	int adress = getFunctionAdress("main");
+	int adress = getFunctionAdress("main",NULL);
 	int endLoc = emitSkip(0) + 2;
 	emitRM("LDC", ac, endLoc,0, "store the return adress");
 	emitRM("LDC", pc, adress, 0, "ujp to the function body");
@@ -601,7 +600,7 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	genExp(e, scope,-1,-1,false);// very important! cannot use cGen to avoid cGen generate exp list automatically
 
 	int exp_reg = get_reg(getBasicType(e->converted_type));
-	int par_reg = get_reg(getBasicType(p->type));
+	int par_reg = get_reg(getBasicType(*p->type));
 	int vsize = var_size_of(e);
 	if (is_basic_type(e->type, Array))
 		vsize = 1;
@@ -613,7 +612,7 @@ void popParam(ParamNode * p)
 	int param_size = 0;
 	while (p != NULL)
 	{
-		param_size += var_size_of_type(p->type);
+		param_size += var_size_of_type(*p->type);
 		p = p->next_param;
 	}
 
@@ -850,3 +849,14 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 {
 	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
 }
+
+ char * setStructInfo(char * s, int mode){
+	 static char * sname = NULL;
+	 if (mode == 0) return sname;
+
+	 char * tmp = sname;
+	 sname = s;
+	 return tmp;
+
+
+ }

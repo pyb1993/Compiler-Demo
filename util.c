@@ -1,11 +1,3 @@
-/****************************************************/
-/* File: util.c                                     */
-/* Utility function implementation                  */
-/* for the TINY compiler                            */
-/* Compiler Construction: Principles and Practice   */
-/* Kenneth C. Louden                                */
-/****************************************************/
-
 #include "globals.h"
 #include "tinytype.h"
 #include "util.h"
@@ -100,7 +92,7 @@ TreeNode * newExpNode(ExpKind kind)
     if (t == NULL)
         fprintf(listing, "Out of memory error at line %d\n", lineno);
     else {
-        for (i = 0; i<MAXCHILDREN; i++) t->child[i] = NULL;
+        for (i = 0; i < MAXCHILDREN; i++) t->child[i] = NULL;
         t->sibling = NULL;
         t->nodekind = ExpK;
         t->kind.exp = kind;
@@ -251,3 +243,4 @@ void printTree(TreeNode * tree)
     }
     UNINDENT;
 }
+
