@@ -56,29 +56,7 @@ TypeInfo createTypeFromBasic(Type basic)
 	}
 	return typeinfo;
 }
-void setFunctionAdress(char * name,char * sname, int adress){
-	if (sname == NULL){
-		BucketList l = st_get_node(name);
-		l->var_type.func_type.adress = adress;
-	}
-	else
-	{
-		StructType stype = getStructType(sname);
-		Member * mem = getMember(stype, name);
-		mem->typeinfo.func_type.adress = adress;
-	}
-}
 
-int getFunctionAdress(char * name, char * sname){
-	if (sname == NULL){
-		TypeInfo type = st_lookup_type(name);
-		return type.func_type.adress;
-	}
-	else{
-		assert(0);
-	
-	}
-}
 
 void free_type(TypeInfo typeinfo)
 {
@@ -194,6 +172,9 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		if (b == Array) return true;// the dimension is not cared
 		else if (b == Pointer && can_convert(*b_type.point_type.pointKind, *a_type.array_type.ele_type)) return true;
 		return false;
+	case Func:
+		if (b == Integer || b == Func) return true;
+		return  false;
 	default:
 		assert(!"unknown type");
 		return false;

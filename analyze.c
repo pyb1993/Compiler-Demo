@@ -147,7 +147,6 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 				 t->type.func_type = new_func_type(t);
 				 if (scope == 0){
 					 st_insert(t->attr.name, t->lineno, location--, 1, scope, t->type);// function occupy 4 bytes
-					 location -= 1;
 				 }
 				 else{
 					 st_insert(t->attr.name, t->lineno, stack_offset + 1, 1, scope, t->type);

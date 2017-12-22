@@ -149,7 +149,5 @@ void freeParamNode(ParamNode * p);
 
 void deleteStructType(char * key);
 void initTypeCollection();
-void setFunctionAdress(char * ,char *, int adress);
-int getFunctionAdress(char *, char *);
 bool ensure_type_defined(char * key);
 #endif /* tinytype_h */

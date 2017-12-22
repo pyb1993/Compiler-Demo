@@ -20,6 +20,9 @@ static char * current_function = NULL;
 static int  genLabel();
 static void emitLabel(int);
 static void emitGoto(int);
+static void setFunctionAdress(char * current_function,char *, int scope);
+static void jumpToFunction(char * current_function,char *,int scope);
+
 
 static void cgen_assign(TreeNode *,TreeNode *,int);
 static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
@@ -162,18 +165,27 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			/*deal with the function  */
 			if (is_basic_type(tree->type,Func)) 
 			{
-				emitComment("function entry");
+				current_function = tree->attr.name;
+				emitComment("function entry:");
+				emitComment(current_function);
+
 				char * last_current = current_function;
-				if (scope > 0){
+				if (scope > 0)
+				{
 					st_insert(tree->attr.name, 0, 0, 1, scope, tree->type);
 				}
 
 				insertParam(tree->child[0], scope + 1);
-				current_function = tree->attr.name;
 
+				// set function adress
+				if (setStructInfo(NULL, 0) == NULL ){
+					setFunctionAdress(tree->attr.name, NULL,scope);
+				}
+				else{// declare function in struct
+					setFunctionAdress(tree, setStructInfo(NULL, 0),scope);
+				}
 				int skip_adress = emitSkip(1);
-				// load function adress
-				setFunctionAdress(tree->attr.name,setStructInfo(NULL,0), emitSkip(0));
+
 				// assume the caller move return adress in reg[ac]
 				emitRO("MOV", ac1, fp, 0,"store the caller fp temporarily");// store the caller fp
 				emitRO("MOV", fp,  sp, 0, "exchang the stack(context)");//reg[fp] = reg[sp]
@@ -284,10 +296,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			pushParam(e, p, scope + 1);
 			emitComment("call function: ");
 			emitComment(tree->attr.name);
-
-			loc = ftype.adress;
-			emitRM("LDA", ac, 1, pc, "store the return adress");
-			emitRM("LDC", pc, loc, 0, "ujp to the function body");
+			jumpToFunction(tree,NULL,scope);
 			popParam(p);
 			break;
 		case SingleOpK:
@@ -530,12 +539,9 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 	cGen(syntaxTree,0,-1,-1,false);
 		
 	emitComment("call main function");
-	int adress = getFunctionAdress("main",NULL);
-	int endLoc = emitSkip(0) + 2;
-	emitRM("LDC", ac, endLoc,0, "store the return adress");
-	emitRM("LDC", pc, adress, 0, "ujp to the function body");
+	int end_loc = emitSkip(0) + 3;
+	jumpToFunction(NULL,"main", 0);
 	emitRO("HALT", 0, 0, 0, "");// finish
-
 }
 
 int genLabel(void)
@@ -562,7 +568,7 @@ int get_reg(Type type)
 	{
 		return fac;
 	}
-	else if ((type == Integer) || (type == Boolean) ||
+	else if ((type == Integer) || (type == Boolean) || (type == Func) ||
 			(type == Pointer) || (type == Array) || (type == Struct))
 	{
 		return ac;
@@ -723,7 +729,6 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 		return;
 	}
 
-
 	int origin_reg = get_reg(getBasicType(p1->converted_type));
 	int origin_reg1 = get_reg1(getBasicType(p2->converted_type));
 	int reg = get_reg(getBasicType(type));
@@ -857,6 +862,34 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 	 char * tmp = sname;
 	 sname = s;
 	 return tmp;
+ }
 
+ void setFunctionAdress(char * fname,char * struct_name, int scope)
+ {
+	 if (struct_name == NULL)
+	 {
+		 int entry_adress = emitSkip(0) + 3;
+		 int loc = st_lookup(fname);
+		 emitRM("LDC", ac, entry_adress, 0, "get function adress");
+		 emitRM("ST", ac, loc, get_stack_bottom(scope), "set function adress");
+	 }
+	 else
+	 {
+		
+	 }
+ }
 
+ void jumpToFunction(TreeNode * tree,char * main_func,int scope)
+ {
+	 if (main_func != NULL){
+		 int loc = st_lookup(main_func);
+		 emitRM("LD",ac1,loc,gp,"get main function adress");
+		 emitRM("LDC", ac, emitSkip(0) + 2, 0, "store the return adress");
+		 emitRM("LDA", pc, 0, ac1, "ujp to the function body");
+	 }
+	 else{
+		 cGenInValueMode(tree->child[1], scope, -1, -1);// now adress in mp
+		 emitRM("LDC", ac, emitSkip(0) + 2, 0, "store the return adress");
+		 emitRM("POP", pc, 0, mp, "ujp to the function body");
+	 }
  }

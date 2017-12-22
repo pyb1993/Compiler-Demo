@@ -1,13 +1,21 @@
 struct test 
 {
 	int a
-	void hi(){write 123}
+	int f(){}
 }
 
+int f()
+{
+	return 100 * 100
+}
 
+int g(){
+	return 200
+}
 void main()
 {
 	struct test t
-	t.hi()	
-		
+	t.f = g
+	write t.f()
+
 }
