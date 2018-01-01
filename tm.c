@@ -379,9 +379,9 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-	if (pc_pos == 39)
+	if (pc_pos == 24)
 	{
-		ok = 100;
+		ok = 18;
 	}
 
     if ((pc_pos < 0) || (pc_pos > IADDR_SIZE)) {return srIMEM_ERR;}
@@ -749,7 +749,7 @@ int doCommand(void)
 
 }
 
-void convert(int reg1, int reg2)
+void convert(int reg1, int reg2 )
 {
 		if (same_reg_type(reg1, reg2))
 		{

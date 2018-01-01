@@ -73,13 +73,11 @@ void free_type(TypeInfo typeinfo)
 
 ParamNode * new_param_node(TreeNode * tree)
 {
-	ParamNode * current;
-	ParamNode * pnode;
 	if (tree == NULL) return NULL;
-	pnode = new_param_node(tree->sibling);
-	current = (ParamNode *)malloc(sizeof(ParamNode));
-	current->type = (TypeInfo *)malloc(sizeof(TypeInfo *));
-	*current->type = tree->type;
+	ParamNode *pnode = new_param_node(tree->sibling);
+	ParamNode *current = (ParamNode *)malloc(sizeof(ParamNode));
+	current->type = (TypeInfo *)malloc(sizeof(TypeInfo ));// 为type分配内存 FUUUuUUUUUCKKKKKKKKK
+	*current->type = tree->type;// the name will be shared with tree->type
 	current->next_param = pnode;
 	return current;
 }
@@ -95,7 +93,6 @@ Member * new_member_list(TreeNode * tree,int offset)
 		{
 			assert(ensure_type_defined(tree->type.sname) || "this struct is not defined");
 		}
-
 
 		member->typeinfo = tree->type;
 		member->offset = offset;
@@ -243,12 +240,18 @@ addStructType(char * type_name, StructType stype)
 	STypeCollection[i] = stype;
 }
 
-void
-deleteStructType(char * key)
+void deleteStructType(char * key)
 {
 	int i = getIndexOfSType(key);
-	// todo free members
-	STypeCollection[i].members = NULL;
+	
+    // todo free members
+    Member * member = STypeCollection[i].members;
+    for(;member != NULL; member = member->next_member)
+    {
+        free(member);
+    }
+    
+    STypeCollection[i].members = NULL;
 	STypeCollection[i].typeinfo = createTypeFromBasic(ErrorType);
 	STypeCollection[i].typeinfo.sname = NULL;
 }

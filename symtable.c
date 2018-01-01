@@ -4,6 +4,7 @@
 #include "symtable.h"
 #include "tinytype.h"
 #include "assert.h"
+#include "util.h"
 
 /* SIZE is the size of the hash table */
 #define SIZE 211
@@ -84,12 +85,15 @@ BucketList insert_into_list(BucketList list,BucketList inserted)
 
 BucketList construct_node(char * name, int lineno, int loc, int size,int depth, TypeInfo type)
 {
+    // type的内存和var_type有overlap!!!!
 	BucketList list = (BucketList)malloc(sizeof(struct BucketListRec));
-	list->name = name; // note: name cannot be free !!!
+	list->name = copyString(name);
 	list->memloc = loc;
 	list->mem_size = size;
 	list->scope_depth = depth;
-	list->var_type = type;
+    //int adress = (int)type.func_type.params->type;//3161504
+    //int ssize = (int)(list);
+	list->var_type = type;// share some memory of type
 	list->next = NULL;
 	return list;
 }
@@ -120,7 +124,7 @@ BucketList del_from_list(BucketList list, char * name)
 void free_node(BucketList l)
 {
 	assert(l != NULL);
-	free(l);
+	//free(l);
 }
 
 /* Function st_lookup returns the memory
@@ -140,7 +144,7 @@ int st_lookup ( char * name )
 TypeInfo st_lookup_type(char * name)
 {
 	BucketList l = st_get_node(name);
-	//assert(l != NULL);
+	assert(l != NULL);
 	return l->var_type;
 }
 
