@@ -21,7 +21,7 @@ static int  genLabel();
 static void emitLabel(int);
 static void emitGoto(int);
 static void setFunctionAdress(char * current_function,char *, int scope);
-static void jumpToFunction(char * current_function,char *,int scope);
+static void jumpToFunction(TreeNode *,char *,int scope);
 
 
 static void cgen_assign(TreeNode *,TreeNode *,int);
@@ -34,6 +34,8 @@ static void cgenOp(TreeNode*, TreeNode*, TokenType, int, int, int);
 
 static void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg);
 static void cgenPushObj(int origin_reg, int target_reg, int offset);
+static void cgenCodeForInsertNode(TreeNode*,int);
+
 
 static void cGen(TreeNode * tree, int scope,int start_label,int end_label,bool in_adress_mode);
 static void cGenInAdressMode(TreeNode * tree, int scope, int start_label, int end_label);
@@ -45,7 +47,6 @@ static int get_reg1(Type type);
 static int get_stack_bottom(int scope);
 static void pushParam(TreeNode * t,ParamNode * p, int scope);
 static void popParam(ParamNode * p);
-static char * setStructInfo(char *, int mode);
 // help
 // get the A.x from tmpOffset
 static void getRealAdressBy(TreeNode* tree);
@@ -130,7 +131,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			type = st_lookup_type(tree->attr.name);
 			//todo, optimize follow code. DRY
 			emitRO("IN", get_reg(getBasicType(type)), 0, 0, "read integer/float value");
-			emitRM("ST", get_reg(getBasicType(type)), loc, gp, "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
+			emitRM("ST", get_reg(getBasicType(type)), loc, get_stack_bottom(scope), "assign: store value");//mem[reg[gp]+loc] =  reg[ac]
 			break;
     
 		case WriteK:
@@ -140,6 +141,22 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			emitRM("POP", get_reg(getBasicType(type)), 0, mp, "move result to register");
 			emitRO("OUT", get_reg(getBasicType(type)), 0, 0, "output value in register[ac / fac]");
             break;
+		case AsmK:
+			if (strcmp(tree->attr.name, "malloc") == 0)
+			{	
+				// malloc(n)
+				cGen(tree->child[0], scope, start_label, end_label, 0);// n
+				emitRM("POP", ac, 0, mp, "get malloc parameters");
+				emitSYS("MALLOC", 0, 0, 0, "system call for malloc");
+			}
+			else if (strcmp(tree->attr.name, "free") == 0)
+			{
+				// free(p)
+				cGen(tree->child[0], scope, start_label, end_label, 0);// p
+				emitRM("POP", ac, 0, mp, "get free parameters");
+				emitSYS("FREE", 0, 0, 0, "system call for free");
+			}
+			break;
 		case ReturnK:
 			if (tree->child[0] != NULL) 
 			{ 
@@ -170,19 +187,15 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitComment(current_function);
 
 				char * last_current = current_function;
-				if (scope > 0)
-				{
-					st_insert(tree->attr.name, 0, 0, 1, scope, tree->type);
-				}
-
+				if (scope > 0) insertNode(tree, scope);
+                
 				insertParam(tree->child[0], scope + 1);
-
 				// set function adress
 				if (setStructInfo(NULL, 0) == NULL ){
 					setFunctionAdress(tree->attr.name, NULL,scope);
 				}
 				else{// declare function in struct
-					setFunctionAdress(tree, setStructInfo(NULL, 0),scope);
+					setFunctionAdress(tree->attr.name, setStructInfo(NULL, 0),scope);
 				}
 				int skip_adress = emitSkip(1);
 
@@ -208,12 +221,10 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitRestore();
 				current_function = last_current;
 			}
-			else if (scope > 0 )//local variable
+			else// variable
 			{
-				insertNode(tree, scope);
-				int vsize = var_size_of(tree);
-				emitRM("LDA",sp,-vsize,sp,"stack expand");
-			}
+                cgenCodeForInsertNode(tree,scope);
+            }
 
 			if (tree->child[2] != NULL){
 				cgen_assign(tree, tree->child[2], scope);
@@ -223,8 +234,11 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 		case StructDefineK:
 		{
 			char * last_sname = setStructInfo(tree->attr.name,1);
-			cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);
-			setStructInfo(last_sname, 1);//restore
+            
+			cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);// will insert all function
+            deleteVarOfField(tree->child[0],scope + 1 );
+            emitRO("MOV",sp,fp,0,"resotre stack in struct");
+            setStructInfo(last_sname, 1);//restore
 			break;
 		}
         default:
@@ -296,7 +310,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			pushParam(e, p, scope + 1);
 			emitComment("call function: ");
 			emitComment(tree->attr.name);
-			jumpToFunction(tree,NULL,scope);
+			jumpToFunction(tree, NULL, scope);
 			popParam(p);
 			break;
 		case SingleOpK:
@@ -464,7 +478,6 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				for (int i = 0; i < vsize; ++i)
 				{
 					// move bytes tmpOffset to tmpOffset
-					// todo optimize
 					emitRM("LD", origin_reg, i, ac, "copy bytes");//reg[ac] =  dMem[reg[ac]]
 					emitRO("MOV", target_reg, origin_reg, 0, "move register ");
 					emitRM("PUSH", target_reg, 0, mp, "push a.x value into tmp");
@@ -539,7 +552,6 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 	cGen(syntaxTree,0,-1,-1,false);
 		
 	emitComment("call main function");
-	int end_loc = emitSkip(0) + 3;
 	jumpToFunction(NULL,"main", 0);
 	emitRO("HALT", 0, 0, 0, "");// finish
 }
@@ -608,8 +620,7 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 	int exp_reg = get_reg(getBasicType(e->converted_type));
 	int par_reg = get_reg(getBasicType(*p->type));
 	int vsize = var_size_of(e);
-	if (is_basic_type(e->type, Array))
-		vsize = 1;
+	if (is_basic_type(e->type, Array)) vsize = 1;
 	cgenPushObj(exp_reg, par_reg, vsize);
 }
 /*pop parameters*/
@@ -649,9 +660,9 @@ void getRealAdressBy( TreeNode* tree)
 		break;
 	}
 	Member* member = getMember(stype, tree->attr.name);
-	int loc = member->offset;
+	int offset = member->offset;
 	emitRO("POP", ac1, 0, mp, "load adress of lhs struct");
-	emitRO("LDC", ac, loc, 0, "load offset of member");
+	emitRO("LDC", ac, offset, 0, "load offset of member");
 	emitRO("ADD", ac, ac, ac1, "compute the real adress if pointK");
 	emitRM("PUSH", ac, 0, mp, "");
 }
@@ -855,14 +866,6 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
 }
 
- char * setStructInfo(char * s, int mode){
-	 static char * sname = NULL;
-	 if (mode == 0) return sname;
-
-	 char * tmp = sname;
-	 sname = s;
-	 return tmp;
- }
 
  void setFunctionAdress(char * fname,char * struct_name, int scope)
  {
@@ -875,7 +878,10 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 	 }
 	 else
 	 {
-		
+         // set adress for struct type
+         StructType stype = getStructType(struct_name);
+         Member * mem = getMember(stype,fname);
+         mem->typeinfo.func_type.adress = emitSkip(0) + 1;
 	 }
  }
 
@@ -893,3 +899,33 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 		 emitRM("POP", pc, 0, mp, "ujp to the function body");
 	 }
  }
+
+void initStructInstance(TreeNode * t,int scope)
+ {
+     StructType stype = getStructType(t->type.sname);
+     Member * members = stype.members;
+     for(Member * mem = members; mem != NULL; mem = mem->next_member)
+     {
+         // 2046,2043,2040
+         if(is_basic_type(mem->typeinfo, Func ))
+         {
+             int offset = mem->offset;
+             emitRM("LDC",ac1, mem->typeinfo.func_type.adress, 0,"get function adress from struct");
+             emitRM("ST", ac1, offset + 1,sp,"Init Struct Instance");
+         }
+     }
+ }
+
+void cgenCodeForInsertNode(TreeNode * t, int scope)
+{
+    if(scope > 0) insertNode(t,scope);
+    
+    int vsize = var_size_of(t);
+    emitRM("LDA",sp,-vsize,sp,"stack expand");
+
+    if(is_basic_type(t->type,Struct))
+    {
+        initStructInstance(t,scope);
+    }
+}
+

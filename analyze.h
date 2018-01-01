@@ -18,4 +18,6 @@ void deleteParams(TreeNode * tree, int scope);
 void gen_converted_type(TreeNode * tree);
 bool isExp(TreeNode * t, ExpKind ekind);
 bool isStmt(TreeNode * t, StmtKind skind);
+char * setStructInfo(char *, int mode);
+
 #endif

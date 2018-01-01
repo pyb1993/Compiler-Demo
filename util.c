@@ -113,16 +113,14 @@ void my_strcpy(char * s,int len,char * t)
     while(i++ < len){
         *s++ = *t++;
     }
-	*s++ = '\0';
+	*s = '\0';
 }
 
 char * copyString(char * s)
 {
-    int n;
-    char * t;
     if (s == NULL) return NULL;
-    n = (int)strlen(s) + 1;
-    t = (char *)malloc(n);
+    int n = (int)strlen(s) + 1;
+    char * t = (char *)malloc(n);// (bug appear occasionally)todo: freed memory are used again. where???
     if (t == NULL)
         fprintf(listing, "Out of memory error at line %d\n", lineno);
     else my_strcpy(t,(int)strlen(s),s);

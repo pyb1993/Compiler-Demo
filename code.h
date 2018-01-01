@@ -85,6 +85,8 @@ void emitRM_Abs( char *op, int r, int a, char * c);
     when we execute the code, we need labeltable.
  */
 
+void emitSYS(char *op, int r, int a, char * c);
+
 // emit LDC code specifically
 void emitLDCF(char * op, int r, float d, int s, char *c);
 

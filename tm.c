@@ -1,6 +1,7 @@
 #include "tm.h"
 #include "assert.h"
 #include "code.h"
+#include "vmmemory.h"
 
 int labelLocMap[1024];// the label and location mapping
 
@@ -13,10 +14,9 @@ int labelLocMap[1024];// the label and location mapping
 
 /******* const *******/
 #define   IADDR_SIZE  4096 /* increase for large programs */
-#define   DADDR_SIZE  4096 /* increase for large programs */
 
-#define   GP_ADRESS 3072 /*the gp adress*/
-#define   FIRST_FP  2048 /*the main fp*/
+#define   GP_ADRESS 4095 /*the gp adress, global area */
+#define   FIRST_FP  60000 /*the main fp, stack area, from 4096 -> 60000*/
 
 #define   NO_REGS 11
 #define   PC_REG  7
@@ -38,8 +38,10 @@ char * opCodeTab[]
 = { "HALT", "IN", "OUT","MOV","NEG","ADD", "SUB", "MUL", "DIV","LABEL","GO", "????",
 /* RR opcodes */
 "LD", "ST","PUSH","POP","????", /* RM opcodes */
-"LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????"
+"LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????",
 /* RA opcodes */
+ "MALLOC","FREE", "????"
+/*system instruction*/
    };
 
 char * stepResultTab[] = 
@@ -102,9 +104,11 @@ static STEPRESULT do_neg_op(int r);
 
 int opClass(int c)
 {
+
 	if (c <= opRRLim) return (opclRR);
 	else if (c <= opRMLim) return (opclRM);
-	else                    return (opclRA);
+	else if (c <= opRALim) return (opclRA);
+	else return opclSYS;
 } /* opClass */
 
 /********************************************/
@@ -291,24 +295,18 @@ int readInstructions(FILE *pgm)
 				return error("Missing opcode", lineNo, loc);
 			// get the instruction type op
 			op = opHALT;
-			while ((op < opRALim)
+			while ((op < opEND)
 				&& (strncmp(opCodeTab[op], word, 4) != 0))
 				op++;
 
 			if (strncmp(opCodeTab[op], word, 4) != 0)
 				return error("Illegal opcode", lineNo, loc);
 			
-
-
 			switch (opClass(op))
 			{
 			case opclRR:
 				/***********************************/
 				// process the label related
-				if (loc == 48)
-				{
-					int b = 1000;
-				}
 				if (strncmp("LABEL", word, 5) == 0)
 				{
 					getNum();
@@ -356,6 +354,10 @@ int readInstructions(FILE *pgm)
 					return error("Bad second register", lineNo, loc);
 				arg3 = num;
 				break;
+			case opclSYS:
+				if (strncmp(word, "MALLOC", 6) == 0){}// nothing need to process
+				if (strncmp(word, "FREE", 6) == 0){}// nothing need to process
+
 			}
 			iMem[loc].iop = op;
 			iMem[loc].iarg1 = arg1;
@@ -379,9 +381,9 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-	if (pc_pos == 39)
+	if (pc_pos == 34)
 	{
-		ok = 100;
+		ok = 18;
 	}
 
     if ((pc_pos < 0) || (pc_pos > IADDR_SIZE)) {return srIMEM_ERR;}
@@ -411,6 +413,11 @@ STEPRESULT stepTM(void)
 		r = currentinstruction.iarg1;
 		s = currentinstruction.iarg3;
 		m = currentinstruction.iarg2 + reg[s];
+		break;
+	case opclSYS:
+		r = currentinstruction.iarg1;
+		s = currentinstruction.iarg3;
+		m = currentinstruction.iarg2;
 		break;
     default:
         assert(!"unknown op type");
@@ -501,6 +508,15 @@ STEPRESULT stepTM(void)
 	case opJEQ:    if (reg[r] == 0) reg[PC_REG] = m; break;
 	case opJNE:    if (reg[r] != 0) reg[PC_REG] = m; break;
 	case opRETURN: reg[PC_REG] = dMem[m];	break;
+	/*sys instructions*/
+	case opMALLOC: 
+		m = pMalloc(reg[ac]);
+		if (m >= reg[sp]) assert(!"stack/heap overlap !!!");
+		dMem[reg[mp]--] = m;
+		break;
+	case opFREE:
+		pFree(dMem + reg[ac]);
+		break;
     default:        assert(!"unknown op type");break;
 		/* end of legal instructions */
 	} /* case */
@@ -749,7 +765,7 @@ int doCommand(void)
 
 }
 
-void convert(int reg1, int reg2)
+void convert(int reg1, int reg2 )
 {
 		if (same_reg_type(reg1, reg2))
 		{

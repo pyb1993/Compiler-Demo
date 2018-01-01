@@ -9,7 +9,7 @@ typedef struct BucketListRec
 	int memloc; /* memory location for variable */
 	int mem_size;/* memory size for this variable */
 	int scope_depth;// the scope depth
-	TypeInfo  var_type;
+	TypeInfo var_type;
 	struct BucketListRec * next;
 } *BucketList;
 

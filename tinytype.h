@@ -7,7 +7,7 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, ELSE, ELSIF, END, WHILE, BREAK, CONTINUE, RETURN, UNTIL, READ, WRITE, LINEEND,
+	IF, ELSE, ELSIF, END, WHILE, BREAK, CONTINUE, RETURN, UNTIL, READ, WRITE, LINEEND,ASM,
 	/* multicharacter tokens */
 	ID, NEG, ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
@@ -19,7 +19,7 @@ typedef enum
 
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK } StmtKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK,AsmK } StmtKind;
 typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK } ExpKind;
 typedef enum { ErrorType, Void, Before, After, Boolean, Integer, Float, Pointer, Array, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
@@ -30,8 +30,8 @@ typedef struct _TypeInfo TypeInfo;
 
 typedef struct _ParamNode{
 	TypeInfo * type;
-	struct _ParamNode * next_param;
-}  ParamNode;
+	struct _ParamNode* next_param;
+} ParamNode;
 
 typedef struct _FuncType
 {
@@ -135,7 +135,6 @@ int var_size_of_type(TypeInfo);
 
 FuncType new_func_type(TreeNode * tree);
 StructType new_struct_type(TreeNode * tree);
-ParamNode * new_param_node(TreeNode * tree);
 Type getBasicType(TypeInfo);
 Member * new_member_list(TreeNode * tree,int offset);
 Member * getMember(StructType, char * name);

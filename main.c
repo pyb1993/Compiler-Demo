@@ -6,6 +6,9 @@
 #include "cgen.h"
 #include "util.h"
 #include "tm.h"
+#include "vmmemory.h"
+
+
 
 int lineno = 0;
 FILE * source;
@@ -67,7 +70,6 @@ int main()
 		exit(1);
 #endif
 
-
 #if 1
 	printf("TM  simulation (enter h for help)...\n");
 	do
@@ -78,6 +80,7 @@ int main()
 	fclose(code);
 	
 #endif
+
 	return 0;
-	
+
 }

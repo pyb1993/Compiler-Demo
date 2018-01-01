@@ -79,7 +79,7 @@ static struct
 	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
 	  { "int", INT }, { "float", FLOAT }, { "void", VOID },
-	  { "def", FUN }, {"struct",STRUCT}
+	  { "def", FUN }, { "struct", STRUCT }, {"asm", ASM}
   };
 
 /* lookup an identifier to see if it is a reserved word */

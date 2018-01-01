@@ -11,7 +11,8 @@
 typedef enum {
 	opclRR,     /* reg operands r,s,t */
 	opclRM,     /* reg r, mem d+s */
-	opclRA      /* reg r, int d+s */
+	opclRA,      /* reg r, int d+s */
+	opclSYS
 } OPCLASS;
 
 typedef enum {
@@ -47,7 +48,11 @@ typedef enum {
 	opJEQ,     /* RA     if reg(r)==0 then reg(7) = d+reg(s) */
 	opJNE,     /* RA     if reg(r)!=0 then reg(7) = d+reg(s) */
 	opRETURN,  /* RA     reg[pc] = dMem[a]; */
-	opRALim    /* Limit of RA opcodes */
+	opRALim,    /* Limit of RA opcodes */
+	/*SYSTEM instructions*/
+	opMALLOC,
+	opFREE,
+	opEND
 } OPCODE;
 
 typedef enum {

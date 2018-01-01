@@ -26,7 +26,7 @@ void emitComment( char * c )
  */
 void emitRO( char *op, int r, int s, int t, char *c)
 {  
-	if (!strcmp(op, "MOV") && (r == s)) {
+	if (strcmp(op, "MOV") == 0 && (r == s)) {
 		return;//optimize
 	}
 
@@ -52,6 +52,16 @@ void emitRM( char * op, int r, int d, int s, char *c )
     fprintf(code,"\n") ;
     if (highEmitLoc < emitLoc)  highEmitLoc = emitLoc ;
 } /* emitRM */
+
+void emitSYS(char * op, int r, int d, int s, char *c)
+{
+
+	fprintf(code, "%3d:  %s  %d,%d(%d) ", emitLoc++, op, r, d, s);
+	if (TraceCode) fprintf(code, "\t%s", c);
+	fprintf(code, "\n");
+	if (highEmitLoc < emitLoc)  highEmitLoc = emitLoc;
+
+} /* emitSYS */
 
 void emitLDCF(char * op, int r, float d, int s, char *c){
 	fprintf(code, "%3d:  %5s  %d,%f(%d)\n ", emitLoc++, op, r, d, s);

@@ -107,12 +107,10 @@ void main()
 	write *(x[0]).x
 	write *(x[1]).x
 	*/
-
-
 /*
+
 to do list
 1.0 todo support return stmt match check in the function
-1.0 support local function: need to add the stack_depth
 1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
 	the easy way is to call getToken with replaced tokenString and return the replaced token
 	which is the preporcessor!
@@ -122,10 +120,15 @@ to do list
 6  support switch case
 9  auto x = 10; auto inference
 10 import other file
-13 support local function
-14 支持函数使用不依赖定义的顺序,依靠label来实现
-15 支持first class
-	TypeInfo return_type = st_lookup_type(current_function); 这里注意，需要把attr.name 和 function name区分开
-	TypeInfo function_return_type = *st_lookup_type(current_function).func_type.return_type; #需要注意
-
+11 函数连续分配
+12 tail recursion
+13 检查stack expand的时候是否和堆冲突
+bug 记录:struct里面的变量导致sp指针的变化
+bug 记录:内存分配了一个指针导致overlap	
+bug 记录: 	int * p = malloc(101)	
+			*p = 100
+			这样的代码会导致parse错误,原因在于这样的语义具有二义性:
+				[0] int *p = malloc(101) * p = 100
+				[1] int *p = malloc(101); *p = 100
+				解决办法是函数调用不跳过LineEnd(既调用matchWithoutSkipLineEnd)		
 */

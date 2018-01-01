@@ -42,6 +42,7 @@ static TreeNode * piexp();
 static TreeNode * factor();
 static TreeNode * lparenStartstmt();
 static TreeNode * block_stmt();
+static TreeNode * asmStmt();
 
 //help function
 static TreeNode * parseOneVar();
@@ -151,6 +152,7 @@ TreeNode * statement(void)
 	case LBRACKET: t = block_stmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
+	case ASM: t = asmStmt(); break;
 	case INT:  
 	case FLOAT:
 	case VOID:
@@ -208,6 +210,24 @@ TreeNode * while_stmt(void)
 	return t;
 }
 
+TreeNode * asmStmt()
+{
+	TreeNode * t = newStmtNode(AsmK);
+	match(ASM);
+	match(LPAREN);
+	t->attr.name = copyString(tokenString);// get system call name
+	match(ID);
+	match(COMMA);
+	for (int i = 0; i < MAXCHILDREN && token != RPAREN; ++i)
+	{
+		t->child[i] = parseExp();
+		if (token == COMMA) match(COMMA);
+	}
+	match(RPAREN);
+	skipLineEnd();
+	return t;
+}
+
 TreeNode * block_stmt(void)
 {
 	TreeNode * t = newStmtNode(BlockK);
@@ -216,7 +236,6 @@ TreeNode * block_stmt(void)
 	match_possible_rbracket(in_block);
 	return t;
 }
-
 
 TreeNode * break_stmt(void)
 {
@@ -280,7 +299,7 @@ TreeNode * funcall_exp(TreeNode * t)
 		next->sibling = parseOneExp();
 		next = next->sibling;
 	}
-	match(RPAREN);
+	matchWithoutSkipLineEnd(RPAREN);
 	return t;
 }
 
@@ -308,12 +327,16 @@ static TreeNode* paramK_stmt(void)
 {
 	matchWithoutSkipLineEnd(LPAREN);
 	
-	if (token == VOID || token == RPAREN)
+	if ((token == VOID  && tryNextToken() == RPAREN) || token == RPAREN)
 	{
-		if (token == VOID) matchWithoutSkipLineEnd(VOID);
-		match(RPAREN);
-		return NULL;
-	}
+        if (token == VOID)
+        {
+            matchWithoutSkipLineEnd(VOID);
+        }
+
+        match(RPAREN);
+        return NULL;
+    }
 
 	TreeNode *t = parseOneVar();// parse first param, why deal with it specifically? because I need to return t
 	TreeNode *next = t;
@@ -417,16 +440,16 @@ TreeNode* parseOneExp()
  }
 
 
- TypeInfo parsePointerType(TypeInfo type){
-	 TypeInfo ptype;
-	 if (token == TIMES)
-	 {
-		 ptype.point_type.pointKind = (TypeInfo*)(malloc(sizeof(TypeInfo)));
-		 ptype.typekind = Pointer;
-		 *ptype.point_type.pointKind = type;
-		 ptype.point_type.plevel = 0;
-		 while (token == TIMES) { ptype.point_type.plevel += 1; match(TIMES); }
-	 }
+ TypeInfo parsePointerType(TypeInfo type)
+{
+    assert(token == TIMES);
+    TypeInfo ptype;
+    ptype.point_type.pointKind = (TypeInfo*)(malloc(sizeof(TypeInfo)));
+    ptype.typekind = Pointer;
+    *ptype.point_type.pointKind = type;
+    ptype.point_type.plevel = 0;
+    while (token == TIMES) { ptype.point_type.plevel += 1; match(TIMES); }
+	 
 	 return ptype; 
  }
 
@@ -507,10 +530,13 @@ TreeNode* parseOneExp()
 		 t->return_type = t->type;//define the return type;
 		 t->type = createTypeFromBasic(Func);
 		 t->child[0] = paramK_stmt();
-		 match(LBRACKET);
-		 t->child[1] = stmt_sequence();
-		 match(RBRACKET);
-	 }
+         if(token == LBRACKET)
+         {
+		  match(LBRACKET);
+		  t->child[1] = stmt_sequence();
+		  match(RBRACKET);
+         }
+    }
 	 else if (token == ASSIGN)
 	 {
 		// not support array initialzation
