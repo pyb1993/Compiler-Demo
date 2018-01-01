@@ -381,7 +381,11 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
+<<<<<<< HEAD
 	if (pc_pos == 34)
+=======
+	if (pc_pos == 24)
+>>>>>>> 3ce9cf5bf3b8454238a26e9bf41ba5860f3b7880
 	{
 		ok = 18;
 	}

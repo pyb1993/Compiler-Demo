@@ -188,7 +188,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 
 				char * last_current = current_function;
 				if (scope > 0) insertNode(tree, scope);
-                
+
 				insertParam(tree->child[0], scope + 1);
 				// set function adress
 				if (setStructInfo(NULL, 0) == NULL ){

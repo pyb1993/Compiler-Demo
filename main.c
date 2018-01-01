@@ -29,7 +29,7 @@ int main()
 
 
     
-	char *filename = "pyb_example.p";
+	char *filename = "../pyb_example.p";
 
 	source = fopen(filename, "r");
 	listing = stdout;
@@ -54,7 +54,7 @@ int main()
 
 #if 1
 	/**compute the length of filename before .tm **/
-	int len = (int)strcspn(filename, ".");
+	int len = (int)strcspn(filename, "//.");
 	char * codeFile = (char *)calloc(len + 4,sizeof(char));
 	strncpy(codeFile, filename, len);
 	strcat(codeFile, ".tm");
