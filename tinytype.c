@@ -83,7 +83,6 @@ ParamNode * new_param_node(TreeNode * tree)
 		current->next_param = pnode;
 		return current;
 	}
-
 }
 
 /* new the member list for the tree */

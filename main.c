@@ -4,9 +4,9 @@
 #include "parse.h"
 #include "analyze.h"
 #include "cgen.h"
+#include "compile.h"
 #include "util.h"
 #include "tm.h"
-#include "vmmemory.h"
 
 
 
@@ -14,6 +14,7 @@ int lineno = 0;
 FILE * source;
 FILE * listing;
 FILE * code;
+char * MainModule;
 
 /* allocate and set tracing flags */
 int EchoSource = TRUE;
@@ -27,45 +28,15 @@ int done = FALSE;
 int main()
 {    
 
-
-    
-	char *filename = "../pyb_example.p";
-
-	source = fopen(filename, "r");
-	listing = stdout;
-
-	if (source == NULL)
-	{
-        perror("1");
-		printf("open error\n");
-		exit(1);
-	}
-
-	 TreeNode *t = parse();
-	 printTree(t);
-	#if 1
-		if (!Error)
-		{
-			if (TraceAnalyze) fprintf(listing, "\nBuilding Symbol Table...\n");
-			buildSymtab(t);
-			if (TraceAnalyze) fprintf(listing, "\nType Checking Finished\n");
-		}
-	#endif
-
-#if 1
-	/**compute the length of filename before .tm **/
-	int len = (int)strcspn(filename, "//.");
-	char * codeFile = (char *)calloc(len + 4,sizeof(char));
-	strncpy(codeFile, filename, len);
-	strcat(codeFile, ".tm");
-	code = fopen(codeFile,"w");
-	codeGen(t,codeFile);
+	MainModule = "pyb_example.p";
+	char * codeFileName = createTmFileName(MainModule);
+	code = fopen(codeFileName, "w");//清理该文件
 	fclose(code);
-#endif
-    
+
+	import(MainModule);
 #if 1
 	/* read the program */
-	code = fopen(codeFile, "r");
+	code = fopen(codeFileName, "r");
 	if (!readInstructions(code))
 		exit(1);
 #endif
@@ -82,5 +53,4 @@ int main()
 #endif
 
 	return 0;
-
 }

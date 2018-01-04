@@ -1,12 +1,16 @@
+import pyb_example_2
+
 void main()
 {
 	int * p = malloc(1011)	
 	p[0] = 100
 	p[1] = 200
 	write p[0] + p[1]
-	//free(p)
-	p = malloc(2000)
 	write p
+	write g()
+	struct fuck f
+	f.a = 22
+	write f.a
 }
 
 

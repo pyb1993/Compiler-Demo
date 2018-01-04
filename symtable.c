@@ -155,7 +155,6 @@ int st_lookup_scope(char * name)
 	return l->scope_depth;
 }
 
-
 bool is_duplicate_var(char * name, int depth)
 {
 	BucketList l = st_get_node(name);

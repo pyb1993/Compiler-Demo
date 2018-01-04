@@ -6,23 +6,21 @@
 #include "tinytype.h"
 #include "assert.h"
 #include "analyze.h"
+#include "compile.h"
+
+#define checkInAdressMode() (in_adress_mode)
+
 
 typedef void(*emitFunc)(int, int, int);
-#define checkInAdressMode() (in_adress_mode)
-/* tmpOffset is the memory offset for temps
- It is decremented each time a temp is
- stored, and incremeted when loaded again
-*/
-
-
 static bool in_adressMode = FALSE;
 static char * current_function = NULL;
+
 static int  genLabel();
 static void emitLabel(int);
 static void emitGoto(int);
 static void setFunctionAdress(char * current_function,char *, int scope);
 static void jumpToFunction(TreeNode *,char *,int scope);
-
+static bool checkInMainModule();
 
 static void cgen_assign(TreeNode *,TreeNode *,int);
 static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
@@ -538,22 +536,24 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
     emitComment(s);
     /* generate st\andard prelude */
     emitComment("Standard prelude:");
-    emitRM("LD",mp,0,ac,"load maxaddress from location 0");//reg[mp] = dMem[reg[ac]] 
+	emitRM("LDC", mp, MP_ADRESS, 0, "load mp adress");//reg[mp] = dMem[reg[ac]] 
     emitRM("ST",ac,0,ac,"clear location 0");// dMem[reg[ac] + 0] = reg[ac]
 	
-	emitRM("LD", gp, 1, ac, "load gp adress from location 1");
+	emitRM("LDC", gp, GP_ADRESS, 0, "load gp adress from location 1");
 	emitRM("ST", ac, 1, ac, "clear location 1");
 
-	emitRM("LD", fp, 2, ac, "load first fp from location 2");
-	emitRM("LD", sp, 2, ac, "load first sp from location 2");
+	emitRM("LDC", fp, FIRST_FP, 0, "load first fp from location 2");
+	emitRM("LDC", sp, FIRST_FP, 0, "load first sp from location 2");
 	emitRM("ST", ac, 2, ac, "clear location 2");
+
     emitComment("End of standard prelude.");
 	/* generate code for TINY program */
 	cGen(syntaxTree,0,-1,-1,false);
 		
 	emitComment("call main function");
 	jumpToFunction(NULL,"main", 0);
-	emitRO("HALT", 0, 0, 0, "");// finish
+	//todo: check if in the MainModule
+	if (st_get_node("main") != NULL)	emitRO("HALT", 0, 0, 0, "");// finish
 }
 
 int genLabel(void)
@@ -887,7 +887,10 @@ void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
 
  void jumpToFunction(TreeNode * tree,char * main_func,int scope)
  {
-	 if (main_func != NULL){
+	 if (main_func != NULL )
+	 {
+		 //处理不属于主模块的情况
+		 if (st_get_node(main_func) == NULL) return;
 		 int loc = st_lookup(main_func);
 		 emitRM("LD",ac1,loc,gp,"get main function adress");
 		 emitRM("LDC", ac, emitSkip(0) + 2, 0, "store the return adress");
@@ -929,3 +932,6 @@ void cgenCodeForInsertNode(TreeNode * t, int scope)
     }
 }
 
+static bool checkInMainModule(){
+	return st_get_node("main") != NULL;
+}

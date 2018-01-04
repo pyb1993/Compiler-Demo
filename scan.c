@@ -3,8 +3,6 @@
 #include "scan.h"
 #include "tinytype.h"
 
-
-
 char tokenString[MAXTOKENLEN + 5];
 /* states in scanner DFA */
 typedef enum
@@ -79,7 +77,7 @@ static struct
 	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
 	  { "int", INT }, { "float", FLOAT }, { "void", VOID },
-	  { "def", FUN }, { "struct", STRUCT }, {"asm", ASM}
+	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, {"import", IMPORT}
   };
 
 /* lookup an identifier to see if it is a reserved word */
@@ -349,3 +347,11 @@ TokenType getToken(void)
 	}
 	return currentToken;
 } /* end getToken */
+
+//scan过一次之后需要将所有标志置为初始状态，方便下一次处理别的模块
+void clear()
+{
+	EOF_flag = FALSE;
+	linepos = 0;
+	bufsize = 0;
+}

@@ -1,20 +1,9 @@
-/****************************************************/
-/* File: parse.c                                    */
-/* The parser implementation for the TINY compiler  */
-/* Compiler Construction: Principles and Practice   */
-/* Kenneth C. Louden                                */
-/****************************************************/
-
 #include "globals.h"
 #include "util.h"
 #include "scan.h"
 #include "assert.h"
 #include "parse.h"
-/*
-	todo: solve the ugly implementation!!!
-		   how to solve function call and assignment???
-		   see the source code impl
-*/
+
 static TokenType token; /* holds current token */
 static TokenType token_array[10000];// holds last token
 static char* token_string_array[10000];
@@ -43,7 +32,7 @@ static TreeNode * factor();
 static TreeNode * lparenStartstmt();
 static TreeNode * block_stmt();
 static TreeNode * asmStmt();
-
+static TreeNode * importStmt();
 //help function
 static TreeNode * parseOneVar();
 static TreeNode * parseOneExp();
@@ -153,6 +142,7 @@ TreeNode * statement(void)
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
 	case ASM: t = asmStmt(); break;
+	case IMPORT: t = importStmt(); break;
 	case INT:  
 	case FLOAT:
 	case VOID:
@@ -210,6 +200,17 @@ TreeNode * while_stmt(void)
 	return t;
 }
 
+// import [其他模块]的语句节点
+TreeNode * importStmt()
+{
+	TreeNode * t = newStmtNode(ImportK);
+	match(IMPORT);
+	t->attr.name = copyString(tokenString);
+	match(ID);
+	skipLineEnd();
+	return t;
+}
+// 插入tm系统调用 语句的节点
 TreeNode * asmStmt()
 {
 	TreeNode * t = newStmtNode(AsmK);
@@ -419,9 +420,6 @@ TreeNode* parseOneExp()
 	}while(0)\
 
 	 int i = 0;
-//	 TokenType tok = getToken();
-//	 while (tok == LINEEND && tok != ENDFILE) { tok = getToken();}// skip the first empty lines
-//	 addToken(tok, copyString(tokenString));
 
 	 TokenType tok = getToken();
 	 while (tok == LINEEND && tok != ENDFILE) tok = getToken();// skip the first token
@@ -778,6 +776,7 @@ TreeNode * parse(void)
 	t = stmt_sequence();
 	if (token != ENDFILE)
 		syntaxError("Code ends before file\n");
+	clear();
 	return t;
 }
 

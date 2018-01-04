@@ -7,19 +7,20 @@ typedef enum
 {
 	ENDFILE, ERROR,
 	/* reserved words */
-	IF, ELSE, ELSIF, END, WHILE, BREAK, CONTINUE, RETURN, UNTIL, READ, WRITE, LINEEND,ASM,
+	IF, ELSE, ELSIF, END, WHILE, BREAK, CONTINUE, RETURN, UNTIL, READ, WRITE, LINEEND,ASM,IMPORT,
 	/* multicharacter tokens */
 	ID, NEG, ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,
-	POINT, ARROW, LBRACKET, RBRACKET, LSQUARE, RSQUARE, STRING, STRUCT,
+	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, 
+	OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,POINT, ARROW, LBRACKET, RBRACKET, LSQUARE, 
+	RSQUARE, STRING, STRUCT,
 	/*variable type*/
 	INT, FLOAT, VOID, FUN
 } TokenType;
 
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK,AsmK } StmtKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK,AsmK,ImportK } StmtKind;
 typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK } ExpKind;
 typedef enum { ErrorType, Void, Before, After, Boolean, Integer, Float, Pointer, Array, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
@@ -129,9 +130,11 @@ typedef struct treeNode
 /************************  FUNCTION ****************************************/
 int integer_from_node(TreeNode * t);
 float float_from_node(TreeNode * t);
-bool can_convert(TypeInfo a, TypeInfo b);
-bool is_basic_type(TypeInfo , Type );
 int var_size_of_type(TypeInfo);
+
+bool can_convert(TypeInfo a, TypeInfo b);
+bool is_basic_type(TypeInfo, Type);
+bool ensure_type_defined(char * key);
 
 FuncType new_func_type(TreeNode * tree);
 StructType new_struct_type(TreeNode * tree);
@@ -148,5 +151,4 @@ void freeParamNode(ParamNode * p);
 
 void deleteStructType(char * key);
 void initTypeCollection();
-bool ensure_type_defined(char * key);
 #endif /* tinytype_h */

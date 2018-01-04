@@ -28,10 +28,17 @@
 #define MEMUNITSCALE 4      // the bytes of mem unit 
 #define NOTFOUND    (404 * 404)
 
+extern char* MainModule;
 extern FILE* source; /* source code text file */
 extern FILE* listing; /* listing output text file */
 extern FILE* code; /* code text file for TM simulator */
 extern int lineno; /* source line number for listing */
+
+extern const int IADDR_SIZE; /* increase for large programs */
+extern const int GP_ADRESS; /*the gp adress, global area */
+extern const int FIRST_FP; /*the main fp, stack area, from 4096 -> 60000*/
+extern const int MP_ADRESS; /*the mp adress, global area */
+
 /**************************************************/
 /***********   Syntax tree for parsing ************/
 /**************************************************/

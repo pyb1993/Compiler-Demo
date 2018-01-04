@@ -18,5 +18,5 @@ extern char tokenString[MAXTOKENLEN + 5];
 * next token in source file
 */
 TokenType getToken(void);
-
+void clear();
 #endif

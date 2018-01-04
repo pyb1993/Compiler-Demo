@@ -12,14 +12,14 @@ int labelLocMap[1024];// the label and location mapping
 #define FALSE 0
 #endif
 
+
+const int   GP_ADRESS = 4095; /*the gp adress, global area */
+const int   FIRST_FP = 60000; /*the main fp, stack area, from 4096 -> 60000*/
+const int	MP_ADRESS = DADDR_SIZE - 1;
 /******* const *******/
-#define   IADDR_SIZE  4096 /* increase for large programs */
-
-#define   GP_ADRESS 4095 /*the gp adress, global area */
-#define   FIRST_FP  60000 /*the main fp, stack area, from 4096 -> 60000*/
-
-#define   NO_REGS 11
-#define   PC_REG  7
+#define IADDR_SIZE 4096 /* increase for large programs */
+#define NO_REGS 11
+#define PC_REG  7
 
 #define   LINESIZE  121
 #define   WORDSIZE  20
@@ -260,7 +260,7 @@ int readInstructions(FILE *pgm)
 	for (regNo = 0; regNo < NO_REGS; regNo++)
 		reg[regNo] = 0;
 
-	dMem[0] = DADDR_SIZE - 1;
+	dMem[0] = MP_ADRESS;
 	dMem[1] = GP_ADRESS;
 	dMem[2] = FIRST_FP;
 	
@@ -381,11 +381,8 @@ STEPRESULT stepTM(void)
 	pc_pos = reg[PC_REG];
 
 	printf("run ins:%d\n", pc_pos);
-<<<<<<< HEAD
-	if (pc_pos == 34)
-=======
-	if (pc_pos == 24)
->>>>>>> 3ce9cf5bf3b8454238a26e9bf41ba5860f3b7880
+
+	if (pc_pos == 35)
 	{
 		ok = 18;
 	}

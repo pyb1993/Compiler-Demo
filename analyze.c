@@ -174,6 +174,13 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 insertTree(t->child[0],scope + 1);
 			 deleteVarOfField(t->child[0], scope + 1);
 			 break;
+		 case ImportK:
+			{
+				char * fileName = createSrcFileNameFromModule(t->attr.name);
+				import(fileName);
+				free(fileName);
+			}
+			 break;
 		 case IfK:
 			 allowed_empty_exp = TRUE;
 			 insertNode(t->child[0], scope + 1);
@@ -339,7 +346,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				t->type = createTypeFromBasic(Integer);
 				gen_converted_type(t); // set the attribute converted_type 
 			}
-
 			break;
 
 		case IdK:
@@ -347,6 +353,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
+		
 		case IndexK:
 			checkNodeType(t->child[0],current_function,scope);
 			checkNodeType(t->child[1], current_function, scope);
@@ -363,6 +370,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			t->converted_type = t->type;
 			break;
+		
 		case ArrowK:{
 			checkNodeType(t->child[0], current_function, scope);
 			TypeInfo lhs_type = t->child[0]->type;
@@ -374,6 +382,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			t->converted_type = t->type;
 			break;
 		}
+		
 		case PointK:
 		{
 			checkNodeType(t->child[0], current_function, scope);
