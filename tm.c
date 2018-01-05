@@ -464,7 +464,8 @@ STEPRESULT stepTM(void)
 
 	case opOUT:
 		if (same_reg_type(r, ac)) {
-			printf("OUT instruction prints int: %d\n", reg[r]);
+			if (s == 0) printf("OUT instruction prints int: %d\n", reg[r]);
+			else if (s == 1){ printf("OUT instruction prints char: %c\n", reg[r]); }
 		}
 		else if (same_reg_type(r, fac)) {
 			flt_num = flt_from_reg(r);

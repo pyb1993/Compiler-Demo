@@ -309,14 +309,19 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[0], current_function, scope);
 			checkNodeType(t->child[1], current_function, scope);
 			// todo optimize bad smell
+			// logic: type1 can convert type2
 			TokenType op = t->attr.op;
 			
 			if (   !((can_convert(t->child[0]->type, createTypeFromBasic(Integer)) ||
-				    can_convert(t->child[0]->type, createTypeFromBasic(Pointer))) 
+				    can_convert(t->child[0]->type, createTypeFromBasic(Pointer))) ||
+					can_convert(t->child[0]->type, createTypeFromBasic(Char)))
+
 				   && 
 				   (can_convert(t->child[1]->type, createTypeFromBasic(Integer)) ||
-				    can_convert(t->child[1]->type, createTypeFromBasic(Pointer))
-				    )))
+				    can_convert(t->child[1]->type, createTypeFromBasic(Pointer)) ||
+					can_convert(t->child[1]->type, createTypeFromBasic(Char))
+				    )
+				)
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE)){
 				t->type = createTypeFromBasic(Boolean);
@@ -473,7 +478,9 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[0],current_function,scope);
 			TypeInfo exp_type = t->child[0]->converted_type;
 			assert(can_convert(exp_type, createTypeFromBasic(Integer)) || 
-				   is_basic_type(exp_type,Pointer) || "can only write bool,integer,float,pointer");
+				   is_basic_type(exp_type,Pointer) || 
+				   is_basic_type(exp_type,Char) || 
+				   "can only write bool,integer,float,pointer");
 			break;
 	
 		case DeclareK:

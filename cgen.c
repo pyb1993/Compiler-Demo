@@ -136,8 +136,10 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
             /* generate code for expression to write */
 			cGenInValueMode(tree->child[0], scope, start_label, end_label);
 			type = tree->child[0]->type;
+			int mode = 0;// 0代表数,1代表字符,2代表字符串
 			emitRM("POP", get_reg(getBasicType(type)), 0, mp, "move result to register");
-			emitRO("OUT", get_reg(getBasicType(type)), 0, 0, "output value in register[ac / fac]");
+			if (is_basic_type(type, Char)) mode = 1;
+			emitRO("OUT", get_reg(getBasicType(type)), mode, 0, "output value in register[ac / fac]");
             break;
 		case AsmK:
 			if (strcmp(tree->attr.name, "malloc") == 0)
@@ -271,6 +273,10 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				 emitLDCF("LDC", fac, float_num, 0, "load float const");// reg[ac] = tree->ttr.val.integer
 				 emitRM("PUSH", fac,0, mp, "store exp");
 				 break;
+			case Char:
+				 emitRM("LDC", ac, tree->attr.val.integer, 0, "load char const");// reg[ac] = tree->ttr.val.integer
+				 emitRM("PUSH", ac, 0, mp, "store exp");
+				break;
 			default:
 				assert(!"BUG in ConstK,unknwon expression type");
 				break;
@@ -581,7 +587,8 @@ int get_reg(Type type)
 		return fac;
 	}
 	else if ((type == Integer) || (type == Boolean) || (type == Func) ||
-			(type == Pointer) || (type == Array) || (type == Struct))
+			(type == Pointer) || (type == Array) || (type == Struct) ||
+			(type == Char))
 	{
 		return ac;
 	}

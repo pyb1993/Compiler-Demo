@@ -13,16 +13,16 @@ typedef enum
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, 
 	OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,POINT, ARROW, LBRACKET, RBRACKET, LSQUARE, 
-	RSQUARE, STRING, STRUCT,
+	RSQUARE, CHARACTER, STRING, STRUCT,
 	/*variable type*/
-	INT, FLOAT, VOID, FUN
+	INT, FLOAT, VOID, CHAR, FUN
 } TokenType;
 
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 typedef enum { StmtK, ExpK } NodeKind;
 typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK,AsmK,ImportK } StmtKind;
 typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK } ExpKind;
-typedef enum { ErrorType, Void, Before, After, Boolean, Integer, Float, Pointer, Array, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
+typedef enum { ErrorType, Void, Before, After, Boolean, Integer, Float,Char, Pointer, Array, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 
 /**************         function type      *********************/
 /**************         function type      *********************/

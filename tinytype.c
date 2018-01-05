@@ -151,18 +151,16 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 	switch (a)
 	{
 	case Boolean:
-		return a == b || b == Integer;
+		return (a == b) || (b == Integer);
+	case Char:
+		return a == b;
 	case Integer:
-		if (b == Boolean) return true;
-		if (b == Float) return true;
-		if (b == Integer) return true;
-		break;
+		if ((b == Boolean) || (b == Float) || (b == Pointer)) return true;
 	case Float:
-		if (b == Float) return true;
-		if (b == Integer) return true;
+		if (b == Float || b == Integer) return true;
 		break;
 	case Pointer:
-		if (b != Pointer) return false;
+		if (b != Pointer && b!= Integer) return false;
 		return true;
 		break;
 	case Struct:
@@ -263,6 +261,7 @@ void deleteStructType(char * key)
 int var_size_of_type(TypeInfo vtype)
 {
 	Type type = getBasicType(vtype);
+	if (type == Char) return 1;
 	if (type == Integer) return 1;
 	if (type == Float) return 1;
 	if (type == Pointer) return 1;

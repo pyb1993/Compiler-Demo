@@ -93,8 +93,6 @@ void main()
 	write b[3].x
 	write b[3].c.d
 	
-
-	
 	struct test a
 	struct test b
 	struct test c
@@ -107,8 +105,8 @@ void main()
 	write *(x[0]).x
 	write *(x[1]).x
 	*/
-/*
 
+/*
 to do list
 1.0 todo support return stmt match check in the function
 1. implement a simple macro: think the code as a stream of token, and replace the token while the tokenString is found in the macro table.
@@ -118,11 +116,12 @@ to do list
 3. implement !,and,or
 6  support three value expression
 6  support switch case
-9  auto x = 10; auto inference
-10 import other file
-11 函数连续分配
+9  auto x = 10; auto inference || 实现动态类型
+
 12 tail recursion
 13 检查stack expand的时候是否和堆冲突
+15 实现char,char*,和常量区域
+16 实现typedef
 bug 记录:struct里面的变量导致sp指针的变化
 bug 记录:内存分配了一个指针导致overlap	
 bug 记录: 	int * p = malloc(101)	

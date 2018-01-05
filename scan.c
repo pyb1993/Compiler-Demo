@@ -76,7 +76,7 @@ static struct
 = {	  { "if", IF }, { "else", ELSE }, { "end", END },
 	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
-	  { "int", INT }, { "float", FLOAT }, { "void", VOID },
+	  { "int", INT }, { "float", FLOAT }, { "void", VOID }, {"char", CHAR},
 	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, {"import", IMPORT}
   };
 
@@ -141,7 +141,7 @@ TokenType getToken(void)
 			else if (c == '>'){
 				state = GT_OR_GE;
 			}
-			else if (c == '"'){
+			else if (c == '"' || c == '\''){
 				state = IN_STR;
 			}
 			else if (c == '+'){
@@ -316,12 +316,9 @@ TokenType getToken(void)
 			}
 			break;
 		case IN_STR:
-			if (c == EOF){
-				SET_CUR_TOKEN(ENDFILE);
-			}
-			else if (c == '"'){
-				SET_CUR_TOKEN(STRING);
-			}
+			if (c == EOF){ SET_CUR_TOKEN(ENDFILE);}
+			else if (c == '"'){SET_CUR_TOKEN(STRING);}
+			else if (c == '\''){ SET_CUR_TOKEN(CHARACTER);}
 			break;
 		case DONE:
 		default: /* should never happen */

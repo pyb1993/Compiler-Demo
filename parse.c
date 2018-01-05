@@ -146,6 +146,7 @@ TreeNode * statement(void)
 	case INT:  
 	case FLOAT:
 	case VOID:
+	case CHAR:
 		t = declare_stmt();
 		break;
 	case STRUCT:
@@ -166,8 +167,7 @@ TreeNode * statement(void)
 
 
 TreeNode * if_stmt(void)
-{
-	
+{	
 	TreeNode * t = newStmtNode(IfK);
 	match(IF);
 	if (t != NULL) t->child[0] = parseExp();
@@ -487,6 +487,10 @@ TreeNode* parseOneExp()
 		 matchWithoutSkipLineEnd(FLOAT);
 		 type = createTypeFromBasic(Float);
 		 break;
+	 case CHAR:
+		 matchWithoutSkipLineEnd(CHAR);
+		 type = createTypeFromBasic(Char);
+		 break;
 	 case VOID:
 		 matchWithoutSkipLineEnd(VOID);
 		 type = createTypeFromBasic(Void);
@@ -744,6 +748,12 @@ TreeNode * factor(void)
 		t->type = createTypeFromBasic(Float);
 		matchWithoutSkipLineEnd(FlOATNUM);
         break;
+	case CHARACTER:
+		t = newExpNode(ConstK);
+		t->attr.val.integer = (char)(tokenString[1]);
+		t->type = createTypeFromBasic(Char);
+		matchWithoutSkipLineEnd(CHARACTER);
+		break;
 	case ID:
 		// todo, remove code to other
 		t = newExpNode(IdK);

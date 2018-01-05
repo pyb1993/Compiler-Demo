@@ -1,24 +1,17 @@
 import pyb_example_2
 
+
+void s(){write 1002}
 void main()
 {
-	int * p = malloc(1011)	
-	p[0] = 100
-	p[1] = 200
-	write p[0] + p[1]
-	write p
-	write g()
-	struct fuck f
-	f.a = 22
-	write f.a
+	char x = 'ba'
+	char c = 'b'
+	write x < c		
 }
 
-
-int * malloc(int n)
+void f()
 {
-	asm(malloc,n)
+
+
 }
 
-void free(int * p){
-	asm(free,p)
-}
