@@ -424,6 +424,14 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 		case ConstK:
 			t->converted_type = t->type;
+			 //需要先分配静态变量的地址
+		 // TODO:需要一个单独的函数来测试!!!!
+		// TODO: 需要标记出来常量不能改变
+		 if (is_basic_type(t->type,String))
+		 {
+			 location -= strlen(t->attr.name);
+			 t->attr.val.integer = location + 1;
+		 }
 			break;
 		default:
 			assert(0);
@@ -633,6 +641,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
   }
 
  void checkEmptyExp(TreeNode * t){
+	 t->empty_exp = TRUE;
 	 if (allowed_empty_exp) return;// eg: while(exp),if(exp)
 	 ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK) || 
 			  (isExp(t,SingleOpK) && (t->attr.op == PPLUS || t->attr.op == MMINUS)),
@@ -646,7 +655,6 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 				 "only function return nothing can be the empty exp");
 		 }
 	 }*/
-	 t->empty_exp = TRUE;
  }
 
 void stInsertVar(TreeNode * t,int scope)

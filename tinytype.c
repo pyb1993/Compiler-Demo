@@ -154,6 +154,8 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		return (a == b) || (b == Integer);
 	case Char:
 		return a == b;
+	case String:
+		return a == b || b == Pointer;
 	case Integer:
 		if ((b == Boolean) || (b == Float) || (b == Pointer)) return true;
 	case Float:

@@ -108,60 +108,64 @@
  79:   PUSH  0,0(3) 	push the return adress
  80:    LDA  3,-1(3) 	stack expand
 * -> Const
- 81:    LDC  0,98(0) 	load char const
- 82:   PUSH  0,0(6) 	store exp
+ 81:    LDC  0,97(0) 	load char const
+ 82:     ST  0,-9(5) 	store exp
+ 83:    LDC  0,98(0) 	load char const
+ 84:     ST  0,-8(5) 	store exp
+ 85:    LDC  0,99(0) 	load char const
+ 86:     ST  0,-7(5) 	store exp
+ 87:    LDC  0,100(0) 	load char const
+ 88:     ST  0,-6(5) 	store exp
+ 89:    LDA  0,-9(5) 	load char const
+ 90:   PUSH  0,0(6) 	store exp
 * <- Const
- 83:    LDA  1,-2(2) 	move the adress of ID
- 84:    POP  0,0(6) 	copy bytes
- 85:     ST  0,0(1) 	copy bytes
- 86:    LDA  3,-1(3) 	stack expand
-* -> Const
- 87:    LDC  0,98(0) 	load char const
- 88:   PUSH  0,0(6) 	store exp
-* <- Const
- 89:    LDA  1,-3(2) 	move the adress of ID
- 90:    POP  0,0(6) 	copy bytes
- 91:     ST  0,0(1) 	copy bytes
-* -> Op
+ 91:    LDA  1,-2(2) 	move the adress of ID
+ 92:    POP  0,0(6) 	copy bytes
+ 93:     ST  0,0(1) 	copy bytes
 * -> Id
- 92:     LD  0,-2(2) 	load id value
- 93:   PUSH  0,0(6) 	store exp
-* <- Id
-* -> Id
- 94:     LD  0,-3(2) 	load id value
+ 94:     LD  0,-2(2) 	load id value
  95:   PUSH  0,0(6) 	store exp
 * <- Id
- 96:    POP  1,0(6) 	pop right
- 97:    POP  0,0(6) 	pop left
- 98:    SUB  0,0,1 	op <
- 99:    JLT  0,2(7) 	br if true
-100:    LDC  0,0(0) 	false case
-101:    LDA  7,1(7) 	unconditional jmp
-102:    LDC  0,1(0) 	true case
-103:   PUSH  0,0(6) 	op: load left
-* <- Op
-104:    POP  0,0(6) 	move result to register
-105:    OUT  0,0,0 	output value in register[ac / fac]
-106:    MOV  3,2,0 	restore the caller sp
-107:     LD  2,0(2) 	resotre the caller fp
-108:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+ 96:    POP  0,0(6) 	move result to register
+ 97:    OUT  0,0,0 	output value in register[ac / fac]
+* ->index k
+* -> Id
+ 98:     LD  0,-2(2) 	load id value
+ 99:   PUSH  0,0(6) 	store exp
+* <- Id
+* -> Const
+100:    LDC  0,3(0) 	load integer const
+101:   PUSH  0,0(6) 	store exp
+* <- Const
+102:    POP  0,0(6) 	load index value to ac
+103:    LDC  1,1,0 	load array size
+104:    MUL  0,1,0 	compute the offset
+105:    POP  1,0(6) 	load lhs adress to ac1
+106:    ADD  0,0,1 	compute the real index adress a[index]
+107:     LD  1,0(0) 	load bytes
+108:   PUSH  1,0(6) 	push bytes 
+109:    POP  0,0(6) 	move result to register
+110:    OUT  0,1,0 	output value in register[ac / fac]
+111:    MOV  3,2,0 	restore the caller sp
+112:     LD  2,0(2) 	resotre the caller fp
+113:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
- 75:    LDA  7,33(7) 	skip the function body
+ 75:    LDA  7,38(7) 	skip the function body
 * function entry:
 * f
-109:    LDC  0,112(0) 	get function adress
-110:     ST  0,-5(5) 	set function adress
-112:    MOV  1,2,0 	store the caller fp temporarily
-113:    MOV  2,3,0 	exchang the stack(context)
-114:   PUSH  1,0(3) 	push the caller fp
-115:   PUSH  0,0(3) 	push the return adress
-116:    MOV  3,2,0 	restore the caller sp
-117:     LD  2,0(2) 	resotre the caller fp
-118:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+114:    LDC  0,117(0) 	get function adress
+115:     ST  0,-5(5) 	set function adress
+117:    MOV  1,2,0 	store the caller fp temporarily
+118:    MOV  2,3,0 	exchang the stack(context)
+119:   PUSH  1,0(3) 	push the caller fp
+120:   PUSH  0,0(3) 	push the return adress
+121:    MOV  3,2,0 	restore the caller sp
+122:     LD  2,0(2) 	resotre the caller fp
+123:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-111:    LDA  7,7(7) 	skip the function body
+116:    LDA  7,7(7) 	skip the function body
 * call main function
-119:     LD  1,-4(5) 	get main function adress
-120:    LDC  0,122(0) 	store the return adress
-121:    LDA  7,0(1) 	ujp to the function body
-122:   HALT  0,0,0 	
+124:     LD  1,-4(5) 	get main function adress
+125:    LDC  0,127(0) 	store the return adress
+126:    LDA  7,0(1) 	ujp to the function body
+127:   HALT  0,0,0 	

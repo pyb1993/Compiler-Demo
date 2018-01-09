@@ -277,6 +277,21 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				 emitRM("LDC", ac, tree->attr.val.integer, 0, "load char const");// reg[ac] = tree->ttr.val.integer
 				 emitRM("PUSH", ac, 0, mp, "store exp");
 				break;
+			case String:
+				if (tree->attr.name != NULL){
+					int i = 0;
+					char * name = tree->attr.name;
+					for (int i = 0; *name != '\0'; i++){
+						emitRM("LDC", ac, *name, 0, "load char const");// reg[ac] = tree->ttr.val.integer
+						emitRM("ST", ac, tree->attr.val.integer + i, gp, "store exp");
+						name++;
+					}
+					free(tree->attr.name);
+					tree->attr.name = NULL;
+				}
+				emitRM("LDA", ac, tree->attr.val.integer, gp, "load char const");// reg[ac] = tree->ttr.val.integer
+				emitRM("PUSH", ac, 0, mp, "store exp");
+				break;
 			default:
 				assert(!"BUG in ConstK,unknwon expression type");
 				break;
@@ -340,6 +355,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				case MMINUS:
 				case PPLUS:// ++x => x = x + 1 || --x => x - 1
 				{
+					// 这里需要复用 +,因为存在pointer和integer的区别
 					TreeNode * op_node = newExpNode(OpK);
 					TreeNode * const_node = newExpNode(ConstK);
 					const_node->type = createTypeFromBasic(Integer);
@@ -355,7 +371,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 						cgen_assign(tree->child[0], op_node, scope);
 						if (!tree->empty_exp) genExp(tree->child[0], scope, start_label, end_label, false);// generate value
 					}
-					else
+					else if (tree->return_type.typekind == After)
 					{
 						if (!tree->empty_exp) genExp(tree->child[0], scope, start_label, end_label, false);// generate value
 						cgen_assign(tree->child[0], op_node, scope);
@@ -588,7 +604,7 @@ int get_reg(Type type)
 	}
 	else if ((type == Integer) || (type == Boolean) || (type == Func) ||
 			(type == Pointer) || (type == Array) || (type == Struct) ||
-			(type == Char))
+			(type == Char) || (type == String))
 	{
 		return ac;
 	}

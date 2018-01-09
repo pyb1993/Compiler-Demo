@@ -15,6 +15,7 @@ int labelLocMap[1024];// the label and location mapping
 
 const int   GP_ADRESS = 4095; /*the gp adress, global area */
 const int   FIRST_FP = 60000; /*the main fp, stack area, from 4096 -> 60000*/
+const int   CONST_ADRESS = 2000;/*the const variable area: "123"*/
 const int	MP_ADRESS = DADDR_SIZE - 1;
 /******* const *******/
 #define IADDR_SIZE 4096 /* increase for large programs */
@@ -795,9 +796,7 @@ void convert(int reg1, int reg2 )
 			reg[reg2] = reg[reg1];
 			break;
 		}
-
-	}
-
+  }
 
 
  int same_reg_type(int reg1, int reg2)

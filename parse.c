@@ -754,6 +754,13 @@ TreeNode * factor(void)
 		t->type = createTypeFromBasic(Char);
 		matchWithoutSkipLineEnd(CHARACTER);
 		break;
+	case STRING:
+		t = newExpNode(ConstK);
+		t->attr.name = copyString(tokenString + 1);
+		*(t->attr.name + strlen(tokenString) - 2) = '\0'; // 处理多出的"
+		t->type = createTypeFromBasic(String);
+		matchWithoutSkipLineEnd(STRING);
+		break;
 	case ID:
 		// todo, remove code to other
 		t = newExpNode(IdK);

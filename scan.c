@@ -20,10 +20,10 @@ source code lines */
 #define SET_CUR_TOKEN_AND_UNGET(tok) do{ungetNextChar();SET_CUR_TOKEN(tok);}while(0)
 
 #define BUFLEN 256
+static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
 static char lineBuf[BUFLEN]; /* holds the current line */
 static int linepos = 0; /* current position in LineBuf */
 static int bufsize = 0; /* current size of buffer string */
-static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
 
 /* getNextChar fetches the next non-blank character
 from lineBuf, reading in a new line if lineBuf is

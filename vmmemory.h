@@ -10,6 +10,3 @@ typedef struct header{
 extern int dMem[DADDR_SIZE];
 int pMalloc(unsigned nbytes);
 void pFree(void *ap);
-
-
-
