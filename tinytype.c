@@ -48,6 +48,7 @@ TypeInfo createTypeFromBasic(Type basic)
 {
 	TypeInfo typeinfo;
 	typeinfo.typekind = basic;
+	typeinfo.is_const = false;
 
 	switch (basic)
 	{

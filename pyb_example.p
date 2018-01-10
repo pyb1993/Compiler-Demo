@@ -1,14 +1,17 @@
 import pyb_example_2
 
-
-void s(){write 1002}
-
+struct test
+{
+	int a
+	int b
+}
 void main()
 {
-	char *s = "abcd"
-	write s
-	write s[3]
-
+	//struct test t1
+	const struct test A[10]
+	struct test B[10]
+	B[0].a = 1
+	write B[0].a
 }
 
 void f()

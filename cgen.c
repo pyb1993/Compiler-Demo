@@ -224,7 +224,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			else// variable
 			{
                 cgenCodeForInsertNode(tree,scope);
-            }
+			}
 
 			if (tree->child[2] != NULL){
 				cgen_assign(tree, tree->child[2], scope);
@@ -283,13 +283,13 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 					char * name = tree->attr.name;
 					for (int i = 0; *name != '\0'; i++){
 						emitRM("LDC", ac, *name, 0, "load char const");// reg[ac] = tree->ttr.val.integer
-						emitRM("ST", ac, tree->attr.val.integer + i, gp, "store exp");
+						emitRM("ST", ac, tree->attr.val.integer + i, cp, "store exp");
 						name++;
 					}
 					free(tree->attr.name);
 					tree->attr.name = NULL;
 				}
-				emitRM("LDA", ac, tree->attr.val.integer, gp, "load char const");// reg[ac] = tree->ttr.val.integer
+				emitRM("LDA", ac, tree->attr.val.integer , cp, "load char const");// reg[ac] = tree->ttr.val.integer
 				emitRM("PUSH", ac, 0, mp, "store exp");
 				break;
 			default:
@@ -564,6 +564,8 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 	emitRM("LDC", gp, GP_ADRESS, 0, "load gp adress from location 1");
 	emitRM("ST", ac, 1, ac, "clear location 1");
 
+	emitRM("LDC", cp, CONST_ADRESS, 0, "load gp adress from location 1");
+
 	emitRM("LDC", fp, FIRST_FP, 0, "load first fp from location 2");
 	emitRM("LDC", sp, FIRST_FP, 0, "load first sp from location 2");
 	emitRM("ST", ac, 2, ac, "clear location 2");
@@ -690,7 +692,7 @@ void getRealAdressBy( TreeNode* tree)
 	emitRM("PUSH", ac, 0, mp, "");
 }
 
-void cgen_assign(TreeNode * left,TreeNode * right,int scope)
+void cgen_assign(TreeNode * left, TreeNode * right, int scope)
 {
 	cGenInValueMode(right, scope, -1, -1);// load value 
 

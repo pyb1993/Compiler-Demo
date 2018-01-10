@@ -129,5 +129,7 @@ bug 记录: 	int * p = malloc(101)
 			这样的代码会导致parse错误,原因在于这样的语义具有二义性:
 				[0] int *p = malloc(101) * p = 100
 				[1] int *p = malloc(101); *p = 100
-				解决办法是函数调用不跳过LineEnd(既调用matchWithoutSkipLineEnd)		
+				解决办法是函数调用不跳过LineEnd(既调用matchWithoutSkipLineEnd)	
+feature 记录: 利用类型中的is_const变量实现了const类型,同时规定只有const char *能够接常量字符串			
+			  需要注意const struct 不但自己不能赋值,包括里面的成员也不可以被赋值		
 */

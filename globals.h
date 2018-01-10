@@ -38,6 +38,7 @@ extern const int IADDR_SIZE; /* increase for large programs */
 extern const int GP_ADRESS; /*the gp adress, global area */
 extern const int FIRST_FP; /*the main fp, stack area, from 4096 -> 60000*/
 extern const int MP_ADRESS; /*the mp adress, global area */
+extern const int CONST_ADRESS;
 
 /**************************************************/
 /***********   Syntax tree for parsing ************/

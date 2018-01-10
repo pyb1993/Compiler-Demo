@@ -76,7 +76,7 @@ static struct
 = {	  { "if", IF }, { "else", ELSE }, { "end", END },
 	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
-	  { "int", INT }, { "float", FLOAT }, { "void", VOID }, {"char", CHAR},
+	  { "int", INT }, { "float", FLOAT }, { "void", VOID }, { "char", CHAR }, {"const",CONST},
 	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, {"import", IMPORT}
   };
 

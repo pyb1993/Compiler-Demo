@@ -4,18 +4,14 @@
 /* pc = program counter  */
 #define  pc 7
 
-/* mp = "memory pointer" points
- * to top of memory (for temp storage)
- */
-#define  mp 6
-
-#define gp 5 // global address
-#define fp 2 // stack bottom
-#define sp 3 // stack top
-
 /* accumulator */
 #define  ac 0
 #define  ac1 1
+#define fp 2 // stack bottom
+#define sp 3 // stack top
+#define cp 4// const area
+#define  mp 6// point to temp memory
+#define gp 5 // global address
 
 /* the float accumulator*/
 #define fac 9

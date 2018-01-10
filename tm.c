@@ -19,7 +19,7 @@ const int   CONST_ADRESS = 2000;/*the const variable area: "123"*/
 const int	MP_ADRESS = DADDR_SIZE - 1;
 /******* const *******/
 #define IADDR_SIZE 4096 /* increase for large programs */
-#define NO_REGS 11
+#define NO_REGS 12
 #define PC_REG  7
 
 #define   LINESIZE  121

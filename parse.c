@@ -143,6 +143,7 @@ TreeNode * statement(void)
 	case WRITE: t = write_stmt(); break;
 	case ASM: t = asmStmt(); break;
 	case IMPORT: t = importStmt(); break;
+	case CONST:
 	case INT:  
 	case FLOAT:
 	case VOID:
@@ -441,9 +442,7 @@ TreeNode* parseOneExp()
  TypeInfo parsePointerType(TypeInfo type)
 {
     assert(token == TIMES);
-    TypeInfo ptype;
-    ptype.point_type.pointKind = (TypeInfo*)(malloc(sizeof(TypeInfo)));
-    ptype.typekind = Pointer;
+    TypeInfo ptype = createTypeFromBasic(Pointer);
     *ptype.point_type.pointKind = type;
     ptype.point_type.plevel = 0;
     while (token == TIMES) { ptype.point_type.plevel += 1; match(TIMES); }
@@ -471,7 +470,15 @@ TreeNode* parseOneExp()
 
  TypeInfo parseBaseType(void)
  {
-	 TypeInfo type;
+	 TypeInfo type = createTypeFromBasic(Void);
+	 bool is_const = false;
+	 
+	 if (token == CONST)
+	 {
+		 is_const = true;
+		 matchWithoutSkipLineEnd(CONST);
+	 }
+
 	 switch (token)
 	 {
 	 case LPAREN:
@@ -507,6 +514,7 @@ TreeNode* parseOneExp()
 		 syntaxError("undefined type");
 		 break;
 	 }
+	 type.is_const = is_const;
 	 return type;
  }
 

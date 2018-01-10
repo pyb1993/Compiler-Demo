@@ -13,7 +13,7 @@ typedef enum
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, LE, GE, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, 
 	OVER, BITAND, LPAREN, RPAREN, SEMI, COMMA,POINT, ARROW, LBRACKET, RBRACKET, LSQUARE, 
-	RSQUARE, CHARACTER, STRING, STRUCT,
+	RSQUARE, CHARACTER, STRING, STRUCT,CONST,
 	/*variable type*/
 	INT, FLOAT, VOID, CHAR, FUN
 } TokenType;
@@ -75,6 +75,7 @@ typedef struct _PointType
 
 typedef struct _TypeInfo
 {
+	bool is_const;
 	Type typekind;
 	ArrayType array_type;
 	PointType point_type;
@@ -99,8 +100,6 @@ typedef struct _Struct
 	int scope_depth;
 	Member * members; // only meaningful when typeinfo is struct
 } StructType;
-
-
 /**************         Tree Node       *********************/
 /**************         Tree Node       *********************/
 

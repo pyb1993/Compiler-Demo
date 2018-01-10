@@ -12,13 +12,14 @@
 #include "tinytype.h"
 #include "assert.h"
 
-#define ERROR_IF(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
+#define ERROR_UNLESS(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
 static TypeInfo * ftype__;
 /* counter for global variable memory locations */
 static int location = 0;
 static int stack_offset = -2;
 static int while_depth = 0;
 static bool allowed_empty_exp = false;
+static int const_area_loc = 0;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
@@ -190,10 +191,10 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 break;
 		 case BreakK:
 		 case ContinueK:
-			 ERROR_IF(checkInWhile(),"break can only be in while");
+			 ERROR_UNLESS(checkInWhile(),"break can only be in while");
 			 break;
 		 case StructDefineK:
-			 ERROR_IF(scope == 0, "only support global struct define stmt");
+			 ERROR_UNLESS(scope == 0, "only support global struct define stmt");
              char * last_struct = setStructInfo(t->attr.name,1);
 			 insertTree(t->child[0], scope + 1);
 			 deleteVarOfField(t->child[0], scope + 1);
@@ -250,7 +251,6 @@ void checkTree(TreeNode * t,char * current_function, int scope)
 void checkNodeType(TreeNode * t,char * current_function, int scope)
 {
 	TreeNode * child1;
-
 	switch (t->nodekind)
 	{
 	case ExpK:
@@ -354,7 +354,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			break;
 
 		case IdK:
-			ERROR_IF(st_lookup(t->attr.name) != NOTFOUND, "undefined variable");
+			ERROR_UNLESS(st_lookup(t->attr.name) != NOTFOUND, "undefined variable");
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
@@ -379,11 +379,12 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case ArrowK:{
 			checkNodeType(t->child[0], current_function, scope);
 			TypeInfo lhs_type = t->child[0]->type;
-			ERROR_IF(is_basic_type(lhs_type, Pointer) && lhs_type.point_type.plevel == 1, "illegal arrow: lhs must be pointer");
-			ERROR_IF(is_basic_type(*lhs_type.point_type.pointKind, Struct), "illegal arrow: lhs must point to struct");
+			ERROR_UNLESS(is_basic_type(lhs_type, Pointer) && lhs_type.point_type.plevel == 1, "illegal arrow: lhs must be pointer");
+			ERROR_UNLESS(is_basic_type(*lhs_type.point_type.pointKind, Struct), "illegal arrow: lhs must point to struct");
 			StructType stype = getStructType(lhs_type.point_type.pointKind->sname);
 			Member* member = getMember(stype, t->attr.name);
 			t->type = member->typeinfo;
+			t->type.is_const = lhs_type.is_const;//set p->memer to be const if necessary
 			t->converted_type = t->type;
 			break;
 		}
@@ -391,9 +392,11 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case PointK:
 		{
 			checkNodeType(t->child[0], current_function, scope);
+			TypeInfo lhs_type = t->child[0]->type;
 			StructType stype = getStructType(t->child[0]->type.sname);
 			Member* member = getMember(stype, t->attr.name);
 			t->type = member->typeinfo;
+			t->type.is_const = lhs_type.is_const;//set strcut.memer to be const if necessary
 			t->converted_type = t->type;
 			break;
 		}
@@ -419,19 +422,19 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				param_type_node = param_type_node->next_param;
 				param_node = param_node->sibling;
 			}
-			ERROR_IF(param_node == NULL && param_type_node == NULL, "parameter num cannot match ");
+			ERROR_UNLESS(param_node == NULL && param_type_node == NULL, "parameter num cannot match ");
 			t->converted_type = t->type;
 			break;
 		case ConstK:
 			t->converted_type = t->type;
-			 //需要先分配静态变量的地址
-		 // TODO:需要一个单独的函数来测试!!!!
-		// TODO: 需要标记出来常量不能改变
-		 if (is_basic_type(t->type,String))
-		 {
-			 location -= strlen(t->attr.name);
-			 t->attr.val.integer = location + 1;
-		 }
+			//需要先分配静态变量的地址
+			// TODO: 需要标记出来常量不能改变
+			if (is_basic_type(t->type,String))
+			{
+				t->type.is_const = true;
+				const_area_loc -= strlen(t->attr.name);
+				t->attr.val.integer = location + 1;
+			}
 			break;
 		default:
 			assert(0);
@@ -500,7 +503,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				checkTree(t->child[1], t->attr.name, scope + 1);
 				deleteParams(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
-			}	
+			}
 			else if (t->child[2] != NULL)// int x = 100
 			{
 				checkNodeType(t->child[2], current_function, scope);
@@ -539,7 +542,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 /*assert the node is exp*/
 static TypeInfo get_converted_type(TreeNode * t)
 {
-	ERROR_IF(t != NULL,"try to get type of null node");
+	ERROR_UNLESS(t != NULL,"try to get type of null node");
 	
 	switch (t->kind.exp)
 	{
@@ -553,7 +556,7 @@ static TypeInfo get_converted_type(TreeNode * t)
 		return st_lookup_type(t->attr.name);
 		break;
 	case FuncallK:
-		ERROR_IF(t->attr.name != NULL,"function not found");
+		ERROR_UNLESS(t->attr.name != NULL,"function not found");
 		TypeInfo return_type = *t->type.func_type.return_type;
 		return return_type;
 		break;
@@ -603,28 +606,33 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 
   void check_assign_node(TreeNode * t,TreeNode * left,TreeNode * right, char * current_function, int scope)
  {
-	  ERROR_IF(right->nodekind == ExpK,"illegal assign");
-	  ERROR_IF(!is_basic_type(left->type, Array), "Array canoot be assigned");
+	  if (right->kind.exp == ConstK && is_basic_type(right->type, String)){
+		  ERROR_UNLESS(is_basic_type(left->type,Pointer) && (left->type.point_type.pointKind->is_const),
+						"only const char * is available for static string");
+	  }
+	  ERROR_UNLESS(left->type.is_const == false, "const cannot be assigned");
+	  ERROR_UNLESS(right->nodekind == ExpK,"const variable cannot be assigned");
+	  ERROR_UNLESS(!is_basic_type(left->type, Array), "Array canot be assigned");
 	  TypeInfo exp_type = right->converted_type;
 	  
 	  if (isExp(left,IdK) || isStmt(t,DeclareK))
 	  {
-		  ERROR_IF(st_lookup(left->attr.name) != NOTFOUND,"variable not defined");
+		  ERROR_UNLESS(st_lookup(left->attr.name) != NOTFOUND,"variable not defined");
 		  TypeInfo id_type = st_lookup_type(left->attr.name);
 		  t->type = id_type;
-		  ERROR_IF(can_convert(exp_type, id_type),
+		  ERROR_UNLESS(can_convert(exp_type, id_type),
 					"conversion is not allowed for this two types");
 	  }
 	  else
 	  {
 		  // *..p = xx || a[exp] = xxx
 		  TreeNode * unref_child = t->child[0];
-		  ERROR_IF(left->child[0] != NULL,"illegal assgin stmt");
-		  ERROR_IF(can_convert(exp_type, unref_child->converted_type),"not converted type in assign");
+		  ERROR_UNLESS(left->child[0] != NULL,"illegal assgin stmt");
+		  ERROR_UNLESS(can_convert(exp_type, unref_child->converted_type),"not converted type in assign");
 		  t->type = unref_child->type;
 		  if (isExp(unref_child,IndexK))
 		  {
-			  ERROR_IF(!is_basic_type(unref_child->type, Array),
+			  ERROR_UNLESS(!is_basic_type(unref_child->type, Array),
 						"Const array cannot be left operand");
 		  }
 	  }
@@ -643,7 +651,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
  void checkEmptyExp(TreeNode * t){
 	 t->empty_exp = TRUE;
 	 if (allowed_empty_exp) return;// eg: while(exp),if(exp)
-	 ERROR_IF(isExp(t, FuncallK) || isExp(t, AssignK) || 
+	 ERROR_UNLESS(isExp(t, FuncallK) || isExp(t, AssignK) || 
 			  (isExp(t,SingleOpK) && (t->attr.op == PPLUS || t->attr.op == MMINUS)),
 			  "empty exp beyond call and assign or ++/-- is not allowed!");
 	 // todo; check all function exp
@@ -651,7 +659,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	 {
 		 TreeNode * function_format = t->child[1];
 		 if (function_format->kind.exp == IdK){
-			 ERROR_IF(is_basic_type(*st_lookup_type(t->attr.name).func_type.return_type, Void),
+			 ERROR_UNLESS(is_basic_type(*st_lookup_type(t->attr.name).func_type.return_type, Void),
 				 "only function return nothing can be the empty exp");
 		 }
 	 }*/
