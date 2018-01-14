@@ -1,22 +1,19 @@
-import pyb_example_2
-
-struct test
-{
-	int a
-	int b
-}
 void main()
 {
-	//struct test t1
-	const struct test A[10]
-	struct test B[10]
-	B[0].a = 1
-	write B[0].a
+	int x = 11
+	if (x >= 11)
+	{
+		write 10
+		if (x < 11)
+		{
+			write 100
+		}
+		else
+		{
+			write 101
+		}
+	}
+	else 
+		write 20
+	
 }
-
-void f()
-{
-
-
-}
-

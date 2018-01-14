@@ -18,6 +18,7 @@ static TypeInfo * ftype__;
 static int location = 0;
 static int stack_offset = -2;
 static int while_depth = 0;
+static int case_depth = 0;
 static bool allowed_empty_exp = false;
 static int const_area_loc = 0;
 /* 
@@ -27,7 +28,9 @@ static void checkTree(TreeNode * t,char * curretn_function,int scope);
 static void checkNodeType(TreeNode * t,char * curretn_function, int scope);
 static void check_assign_node(TreeNode *,TreeNode *,TreeNode*, char * current_function, int scope);
 static bool checkInWhile();
+static bool checkInCase();
 static void incrWhileDepth(int);
+static void incrCaseDepth(int);
 static void checkEmptyExp(TreeNode *);
 static void stInsertVar(TreeNode *,int);
 static void defineError(TreeNode * t ,char * msg)
@@ -175,6 +178,21 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 insertTree(t->child[0],scope + 1);
 			 deleteVarOfField(t->child[0], scope + 1);
 			 break;
+		case SwitchK:
+			allowed_empty_exp = TRUE;
+			insertNode(t->child[0], scope + 1);
+			allowed_empty_exp = FALSE;
+			insertNode(t->child[1], scope + 1);
+			break;
+		case CaseK:
+			incrCaseDepth(1);
+			allowed_empty_exp = TRUE;
+			insertNode(t->child[0], scope + 1);
+			allowed_empty_exp = FALSE;
+			insertTree(t->child[1], scope + 1);
+			deleteVarOfField(t->child[1], scope + 1);
+			incrCaseDepth(-1);
+			break;
 		 case ImportK:
 			{
 				char * fileName = createSrcFileNameFromModule(t->attr.name);
@@ -190,8 +208,10 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 insertTree(t->child[2], scope + 1);
 			 break;
 		 case BreakK:
+			 ERROR_UNLESS(checkInWhile() || checkInCase(), "break can only be in while/case");
+			 break;
 		 case ContinueK:
-			 ERROR_UNLESS(checkInWhile(),"break can only be in while");
+			 ERROR_UNLESS(checkInWhile(),"continue can only be in while");
 			 break;
 		 case StructDefineK:
 			 ERROR_UNLESS(scope == 0, "only support global struct define stmt");
@@ -405,9 +425,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[1], current_function, scope);// first check the function exp
 			FuncType ftype = t->child[1]->type.func_type;
 			t->type = *ftype.return_type;// set the function return type
-			/*check the paramter type is legal*/
-            // todo: function as parameters need to create type
-                
+			
+			/*check the paramter type is legal*/                
 			ParamNode *param_type_node = ftype.params;
 			TreeNode * param_node = t->child[0];
 			while (param_type_node != NULL && param_node != NULL )
@@ -428,7 +447,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case ConstK:
 			t->converted_type = t->type;
 			//需要先分配静态变量的地址
-			// TODO: 需要标记出来常量不能改变
 			if (is_basic_type(t->type,String))
 			{
 				t->type.is_const = true;
@@ -478,12 +496,30 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			break;		
 		case RepeatK:
+			incrWhileDepth(1);
 			checkNodeType(t->child[0],current_function, scope + 1);
-			checkTree(t->child[1],current_function, scope);
+			checkTree(t->child[1],current_function, scope + 1);
 			if (!is_basic_type(t->child[0]->type,Boolean))
 			{
 				typeError(t->child[0], "repeat test is not Boolean");
 			}
+			incrWhileDepth(-1);
+			break;
+		case CaseK:
+			incrCaseDepth(1);
+			insertTree(t->child[1], scope + 1);
+			checkNodeType(t->child[0], current_function, scope + 1);
+			ERROR_UNLESS(is_basic_type(t->child[0]->converted_type, Integer),"case exp:exp只能是整数表达式");
+			checkTree(t->child[1], current_function, scope + 1);
+			deleteVarOfField(t->child[1], scope + 1);
+			incrCaseDepth(-1);
+			break;
+		case SwitchK:
+			checkNodeType(t->child[0], current_function, scope + 1);
+			ERROR_UNLESS(is_basic_type(t->child[0]->converted_type, Integer), "switch(exp):exp只能是整数表达式");
+			checkNodeType(t->child[1], current_function, scope + 1);// 只可能是一个blockK
+			TreeNode * exp = t->child[0];
+			TreeNode * block_node = t->child[1];
 			break;
 		case WriteK:
 			checkNodeType(t->child[0],current_function,scope);
@@ -497,7 +533,6 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case DeclareK:
 			if (is_basic_type(t->type,Func))
 			{
-				/*todo :remove these  function insert Function*/
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
@@ -647,6 +682,15 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
   {
 	  while_depth += delta;
   }
+
+ bool checkInCase()
+ {
+	 return case_depth > 0;
+ }
+ void incrCaseDepth(int delta)
+ {
+	 case_depth += delta;
+ }
 
  void checkEmptyExp(TreeNode * t){
 	 t->empty_exp = TRUE;

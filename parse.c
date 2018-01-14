@@ -41,7 +41,8 @@ static TreeNode * paramK_stmt();// parse function def params
 static TreeNode * parseStruct();// parse struct declaration or struct definition
 static TreeNode * parseStructDef();
 static TreeNode * parseIndexNode(TreeNode*);
-
+static TreeNode * parseSwitchStmt();
+static TreeNode * parseCaseNode();
 static TypeInfo parseBaseType(void);
 static TypeInfo parsePointerType(TypeInfo);
 static void rollback(int);
@@ -103,7 +104,8 @@ TreeNode * stmt_sequence(void)
 	TreeNode * p = t;
 
 	while ((token != ENDFILE) && (token != END) &&
-		   (token != RBRACKET) && (token != ELSE))
+		   (token != RBRACKET) && (token != ELSE) &&
+		   (token != CASE))
 	{
 		TreeNode * q;
 		q = statement();
@@ -139,6 +141,7 @@ TreeNode * statement(void)
 		t = parseExp();
 		break;
 	case LBRACKET: t = block_stmt(); break;
+	case SWITCH: t = parseSwitchStmt(); break;
 	case READ: t = read_stmt(); break;
 	case WRITE: t = write_stmt(); break;
 	case ASM: t = asmStmt(); break;
@@ -173,10 +176,12 @@ TreeNode * if_stmt(void)
 	match(IF);
 	if (t != NULL) t->child[0] = parseExp();
 	skipLineEnd();
-	bool in_block = match_possible_lbracket();
+	t->child[1] = stmt_sequence();
+	/*bool in_block = match_possible_lbracket();
 	t->child[1] = in_block ? stmt_sequence() : statement();
 	skipLineEnd();
 	match_possible_rbracket(in_block);
+	*/
 	if (token == ELSE)
     {
 		match(ELSE);
@@ -197,7 +202,7 @@ TreeNode * while_stmt(void)
 	match(WHILE);
 	if (t != NULL) t->child[0] = parseExp(); //child[0] for test
 	skipLineEnd();
-	t->child[1] = block_stmt();
+	t->child[1] = stmt_sequence();
 	return t;
 }
 
@@ -230,12 +235,13 @@ TreeNode * asmStmt()
 	return t;
 }
 
+// parse {xxx;xxx;}
 TreeNode * block_stmt(void)
 {
 	TreeNode * t = newStmtNode(BlockK);
-	bool in_block = match_possible_lbracket();
-	t->child[0] = in_block ? stmt_sequence() : statement(); // child[1] for body
-	match_possible_rbracket(in_block);
+	match(LBRACKET);
+	t->child[0] = stmt_sequence(); // child[1] for body
+	match(RBRACKET);
 	return t;
 }
 
@@ -829,6 +835,39 @@ ArrayType parseArrayType(TypeInfo element_type)
 
 	atype.ele_num = element_num;
 	return atype;
+}
+
+TreeNode * parseSwitchStmt()
+{
+	TreeNode * t = newStmtNode(SwitchK);
+	matchWithoutSkipLineEnd(SWITCH);
+	t->child[0] = parseExp();// switch(exp)
+
+	// parse casenode1->casenode2->casenode3...->casenodex->NULL
+	// 因为需要检查case,所以不能使用通用的block_stmt
+	match(LBRACKET);
+	TreeNode *blockNode = newStmtNode(BlockK);
+	blockNode->child[0] = parseCaseNode();
+	TreeNode * cur_case = blockNode->child[0];
+	while (token == CASE)
+	{
+		cur_case->sibling = parseCaseNode();
+		cur_case = cur_case->sibling;
+	}
+	t->child[1] = blockNode;
+	match(RBRACKET);
+	return t;
+}
+
+// 用来解析case 语法
+TreeNode * parseCaseNode()
+{
+	matchWithoutSkipLineEnd(CASE);
+	TreeNode * case_node = newStmtNode(CaseK);
+	case_node->child[0] = parseExp();
+	match(CLON);
+	case_node->child[1] = stmt_sequence();
+	return case_node;
 }
 
 TreeNode * parseIndexNode(TreeNode * lhs_exp)

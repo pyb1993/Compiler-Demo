@@ -77,7 +77,8 @@ static struct
 	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
 	  { "int", INT }, { "float", FLOAT }, { "void", VOID }, { "char", CHAR }, {"const",CONST},
-	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, {"import", IMPORT}
+	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, { "import", IMPORT }, {"switch",SWITCH},
+	  {"case", CASE}
   };
 
 /* lookup an identifier to see if it is a reserved word */
@@ -174,6 +175,9 @@ TokenType getToken(void)
 					break;
 				case '[':
 					currentToken = LSQUARE;
+					break;
+				case ':':
+					currentToken = CLON;
 					break;
 				case ']':
 					currentToken = RSQUARE;

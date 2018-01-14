@@ -64,58 +64,77 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 	{            
         case IfK :
             if (TraceCode) emitComment("-> if");
-            p1 = tree->child[0] ;
-            p2 = tree->child[1] ;
-            p3 = tree->child[2] ;
-            /* generate code for test expression */
-            cGenInValueMode(p1,scope + 1,start_label,end_label);
-            savedLoc1 = emitSkip(2) ;
+
+			int else_label = genLabel();
+			int if_end_label = genLabel();
+
+			/* generate code for test expression */
+			cGenInValueMode(tree->child[0], scope + 1, -1, -1);
+			emitRM("POP", ac, 0, mp, "pop from the mp");
+			emitRO("JNE", ac, 1, pc, "true case:, execute if part");
+			emitGoto(else_label);// 直接进入else命令的判断
+			cGenInValueMode(tree->child[1], scope + 1, start_label, end_label);//执行if的语句
+			emitGoto(if_end_label);// if 执行完之后直接进入结束位置
+			
+			emitLabel(else_label);
             emitComment("if: jump to else");
-            /* recurse on then part */
-			cGenInValueMode(p2, scope + 1, start_label, end_label);
-            savedLoc2 = emitSkip(1);
-            emitComment("if: jump to end");
-            currentLoc = emitSkip(0) ;
-            emitBackup(savedLoc1) ;
-			// we know the condition value is used as bool, so conversion is uncessary
-			emitRM("POP", ac, 0, mp, "pop the condition value");
-            emitRM_Abs("JEQ",ac,currentLoc,"if: jmp to else");
-            emitRestore() ;
-            /* recurse on else part */
-			cGenInValueMode(p3, scope + 1, start_label, end_label);
-            currentLoc = emitSkip(0) ;
-            emitBackup(savedLoc2);
-            emitRM_Abs("LDA",pc,currentLoc,"jmp to end") ;
-            emitRestore() ;
+			cGenInValueMode(tree->child[2], scope + 1, start_label, end_label);// 执行else部分的语句
+			emitLabel(if_end_label);
+			
             if (TraceCode)  emitComment("<- if") ;
             break; /* if_k */
-            
+		case SwitchK:
+			{
+				int switch_end_label = genLabel();// the label before repeat
+				TreeNode * case_seq = tree->child[1]->child[0];
+				while (case_seq != NULL)
+				{
+					cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);
+					cGenInValueMode(case_seq->child[0], scope + 1, start_label, end_label);// case exp;
+					int case_start_label = genLabel();
+					int case_end_label = genLabel();
+
+					emitRO("POP", ac, 0, mp, "pop case exp");
+					emitRO("POP", ac1, 0, mp, "pop switch exp");
+					emitRO("SUB", ac, ac, ac1, "op ==, convertd_type");
+					emitRM("JEQ", ac, 2, pc, "go to case if statisfy");
+					emitGoto(case_end_label);// case 不满足,go to case结束位置
+					emitRM("LDA", pc, 1, pc, "unconditional jmp");
+					emitGoto(case_start_label);// case 满足: go to case内部代码
+
+					emitLabel(case_start_label);// generate start label
+					cGenInValueMode(case_seq->child[1], scope + 1, start_label, switch_end_label);// case stmt;
+					emitLabel(case_end_label);// generate start label
+					deleteVarOfField(case_seq->child[1], scope + 1);// 清除所有的局部变量
+					case_seq = case_seq->sibling;
+				}
+				emitLabel(switch_end_label);// generate start label
+				break;
+			}
         case RepeatK:/*gen code for while statement*/
             if (TraceCode) emitComment("-> repeat");
 			int new_start_label = genLabel();// the label before repeat
 			int new_end_label = genLabel();
+
+			TreeNode * test = tree->child[0];
+			TreeNode * body = tree->child[1];
+			emitComment("while stmt:");
 			emitLabel(new_start_label);// generate start label
 
-			p1 = tree->child[0];
-			p2 = tree->child[1];
-            emitComment("repeat: jump after body comes back here");
-			savedLoc2 = emitSkip(0);
+			cGenInValueMode(test, scope + 1, -1, -1);// test condition code
+			emitRM("POP", ac, 0, mp, "pop from the mp");
+			emitRO("JNE", ac, 1, pc, "true case:, skip the break, execute the block code");
+			emitGoto(new_end_label);
 
-			cGenInValueMode(p1, scope + 1, new_start_label, new_end_label);// create code for test
-			savedLoc1 = emitSkip(1);
 			/* generate code for body */
-			cGenInValueMode(p2, scope, new_start_label, new_end_label);
-			currentLoc = emitSkip(0);
-			emitRM("LDA", pc, (savedLoc2 - (currentLoc + 1)), pc, "unconditional jmp");
-			currentLoc = emitSkip(0);
-            emitBackup(savedLoc1);
-            emitRM_Abs("JEQ",ac,currentLoc,"repeat: jmp to the out of while");
+			cGenInValueMode(body, scope, new_start_label, new_end_label);
+			emitGoto(new_start_label);
             emitRestore();
 			emitLabel(new_end_label);// generate a label
 			if (TraceCode)  emitComment("<- repeat") ;
             break; /* repeat */
 		case BreakK:
-			emitGoto(start_label);
+			emitGoto(end_label);
 			break;
 		case BlockK:
 			cGen(tree->child[0], scope + 1, start_label, end_label, in_adress_mode);
@@ -542,15 +561,7 @@ static void cGen( TreeNode * tree,int scope,int start_label,int end_label,bool i
 	}
 }
 
-/**********************************************/
-/* the primary function of the code generator */
-/**********************************************/
-/* Procedure codeGen generates code to a code
- * file by traversal of the syntax tree. The
- * second parameter (codefile) is the file name
- * of the code file, and is used to print the
- * file name as a comment in the code file
- */
+
 void codeGen(TreeNode * syntaxTree, char * codefile)
 { 
 	char *s = copyString("File: ");

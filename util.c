@@ -41,9 +41,12 @@ void printToken(TokenType token, const char* tokenString)
         case INT:fprintf(listing, "int\n "); break;
         case FLOAT:fprintf(listing, "float\n "); break;
 		case VOID:fprintf(listing, "void\n "); break;
-        case STRING:fprintf(listing, "STRING val = %s\n", tokenString);
-		case RETURN:fprintf(listing, "RETURN statement\n");
-		case LINEEND:fprintf(listing,"\n"); break;
+		case STRING:fprintf(listing, "STRING val = %s\n", tokenString); break;
+		case RETURN:fprintf(listing, "RETURN statement\n"); break;
+		case SWITCH:fprintf(listing, "SWITCH statement\n"); break;
+		case CASE:fprintf(listing, "CASE statement\n"); break;
+		case CLON:fprintf(listing, ":\n"); break;
+		case LINEEND:fprintf(listing, "\n"); break;
 		case ENDFILE: fprintf(listing, "EOF\n"); break;
         case NUM:
 		case FlOATNUM:
