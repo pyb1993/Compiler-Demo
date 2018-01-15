@@ -355,12 +355,12 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			if (TraceCode) emitComment("->Single Op");
 			p1 = tree->child[0];
 			// todo optimize following code. bad smell
-			// if the p1 is a struct and op is unref, the size is more than 1;
 			if (tree->attr.op != ADRESS && tree->attr.op != UNREF)
 			{
 				cGenInValueMode(p1, scope, start_label, end_label);
 				origin_reg = get_reg(getBasicType(p1->converted_type));
 				target_reg = get_reg(getBasicType(type));
+				
 				emitRM("POP", origin_reg, 0, mp, "pop right");
 				emitRO("MOV", target_reg, origin_reg, 0, "convert type");
 			}
@@ -423,6 +423,9 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 						origin_reg = get_reg1(ptype_ori.typekind);
 						cGenPushTemp(vsize, target_reg, origin_reg, ac);
 					}
+					break;
+				case CONVERSION:		
+					emitRM("PUSH",target_reg,0,mp,"");
 					break;
 				default:
                     assert(!"not implemented single op");
@@ -849,12 +852,12 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 	} /* case op */
 }
 
-
+// 将内存的内容从 adress_reg加载到origin_reg,然后从origin_reg->target_reg,然后压到mp
 void cGenPushTemp(int vsize, int target_reg, int origin_reg, int adress_reg)
 {
 	for (int loc = 0; loc < vsize; ++loc)
 	{
-		emitRM("LD", target_reg, loc, adress_reg, "load bytes");//
+		emitRM("LD", origin_reg, loc, adress_reg, "load bytes");//
 		emitRO("MOV", target_reg, origin_reg, 0, "move between reg");
 		emitRM("PUSH", target_reg, 0, mp, "push bytes ");
 	}
@@ -869,39 +872,45 @@ void cGenInValueMode(TreeNode * tree, int scope, int start_label, int end_label)
 }
 
 
-//pop and do something
-void __cgenPopFromTemp(int origin_reg, int target_reg, int offset,int adress_reg, emitFunc f)
-{
-	while (offset-- > 0)
-	{
-		emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
-		emitRO("MOV", target_reg, origin_reg, 0, "copy bytes");
-		f(target_reg, offset, adress_reg);// do something
-	}
-}
-
-void __cGenST(int target_reg, int offset, int target_adress_reg)
-{
-	emitRM("ST", target_reg, offset, target_adress_reg, "copy bytes");
-}
-
-void __cGenPUSH(int target_reg,int offset, int target_adress_reg)
-{
-	emitRM("PUSH", target_reg, 0, target_adress_reg, "PUSH bytes");
-}
-
-// pop from mp and store to adress
+/* 从mp开始,连续拷贝vsize大小的内存到
+   target_adress_reg 开始的地方
+   (经过 origin_reg -> target_reg的转换)		
+*/
  void cgenCopyObj(int origin_reg, int target_reg, int offset, int target_adress_reg)
 {
 	__cgenPopFromTemp(origin_reg, target_reg, offset, target_adress_reg, __cGenST);
 }
 
- // pop from mp and push to sp
- void cgenPushObj(int origin_reg, int target_reg, int offset)
+ //  pop from mp and push to sp
+ /*  从mp开始, 连续拷贝vsize大小的内存到stack的栈底(内存压缩)
+	 target_adress_reg 开始的地方
+	 (经过 origin_reg->target_reg的转换)
+ */
+void cgenPushObj(int origin_reg, int target_reg, int offset)
 {
 	__cgenPopFromTemp(origin_reg, target_reg, offset, sp, __cGenPUSH);
 }
 
+ //pop and do something
+ void __cgenPopFromTemp(int origin_reg, int target_reg, int offset, int adress_reg, emitFunc f)
+ {
+	 while (offset-- > 0)
+	 {
+		 emitRM("POP", origin_reg, 0, mp, "copy bytes");//reg[ac] =  dMem[reg[mp] + (++tmpOffset) ]
+		 emitRO("MOV", target_reg, origin_reg, 0, "copy bytes");
+		 f(target_reg, offset, adress_reg);// do something
+	 }
+ }
+
+ void __cGenST(int target_reg, int offset, int target_adress_reg)
+ {
+	 emitRM("ST", target_reg, offset, target_adress_reg, "copy bytes");
+ }
+
+ void __cGenPUSH(int target_reg, int offset, int target_adress_reg)
+ {
+	 emitRM("PUSH", target_reg, 0, target_adress_reg, "PUSH bytes");
+ }
 
  void setFunctionAdress(char * fname,char * struct_name, int scope)
  {
@@ -968,6 +977,7 @@ void cgenCodeForInsertNode(TreeNode * t, int scope)
     }
 }
 
-static bool checkInMainModule(){
+static bool checkInMainModule()
+{
 	return st_get_node("main") != NULL;
 }

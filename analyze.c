@@ -315,6 +315,9 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 					t->type.point_type.plevel -= 1;
 				}
 			}
+			else if (t->attr.op == CONVERSION){
+				ERROR_UNLESS(var_size_of_type(t->type) == 1, "type conversion cannot be used to array/struct");
+			}
 			t->converted_type = t->type;
 			return;// important! skip set_converted_type
 			break;

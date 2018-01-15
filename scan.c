@@ -107,6 +107,7 @@ TokenType getToken(void)
 	StateType state = START;
 	/* flag to indicate save to tokenString */
 	int save;
+	int comment_num = 0;
 	while (state != DONE)
 	{
 		int c = getNextChar();
@@ -279,6 +280,7 @@ TokenType getToken(void)
 			}
 			else if (c == '*'){
 				state = INMULCOMMENT;
+				comment_num = 1;
 				ungetTokenstring(&tokenStringIndex);
 				save = FALSE;
 			}
@@ -288,15 +290,16 @@ TokenType getToken(void)
 			break;
 		case INMULCOMMENT:
 			save = FALSE;
-			if (c == EOF){
-				SET_CUR_TOKEN(ENDFILE);
+			if (c == EOF){SET_CUR_TOKEN(ENDFILE);}
+			
+			if (c == '*' && getNextChar() == '/')
+			{
+				if (--comment_num == 0)
+					state = START;					
 			}
-			if (c == '*' ){
-				if (getNextChar() == '/'){
-					state = START;
-				}
-				else
-					ungetNextChar();
+			else if (c == '/' && getNextChar() == '*')
+			{
+				comment_num += 1;
 			}
 		break;
 		case LT_OR_LE:

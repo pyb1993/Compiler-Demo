@@ -117,10 +117,11 @@ to do list
 6  support three value expression
 6  support switch case
 9  auto x = 10; auto inference || 实现动态类型
+10 todo 10.1 实现强制类型转换 10.2 实现sizeof, 10.3 实现一个双端链表
 
+11 todo 实现
 12 tail recursion
 13 检查stack expand的时候是否和堆冲突
-15 实现char,char*,和常量区域
 16 实现typedef
 bug 记录:struct里面的变量导致sp指针的变化
 bug 记录:内存分配了一个指针导致overlap	
@@ -132,4 +133,17 @@ bug 记录: 	int * p = malloc(101)
 				解决办法是函数调用不跳过LineEnd(既调用matchWithoutSkipLineEnd)	
 feature 记录: 利用类型中的is_const变量实现了const类型,同时规定只有const char *能够接常量字符串			
 			  需要注意const struct 不但自己不能赋值,包括里面的成员也不可以被赋值		
+
+feature 记录: 实现了 switch-case结果,case的conditon可以是任意表达式;
+			  case 语句出现break会使得整个switch结束,否则会继续匹配下一个满足条件的case
+			  每一个case存在一个自己的作用域,所以可以实现为 case 'A' :{} {} {}
+			  也可以是 case 'B' : {},还可以是case 'C';xxx xxx xxx
+			  每一个case无论有没有{}都是相互独立的
+bug 记录: 嵌套注释没有处理好
+		/*/*write 10000*/ /*ss*/*/ /*sss*/
+		利用comment_num来处理嵌套注释
+feature 记录: 实现强制类型转换,
+	1： parse方面区分 (int *) a,((int *)[10]) a, (struct test *) a ,能根据前缀调用delcare_stmt 或者 parseExp
+	2:  挂在singleOpK下面,限制1个byte的类型转换
+
 */

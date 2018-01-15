@@ -1,19 +1,19 @@
+struct test{
+int a
+int b[10]
+float c
+}
+
+void f(void * s){
+	(struct test *(s))->b[2] = 100
+	/*/*write 10000*/ /ss*/*/ /*sss*/
+}
+
 void main()
 {
-	int x = 11
-	if (x >= 11)
-	{
-		write 10
-		if (x < 11)
-		{
-			write 100
-		}
-		else
-		{
-			write 101
-		}
-	}
-	else 
-		write 20
-	
+	void * p
+	struct test t
+	f(&t)
+	write t.b[2]
+
 }

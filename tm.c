@@ -383,9 +383,9 @@ STEPRESULT stepTM(void)
 
 	printf("run ins:%d\n", pc_pos);
 
-	if (pc_pos == 35)
+	if (pc_pos == 37)
 	{
-		ok = 18;
+		ok = 36;
 	}
 
     if ((pc_pos < 0) || (pc_pos > IADDR_SIZE)) {return srIMEM_ERR;}

@@ -22,6 +22,7 @@ static TreeNode * break_stmt();
 static TreeNode * continue_stmt();
 static TreeNode * return_stmt();
 static TreeNode * parseExp();
+static TreeNode * parseAssignExp();
 static TreeNode * parsePointExp(TreeNode*);
 static TreeNode * parseArrowExp(TreeNode*);
 static TreeNode * compare_exp();
@@ -456,6 +457,8 @@ TreeNode* parseOneExp()
 	 return ptype; 
  }
 
+ // 用来解析一个type的声明
+ // eg: int/ int * / int []
  TypeInfo parseDeclareType()
  {
 	 TypeInfo type = parseBaseType();
@@ -543,7 +546,7 @@ TreeNode* parseOneExp()
 	 }
 	 else if (token == LPAREN)// function
 	 {
-		 t->return_type = t->type;//define the return type;
+		 t->return_type = t->type; // define the return type;
 		 t->type = createTypeFromBasic(Func);
 		 t->child[0] = paramK_stmt();
          if(token == LBRACKET)
@@ -572,32 +575,62 @@ TreeNode* parseOneExp()
  TreeNode * lparenStartstmt()
  {
 	 int pos_backup = pos;
+	 int state = 0;// the parse_exp
 	 matchWithoutSkipLineEnd(LPAREN);
 	 while (token == LPAREN)
 	 {
 		 matchWithoutSkipLineEnd(LPAREN);
 	 }
-
-
+	 
 	 if (token == FLOAT || token == INT || token == STRUCT || token == VOID)
 	 {
-		 rollback(pos_backup);
-		 return declare_stmt();
+		 while (tryNextToken() != ID && tryNextToken() != LINEEND)
+		 {
+			 matchWithoutSkipLineEnd(token);
+		 }
+		 assert(tryNextToken() == ID);
+		 if (token == LPAREN) state = 0;// (type)(f) exp
+		 else state = 1; //declare stmt
+	 }
+	 else
+		 state = 0;// (ID) exp
+
+	 rollback(pos_backup);
+	 return state == 0 ? declare_stmt() : parseExp();
+ }
+
+ // 复杂的case: float(a = b = c <= d + e * f->g[h].i++)
+ // 其中大多数元素可以用(任意表达式来替换)
+ // 这一层处理 强制转换 int()
+ TreeNode * parseExp()
+{
+	 // todo: typedef 的时候还需要处理
+	 // 强制转换
+	 if (token == INT || token == FLOAT || token == CHAR || token == STRUCT)
+	 {
+		 TypeInfo type = parseDeclareType();
+		 TreeNode * t = newExpNode(SingleOpK);
+		 TreeNode * exp = parseAssignExp();
+		 t->child[0] = exp;
+		 t->attr.op = CONVERSION;
+		 t->type = type;
+		 return t;
 	 }
 	 else
 	 {
-		 rollback(pos_backup);
-		 return parseExp();
+		 return parseAssignExp();
 	 }
- }
+}
 
-TreeNode * parseExp()
+// 用来处理 a = b = c
+TreeNode * parseAssignExp()
 {
+
 	TreeNode * t = compare_exp();
 	while (token == ASSIGN)
 	{
 		TreeNode * p = newExpNode(AssignK);
-		if (p != NULL) 
+		if (p != NULL)
 		{
 			p->child[0] = t;
 			t = p;
@@ -606,6 +639,8 @@ TreeNode * parseExp()
 		}
 	}
 	return t;
+
+
 }
 
 TreeNode * compare_exp(void)
