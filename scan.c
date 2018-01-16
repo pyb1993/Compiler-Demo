@@ -78,7 +78,7 @@ static struct
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
 	  { "int", INT }, { "float", FLOAT }, { "void", VOID }, { "char", CHAR }, {"const",CONST},
 	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, { "import", IMPORT }, {"switch",SWITCH},
-	  {"case", CASE}
+	  { "case", CASE }, {"sizeof", SIZEOF}
   };
 
 /* lookup an identifier to see if it is a reserved word */

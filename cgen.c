@@ -158,6 +158,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			int mode = 0;// 0代表数,1代表字符,2代表字符串
 			emitRM("POP", get_reg(getBasicType(type)), 0, mp, "move result to register");
 			if (is_basic_type(type, Char)) mode = 1;
+			else if (is_basic_type(type, String)) mode = 2;
 			emitRO("OUT", get_reg(getBasicType(type)), mode, 0, "output value in register[ac / fac]");
             break;
 		case AsmK:
@@ -355,7 +356,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			if (TraceCode) emitComment("->Single Op");
 			p1 = tree->child[0];
 			// todo optimize following code. bad smell
-			if (tree->attr.op != ADRESS && tree->attr.op != UNREF)
+			if (tree->attr.op != ADRESS && tree->attr.op != UNREF && tree->attr.op != SIZEOF)
 			{
 				cGenInValueMode(p1, scope, start_label, end_label);
 				origin_reg = get_reg(getBasicType(p1->converted_type));
@@ -426,6 +427,12 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 					break;
 				case CONVERSION:		
 					emitRM("PUSH",target_reg,0,mp,"");
+					break;
+				case SIZEOF:
+					target_reg = get_reg(getBasicType(type));
+					emitRO("LDC", ac, var_size_of_type(tree->return_type), 0, "load size of exp");
+					emitRO("MOV", target_reg, ac, 0, "");
+					emitRM("PUSH",target_reg, 0,mp,"");
 					break;
 				default:
                     assert(!"not implemented single op");

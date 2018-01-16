@@ -1,19 +1,18 @@
 struct test{
-int a
-int b[10]
-float c
-}
+	int a
+	float b
+	int * c
+	float d[2]
 
-void f(void * s){
-	(struct test *(s))->b[2] = 100
-	/*/*write 10000*/ /ss*/*/ /*sss*/
 }
 
 void main()
 {
-	void * p
-	struct test t
-	f(&t)
-	write t.b[2]
-
+	
+	write "aaaa"
+	write "abcdes1945#{Ä§Íõ}"
+	const char * str = "123Ä§Íõ"
+	write str[1]
+	write int(str[3])
+	write str[4]
 }

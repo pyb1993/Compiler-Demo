@@ -270,7 +270,9 @@ void checkTree(TreeNode * t,char * current_function, int scope)
 
 void checkNodeType(TreeNode * t,char * current_function, int scope)
 {
+
 	TreeNode * child1;
+	if (t == NULL) return;
 	switch (t->nodekind)
 	{
 	case ExpK:
@@ -317,6 +319,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			}
 			else if (t->attr.op == CONVERSION){
 				ERROR_UNLESS(var_size_of_type(t->type) == 1, "type conversion cannot be used to array/struct");
+			}
+			else if (t->attr.op == SIZEOF)
+			{
+				if (t->child[0] != NULL){ t->return_type = child1->type; }
+				// todo: 构造一个函数,setType,用来防止内存泄露
+				free_type(t->type);
+				t->type = createTypeFromBasic(Integer);
 			}
 			t->converted_type = t->type;
 			return;// important! skip set_converted_type

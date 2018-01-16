@@ -467,6 +467,7 @@ STEPRESULT stepTM(void)
 		if (same_reg_type(r, ac)) {
 			if (s == 0) printf("OUT instruction prints int: %d\n", reg[r]);
 			else if (s == 1){ printf("OUT instruction prints char: %c\n", reg[r]); }
+			else if (s == 2){ int p = reg[r]; while (dMem[p] != '\0') putc(dMem[p++], stdout); putc('\n',stdout); }
 		}
 		else if (same_reg_type(r, fac)) {
 			flt_num = flt_from_reg(r);

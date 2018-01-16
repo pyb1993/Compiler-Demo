@@ -811,11 +811,22 @@ TreeNode * factor(void)
 		matchWithoutSkipLineEnd(STRING);
 		break;
 	case ID:
-		// todo, remove code to other
 		t = newExpNode(IdK);
 		t->attr.name = copyString(tokenString);
 		matchWithoutSkipLineEnd(ID);
-		
+		break;
+	case SIZEOF:
+		// todo : 增加一个宏用来判断是不是类型
+		// sizeof(x) 这种操作时最小的独立个体,后面不能接. -> []等表达式
+		t = newExpNode(SingleOpK);
+		t->attr.op = SIZEOF;
+		matchWithoutSkipLineEnd(SIZEOF);
+		matchWithoutSkipLineEnd(LPAREN);
+		if (token == INT || token == FLOAT || token == CHAR || token == STRUCT){
+			t->return_type = parseDeclareType();
+		}
+		else {t->child[0] = parseExp();}
+		matchWithoutSkipLineEnd(RPAREN);
 		break;
 	case LPAREN:
 		// todo support comma expression, backup the pos, and restore!!!
@@ -920,7 +931,6 @@ TreeNode * parseIndexNode(TreeNode * lhs_exp)
 	return parseIndexNode(t);
 }
 
-
 TreeNode * parseStruct()
 {
 
@@ -990,7 +1000,6 @@ TreeNode * parseStructDef()
 	 matchWithoutSkipLineEnd(ID);
 	 return parseArrowExp(t);
  }
-
 
  void rollback(int pos_backup) 
  {
