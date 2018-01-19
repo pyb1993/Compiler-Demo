@@ -846,13 +846,16 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 		break;
 	}
 	case EQ:
+	case NOTEQ:
+		{
 		emitRO("SUB", reg, reg, reg1, "op ==, convertd_type");
-		emitRM("JEQ", ac, 2, pc, "br if true");
+		emitRM(op == EQ ? "JEQ" : "JNE", ac, 2, pc, "br if true");
 		emitRM("LDC", ac, 0, ac, "false case");
 		emitRM("LDA", pc, 1, pc, "unconditional jmp");
 		emitRM("LDC", ac, 1, ac, "true case");
 		emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 		break;
+		}
 	default:
 		emitComment("BUG: Unknown operator");
 		break;

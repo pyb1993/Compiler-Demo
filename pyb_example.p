@@ -1,18 +1,35 @@
-struct test{
-	int a
-	float b
-	int * c
-	float d[2]
+import list
 
+// 构造一个具体的listNode
+struct listNode * makeNode(int val)
+{
+	int compare(void * a, void * b)
+	{
+		int av = int(*a) 
+		int bv = int(*b)
+		if (av < bv) return -1
+		if (av > bv) return 1
+		return 0
+	}
+	struct listNode  * node = createListNode()
+	node->value = malloc(sizeof(int))
+	*(node->value) = val // 大小一致,直接转换
+	node->match = compare 
 }
+
+struct list makeList()
+{
+
+	struct list l = createList()
+	return l
+}
+*
 
 void main()
 {
-	
-	write "aaaa"
-	write "abcdes1945#{魔王}"
-	const char * str = "123魔王"
-	write str[1]
-	write int(str[3])
-	write str[4]
+	//struct list l = makeList()
+	//insertList(l,makeNode(1))
+	//insertList(l,makeNode(2))
+	//insertList(l,makeNode(3))
+
 }

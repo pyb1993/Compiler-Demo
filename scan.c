@@ -9,15 +9,15 @@ typedef enum
 {
 	START, INASSIGN, INCOMMENT, INMULCOMMENT, INNUM, INFLOATNUM, INID, OVER_OR_COMMENT,
 	INASSIGN_OR_EQ, MINUS_START, LT_OR_LE, GT_OR_GE,IN_STR,
-	PLUS_START,
+	PLUS_START, NOT_OR_NOTEQ,
 	DONE
 } StateType;
 
 /* BUFLEN = length of the input buffer for
 source code lines */
-#define setStateMinus() do{currentToken = MINUS; ungetNextChar(); state = DONE;} while (0)
+#define setStateMinus() do{currentToken = MINUS; ungetNextChar(c); state = DONE;} while (0)
 #define SET_CUR_TOKEN(tok) do {state = DONE; currentToken = tok;}while(0)
-#define SET_CUR_TOKEN_AND_UNGET(tok) do{ungetNextChar();SET_CUR_TOKEN(tok);}while(0)
+#define SET_CUR_TOKEN_AND_UNGET(tok) do{ungetNextChar(c);SET_CUR_TOKEN(tok);}while(0)
 
 #define BUFLEN 256
 static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
@@ -28,38 +28,23 @@ static int bufsize = 0; /* current size of buffer string */
 /* getNextChar fetches the next non-blank character
 from lineBuf, reading in a new line if lineBuf is
 exhausted */
-static int getNextChar(void)
-{
 
-	if ( bufsize <= linepos)
-	{
-		lineno++;
-		if (fgets(lineBuf, BUFLEN - 1, source))
-		{
-			if (EchoSource) fprintf(listing, "%4d: %s", lineno, lineBuf);
-			bufsize = (int)strlen(lineBuf);
-			linepos = 0;
-			return lineBuf[linepos++];
-		}
-		else
-		{
-			EOF_flag = TRUE;
-			return EOF;
-		}
-	}
-	else return lineBuf[linepos++];
+static int getNextChar()
+{
+	int c =  fgetc(source);
+	if (c == '\n') lineno++;
+	return c;
 }
 
 static bool isAplhaUnderscore(char ch)
 {
 	return isalpha(ch) || ch == '_' || (ch >= '0' && ch <= '9');
 }
-/* ungetNextChar backtracks one character
-in lineBuf */
-static void ungetNextChar(void)
-{
-	if (!EOF_flag) linepos--;
+
+static void ungetNextChar(int c){
+	if (!EOF_flag) ungetc(c,source);
 }
+
 
 //将读入的tokenstring退出一格,比如说用在退出//的第一个/上面
 static void ungetTokenstring(int *tokenstringindex)
@@ -74,7 +59,7 @@ static struct
 	TokenType tok;
 } reservedWords[MAXRESERVED]
 = {	  { "if", IF }, { "else", ELSE }, { "end", END },
-	  { "while", WHILE }, { "break", BREAK }, {"next",CONTINUE}, 
+	  { "while", WHILE }, { "break", BREAK }, {"continue",CONTINUE}, 
 	  {"return", RETURN}, { "until", UNTIL }, { "read", READ },{ "write", WRITE },
 	  { "int", INT }, { "float", FLOAT }, { "void", VOID }, { "char", CHAR }, {"const",CONST},
 	  { "def", FUN }, { "struct", STRUCT }, { "asm", ASM }, { "import", IMPORT }, {"switch",SWITCH},
@@ -148,6 +133,9 @@ TokenType getToken(void)
 			}
 			else if (c == '+'){
 				state = PLUS_START;
+			}
+			else if (c == '!'){
+				state = NOT_OR_NOTEQ;
 			}
 			//consider specific case
 			else
@@ -266,7 +254,6 @@ TokenType getToken(void)
 			}
 			break;
 		case INID:
-		
 			if (!(isAplhaUnderscore(c))){ /* backup in the input */
 				save = FALSE;
 				SET_CUR_TOKEN_AND_UNGET(ID);
@@ -290,12 +277,19 @@ TokenType getToken(void)
 			break;
 		case INMULCOMMENT:
 			save = FALSE;
-			if (c == EOF){SET_CUR_TOKEN(ENDFILE);}
-			
-			if (c == '*' && getNextChar() == '/')
+			if (c == EOF)
 			{
-				if (--comment_num == 0)
-					state = START;					
+				SET_CUR_TOKEN(ENDFILE);
+			}
+			
+			if (c == '*')
+			{
+				if ((c = getNextChar()) == '/')
+				{
+					if (--comment_num == 0)
+						state = START;
+				}
+				else ungetNextChar(c); 
 			}
 			else if (c == '/' && getNextChar() == '*')
 			{
@@ -322,6 +316,15 @@ TokenType getToken(void)
 				SET_CUR_TOKEN_AND_UNGET(GT);
 			}
 			break;
+		case NOT_OR_NOTEQ:
+			if (c == '='){
+				SET_CUR_TOKEN(NOTEQ);
+			}
+			else{
+				SET_CUR_TOKEN(NOT);
+			}
+			
+			break;
 		case IN_STR:
 			if (c == EOF){ SET_CUR_TOKEN(ENDFILE);}
 			else if (c == '"'){SET_CUR_TOKEN(STRING);}
@@ -336,7 +339,7 @@ TokenType getToken(void)
 		if ((save) && (tokenStringIndex <= MAXTOKENLEN))
 		{
 			tokenString[tokenStringIndex++] = (char)c;
-			if (c == '\n') ungetNextChar();// to return LINEND
+			if (c == '\n') ungetNextChar(c);// to return LINEND
 		}
 			if (state == DONE)
 		{
@@ -357,5 +360,5 @@ void clear()
 {
 	EOF_flag = FALSE;
 	linepos = 0;
-	bufsize = 0;
+	fclose(source);
 }

@@ -1,0 +1,90 @@
+/*
+ 用来实现一个通用的双端链表
+*/
+
+import pyb_example_2 
+
+const void * NULL = 0 // 为了以后兼容
+
+
+// 链表节点的数据结构
+struct listNode 
+{
+
+    // 前置节点
+    struct listNode *prev
+
+    // 后置节点
+    struct listNode *next
+
+    // 节点的值
+    void *value
+}
+
+ // 链表的数据结构
+ struct list 
+ {
+    // 表头节点
+    struct listNode *head
+
+    // 节点
+    struct listNode *tail
+
+    // 链表所包含的节点数量
+    int len
+
+    // 节点值复制函数
+    void* dup (void *ptr){}
+
+    // 节点值释放函数，注意不是系统free函数
+    void free (void *ptr){}
+
+    // 节点值对比函数 -1 代表 小于 0 等于, 1大于
+    int match (void *ptr, void *key){} 
+} 
+
+/*********创建一个链表节点****************/
+struct listNode * createListNode()
+{
+	struct listNode  * node = malloc(sizeof(struct listNode))
+
+	node->prev = NULL 
+	node->next = NULL
+	node->value = NULL
+	return node
+}
+
+/*********创建一个双端链表***************/
+struct list createList()
+{
+	struct list l
+	void * NULL = 0 // 为了以后兼容
+	l.head =  createListNode()
+	l.tail = NULL
+	l.len = 0
+	return l
+}
+
+
+/*********插入一个节点***************/
+void insertList(struct list l,struct listNode * node)
+{
+	if (node == NULL) return
+	
+	int abcd = 100
+	l.len += 1
+	struct listNode * cur = l.head
+	while(cur->next != NULL )
+	{
+		if(l.match(cur, node) >= 0){	break }
+		cur++
+	}
+
+	struct listNode * cur_next = cur->next
+	cur->next = node
+	node->next = cur_next
+	node->prev = cur
+	if(cur_next != NULL) cur_next->prev = node // case1 cur node cur->next
+	else l.tail = node // case2 cur node NULL
+}
+

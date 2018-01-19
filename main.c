@@ -28,7 +28,7 @@ int done = FALSE;
 int main()
 {    
 
-	MainModule = "pyb_example.p";
+	MainModule = "list.p";
 	char * codeFileName = createTmFileName(MainModule);
 	code = fopen(codeFileName, "w");//清理该文件
 	fclose(code);

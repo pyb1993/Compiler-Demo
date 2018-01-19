@@ -176,6 +176,8 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 	case Func:
 		if (b == Integer || b == Func) return true;
 		return  false;
+	case Void:
+		return b == Void;
 	default:
 		assert(!"unknown type");
 		return false;
@@ -269,6 +271,7 @@ int var_size_of_type(TypeInfo vtype)
 	if (type == Float) return 1;
 	if (type == Pointer) return 1;
 	if (type == Func) return 1;
+	if (type == Void) return 1;
 	if (type == Array)
 	{
 		ArrayType atype = vtype.array_type;

@@ -117,7 +117,7 @@ to do list
 6  support three value expression
 6  support switch case
 9  auto x = 10; auto inference || 实现动态类型
-10 todo 10.1 实现强制类型转换 10.2 实现sizeof, 10.3 实现一个双端链表
+10 10.3 实现一个双端链表
 
 11 todo 实现
 12 tail recursion
@@ -142,6 +142,11 @@ feature 记录: 实现了 switch-case结果,case的conditon可以是任意表达式;
 bug 记录: 嵌套注释没有处理好
 		/*/*write 10000*/ /*ss*/*/ /*sss*/
 		利用comment_num来处理嵌套注释
+bug 记录: /***comment****/这样的注释会导致注释状态无法结束。
+			原因是 忘记在判断*之后ungetNextChar(),导致跳过了下一个*,直接到了/,
+			无法匹配*/，而 /*comment*/就不存在这样的问题
+
+
 feature 记录: 实现强制类型转换,
 	1： parse方面区分 (int *) a,((int *)[10]) a, (struct test *) a ,能根据前缀调用delcare_stmt 或者 parseExp
 	2:  挂在singleOpK下面,限制1个byte的类型转换

@@ -13,7 +13,7 @@
 #include "assert.h"
 
 #define ERROR_UNLESS(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
-static TypeInfo * ftype__;
+//static TypeInfo * ftype__;
 /* counter for global variable memory locations */
 static int location = 0;
 static int stack_offset = -2;
@@ -159,9 +159,9 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 				 insertParam(t->child[0], scope + 1);// use st_insert(share memory of name)
 				 deleteParams(t->child[0], scope + 1);
                  deleteVarOfField(t->child[1], scope + 1);
-				 if(t->type.func_type.params != NULL) ftype__ = t->type.func_type.params->type;
+				 //if(t->type.func_type.params != NULL) ftype__ = t->type.func_type.params->type;
 			  }
-            else{
+				else{
                 stInsertVar(t,scope);
             }
 			 break;
@@ -415,6 +415,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			ERROR_UNLESS(is_basic_type(*lhs_type.point_type.pointKind, Struct), "illegal arrow: lhs must point to struct");
 			StructType stype = getStructType(lhs_type.point_type.pointKind->sname);
 			Member* member = getMember(stype, t->attr.name);
+			ERROR_UNLESS(member != NULL, "member not belong to this struct");
 			t->type = member->typeinfo;
 			t->type.is_const = lhs_type.is_const;//set p->memer to be const if necessary
 			t->converted_type = t->type;
@@ -653,8 +654,10 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 
   void check_assign_node(TreeNode * t,TreeNode * left,TreeNode * right, char * current_function, int scope)
  {
-	  if (right->kind.exp == ConstK && is_basic_type(right->type, String)){
-		  ERROR_UNLESS(is_basic_type(left->type,Pointer) && (left->type.point_type.pointKind->is_const),
+	  if (right->kind.exp == ConstK && is_basic_type(right->type, String))
+	  {
+		  ERROR_UNLESS(is_basic_type(left->type,Pointer) &&
+						(left->type.point_type.pointKind->is_const),
 						"only const char * is available for static string");
 	  }
 	  ERROR_UNLESS(left->type.is_const == false, "const cannot be assigned");

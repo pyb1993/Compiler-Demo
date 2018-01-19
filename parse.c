@@ -47,6 +47,8 @@ static TreeNode * parseCaseNode();
 static TypeInfo parseBaseType(void);
 static TypeInfo parsePointerType(TypeInfo);
 static void rollback(int);
+static bool checkTokenIsType(TokenType);
+
 
 static void initTokens();
 static void unGetToken();
@@ -162,7 +164,8 @@ TreeNode * statement(void)
 		break;
 	case RBRACKET:// a empty statment
 		break;
-	default: syntaxError("unexpected token -> ");
+	default:
+		syntaxError("unexpected token -> ");
 		printToken(token, tokenString);
 		token = currentToken();
 		break;
@@ -177,12 +180,12 @@ TreeNode * if_stmt(void)
 	match(IF);
 	if (t != NULL) t->child[0] = parseExp();
 	skipLineEnd();
-	t->child[1] = stmt_sequence();
-	/*bool in_block = match_possible_lbracket();
+
+	bool in_block = match_possible_lbracket();
 	t->child[1] = in_block ? stmt_sequence() : statement();
 	skipLineEnd();
 	match_possible_rbracket(in_block);
-	*/
+	
 	if (token == ELSE)
     {
 		match(ELSE);
@@ -203,7 +206,12 @@ TreeNode * while_stmt(void)
 	match(WHILE);
 	if (t != NULL) t->child[0] = parseExp(); //child[0] for test
 	skipLineEnd();
-	t->child[1] = stmt_sequence();
+
+	bool in_block = match_possible_lbracket();
+	t->child[1] = in_block ? stmt_sequence() : statement();
+	skipLineEnd();
+	match_possible_rbracket(in_block);
+
 	return t;
 }
 
@@ -405,6 +413,7 @@ TreeNode* parseOneExp()
 		 syntaxError("the required toke should be");
 		 printToken(expected, "");
 		 fprintf(listing, "      ");
+		 assert(0);
 	 }
  }
 
@@ -430,15 +439,17 @@ TreeNode* parseOneExp()
 	 int i = 0;
 
 	 TokenType tok = getToken();
-	 while (tok == LINEEND && tok != ENDFILE) tok = getToken();// skip the first token
+	 TokenType last_tok;
+	 while (tok == LINEEND && tok != ENDFILE) tok = getToken();// skip the first LINEEND
 	 addToken(tok, copyString(tokenString));// 
 
 	 while (tok != ENDFILE)
 	 {
-		 TokenType last_tok = tok;
+		 last_tok = tok;
 		 tok = getToken();
 		 if (tok == last_tok && last_tok == LINEEND) continue;
 		 addToken(tok, copyString(tokenString));
+		 
 	 }
 
 	 addToken(ENDFILE, NULL);
@@ -521,6 +532,7 @@ TreeNode* parseOneExp()
 		 matchWithoutSkipLineEnd(token);
 		 type = createTypeFromBasic(ErrorType);
 		 syntaxError("undefined type");
+		 assert(0);
 		 break;
 	 }
 	 type.is_const = is_const;
@@ -582,7 +594,7 @@ TreeNode* parseOneExp()
 		 matchWithoutSkipLineEnd(LPAREN);
 	 }
 	 
-	 if (token == FLOAT || token == INT || token == STRUCT || token == VOID)
+	 if (checkTokenIsType(token))
 	 {
 		 while (tryNextToken() != ID && tryNextToken() != LINEEND)
 		 {
@@ -606,7 +618,7 @@ TreeNode* parseOneExp()
 {
 	 // todo: typedef 的时候还需要处理
 	 // 强制转换
-	 if (token == INT || token == FLOAT || token == CHAR || token == STRUCT)
+	 if (checkTokenIsType(token))
 	 {
 		 TypeInfo type = parseDeclareType();
 		 TreeNode * t = newExpNode(SingleOpK);
@@ -625,7 +637,6 @@ TreeNode* parseOneExp()
 // 用来处理 a = b = c
 TreeNode * parseAssignExp()
 {
-
 	TreeNode * t = compare_exp();
 	while (token == ASSIGN)
 	{
@@ -639,14 +650,12 @@ TreeNode * parseAssignExp()
 		}
 	}
 	return t;
-
-
 }
 
 TreeNode * compare_exp(void)
 {
 	TreeNode * t = simple_exp();
-	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE))
+	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE) || (token == NOTEQ))
 	{
 		TreeNode * p = newExpNode(OpK);
 		if (p != NULL) {
@@ -822,10 +831,12 @@ TreeNode * factor(void)
 		t->attr.op = SIZEOF;
 		matchWithoutSkipLineEnd(SIZEOF);
 		matchWithoutSkipLineEnd(LPAREN);
-		if (token == INT || token == FLOAT || token == CHAR || token == STRUCT){
+		if (checkTokenIsType(token)){
 			t->return_type = parseDeclareType();
 		}
-		else {t->child[0] = parseExp();}
+		else {
+			t->child[0] = parseExp();
+		}
 		matchWithoutSkipLineEnd(RPAREN);
 		break;
 	case LPAREN:
@@ -851,8 +862,7 @@ TreeNode * parse(void)
 	initTokens();
 	token = currentToken();
 	t = stmt_sequence();
-	if (token != ENDFILE)
-		syntaxError("Code ends before file\n");
+	if (token != ENDFILE) syntaxError("Code ends before file\n");
 	clear();
 	return t;
 }
@@ -1004,4 +1014,11 @@ TreeNode * parseStructDef()
  void rollback(int pos_backup) 
  {
 	 while (pos > pos_backup) unGetToken(); 
+ }
+
+ static bool checkTokenIsType(TokenType token)
+ {
+	 return token == INT || token == FLOAT || 
+			token == CHAR || token == STRUCT ||
+			token == VOID;
  }

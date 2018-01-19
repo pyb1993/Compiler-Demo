@@ -6,12 +6,35 @@
 #include "cgen.h"
 #include "util.h"
 #include "compile.h"
+#include "assert.h"
 
 void compile(char *, char *);
 
+// 是否已经import过了
+bool isAlreadyImported(char * file_name){
+	static char * imported_modules[1000];
+	static int modules_imported = -1;
+	assert(++modules_imported < 1000);
+
+	int i;
+	for (i = 0; i < modules_imported && strcmp(file_name, imported_modules[i]) != 0;i++){}
+	if (i == modules_imported)
+	{
+		imported_modules[modules_imported] = copyString(file_name);
+		return false;
+	}
+
+	return true;
+}
+
 void import(char * filename)
 {
+	
+	char buf[BUFSIZ];
+	if (isAlreadyImported(filename)) return;
 	source = fopen(filename, "r");
+	setbuf(source, buf);
+	
 	listing = stdout;
 
 	if (source == NULL)
@@ -46,7 +69,6 @@ void compile(char *filename, char * targetFileName)
 
 char * createTmFileName(char * filename)
 {
-
 	/**compute the length of filename before .tm **/
 	int len = (int)strcspn(filename, "//.");
 	char * codeFile = (char *)calloc(len + 4, sizeof(char));
