@@ -12,9 +12,18 @@
 #include "tinytype.h"
 #include "assert.h"
 
-#define ERROR_UNLESS(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
+//#define ERROR_UNLESS(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
 //static TypeInfo * ftype__;
 /* counter for global variable memory locations */
+static void ERROR_UNLESS(bool cond, char * msg)
+{
+	if (!cond)
+		assert(!msg);
+	
+}
+
+
+
 static int location = 0;
 static int stack_offset = -2;
 static int while_depth = 0;
@@ -43,6 +52,7 @@ static void defineError(TreeNode * t ,char * msg)
 static void typeError(TreeNode * t, char * message)
 {
 	fprintf(listing, "Type error at line %d: %s\n", t->lineno, message);
+	assert(!message);
 	Error = TRUE;
 }
 
@@ -144,6 +154,8 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 
  void insertNode( TreeNode * t,int scope)
 {
+	 if (t == NULL) return;
+
 	 switch (t->nodekind)
 	 {
 	 case StmtK:
@@ -355,7 +367,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				    )
 				)
 				typeError(t, "Op applied to type beyond bool,integer,float");
-			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE)){
+			// todo 用一个小函数来优化
+			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE) || (op == NOTEQ)){
 				t->type = createTypeFromBasic(Boolean);
 				t->converted_type = t->type;
 			}
@@ -707,7 +720,8 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	 case_depth += delta;
  }
 
- void checkEmptyExp(TreeNode * t){
+ void checkEmptyExp(TreeNode * t)
+ {
 	 t->empty_exp = TRUE;
 	 if (allowed_empty_exp) return;// eg: while(exp),if(exp)
 	 ERROR_UNLESS(isExp(t, FuncallK) || isExp(t, AssignK) || 

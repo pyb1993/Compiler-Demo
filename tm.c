@@ -313,7 +313,7 @@ int readInstructions(FILE *pgm)
 					getNum();
 					labelLocMap[num] = loc;
 				}
-				else if ((!getNum()) || (num < 0) || (num >= NO_REGS))
+				else if ((!getNum()) || (num < 0) || (strcmp("GO", word) != 0 && num >= NO_REGS))
 					return error("Bad first register", lineNo, loc);
 				arg1 = num;
 				if (!skipCh(','))
@@ -381,9 +381,9 @@ STEPRESULT stepTM(void)
 
 	pc_pos = reg[PC_REG];
 
-	printf("run ins:%d\n", pc_pos);
+	//printf("run ins:%d\n", pc_pos);
 
-	if (pc_pos == 37)
+	if (pc_pos == 224)
 	{
 		ok = 36;
 	}

@@ -33,13 +33,14 @@ struct listNode
     // 链表所包含的节点数量
     int len
 
+
     // 节点值复制函数
     void* dup (void *ptr){}
 
     // 节点值释放函数，注意不是系统free函数
     void free (void *ptr){}
 
-    // 节点值对比函数 -1 代表 小于 0 等于, 1大于
+	// 节点值对比函数 -1 代表 小于 0 等于, 1大于
     int match (void *ptr, void *key){} 
 } 
 
@@ -60,31 +61,51 @@ struct list createList()
 	struct list l
 	void * NULL = 0 // 为了以后兼容
 	l.head =  createListNode()
-	l.tail = NULL
+	l.tail = l.head
 	l.len = 0
 	return l
 }
 
 
-/*********插入一个节点***************/
-void insertList(struct list l,struct listNode * node)
+/*********按顺序插入一个节点***************/
+void insertSortedList(struct list * l,struct listNode * node)
 {
 	if (node == NULL) return
 	
-	int abcd = 100
-	l.len += 1
-	struct listNode * cur = l.head
+	l->len += 1
+	struct listNode * cur = l->head
+
 	while(cur->next != NULL )
 	{
-		if(l.match(cur, node) >= 0){	break }
-		cur++
+		if(l->match(cur->next->value, node->value) >= 0){ break }
+		cur = cur->next
 	}
-
+	
 	struct listNode * cur_next = cur->next
 	cur->next = node
 	node->next = cur_next
 	node->prev = cur
-	if(cur_next != NULL) cur_next->prev = node // case1 cur node cur->next
-	else l.tail = node // case2 cur node NULL
+	if(cur_next != NULL) {cur_next->prev = node} // case1 cur node cur->next
+	else {l->tail = node	} // case2 cur node NULL
 }
 
+/**********append一个节点******************************************/
+void append(struct list * l,struct listNode * node)
+{
+	if(l == NULL ) return
+	if(node == NULL) return
+	
+	
+	l->tail->next = node
+	node->prev = l->tail
+	node->next = NULL
+	l->tail = node
+}
+
+
+// 删除一个节点
+void removeList(struct list * l,void * value)
+{
+	if(value == NULL) return	
+	
+}

@@ -115,14 +115,21 @@ to do list
 	to implement the procedure, we need to save the linebuf,
 3. implement !,and,or
 6  support three value expression
-6  support switch case
 9  auto x = 10; auto inference || 实现动态类型
 10 10.3 实现一个双端链表
 
-11 todo 实现
+11 todo 实现union类型
 12 tail recursion
 13 检查stack expand的时候是否和堆冲突
-16 实现typedef
+****  15 实现 && 和 ||
+***** feature记录 实现typedef(和预处理无关,不支持函数申明)
+	typedef type  x(其中x不能为任何关键字)
+	typedef struct test f
+	逻辑: 注意处理parseDeclareType部分对ID的处理。所有的类型替换在parse部分就解决。
+
+*********** 18 实现self
+******* 17 实现each,select
+
 bug 记录:struct里面的变量导致sp指针的变化
 bug 记录:内存分配了一个指针导致overlap	
 bug 记录: 	int * p = malloc(101)	
@@ -158,4 +165,9 @@ feature 记录:实现sizeof(exp) 和 sizeof(type)
 					 * 函数和sizeof唯一的共同点在后面有一个(),但是函数还需要增加指令的跳转,函数可能会返回一个除了int 
 					  以外的类型,函数可能会后面接上[],->,.等操作。这些不同点导致远远多于共同点。
                      综上所述,单独处理sizeof会好得多。 
+
+
+	bug记录: pointer == pointer 返回的结果是pointer的值而不是比较结果,原因是忘记在op节点 pointer类型的分支里面处理op等于比较符号的情况
+	bug记录: 生成的函数地址,在创建一个struct之后就变成了struct里面最后一个函数的地址
+			原因,initstructInstance的时候内存边界算多了一位
 */

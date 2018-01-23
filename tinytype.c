@@ -283,6 +283,7 @@ int var_size_of_type(TypeInfo vtype)
 		StructType stype = getStructType(vtype.sname);
 		return var_size_of_members(stype.members);
 	}
+
 	assert(!"undefined type size");
 	return 0;
 }

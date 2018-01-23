@@ -18,6 +18,12 @@ TreeNode * parse(void);
 bool match_possible_lbracket();
 bool is_line_end();// is the end of line?
 
+/*用来存储typedef 定义的映射关系*/
+typedef struct type_def_map
+{
+	char * key;
+	TypeInfo type;
+} typeDefMap;
 
 
 #endif

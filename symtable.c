@@ -175,7 +175,6 @@ BucketList st_get_node(char * name)
 	return l;
 }
 
-
 /* Procedure printSymTab prints a formatted
  * listing of the symbol table contents
  * to the listing file

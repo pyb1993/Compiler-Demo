@@ -627,7 +627,7 @@ int get_reg(Type type)
 	}
 	else if ((type == Integer) || (type == Boolean) || (type == Func) ||
 			(type == Pointer) || (type == Array) || (type == Struct) ||
-			(type == Char) || (type == String))
+			(type == Char) || (type == String) || (type == Void))
 	{
 		return ac;
 	}
@@ -770,7 +770,7 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
 			emitRO("ADD", ac, ac1, ac, "compute the real index adress");
 			emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-			break;
+			return;
 		case MINUS:
 		case MMINUS:
 		case MINUSASSIGN:
@@ -781,9 +781,8 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 			emitRM("POP", ac1, 0, mp, "load lhs adress to ac1");
 			emitRO("SUB", ac, ac1, ac, "compute the real index adress");
 			emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
-			break;
+			return;
 		}
-		return;
 	}
 
 	int origin_reg = get_reg(getBasicType(p1->converted_type));
@@ -964,12 +963,11 @@ void initStructInstance(TreeNode * t,int scope)
      Member * members = stype.members;
      for(Member * mem = members; mem != NULL; mem = mem->next_member)
      {
-         // 2046,2043,2040
          if(is_basic_type(mem->typeinfo, Func ))
          {
              int offset = mem->offset;
              emitRM("LDC",ac1, mem->typeinfo.func_type.adress, 0,"get function adress from struct");
-             emitRM("ST", ac1, offset + 1,sp,"Init Struct Instance");
+             emitRM("ST", ac1, offset,sp,"Init Struct Instance");
          }
      }
  }

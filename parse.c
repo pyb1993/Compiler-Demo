@@ -4,10 +4,15 @@
 #include "assert.h"
 #include "parse.h"
 
+#define MAX_TYPE_DEF 100
+#define MAX_TOKEN 10000
+
 static TokenType token; /* holds current token */
-static TokenType token_array[10000];// holds last token
-static char* token_string_array[10000];
+static TokenType token_array[MAX_TOKEN];// holds last token
+static char* token_string_array[MAX_TOKEN];
 static int pos = 0;// hold the current token position
+static typeDefMap type_map[MAX_TYPE_DEF];// typedef 映射
+
 
 /* function prototypes for recursive calls */
 static TreeNode * stmt_sequence();
@@ -34,6 +39,9 @@ static TreeNode * lparenStartstmt();
 static TreeNode * block_stmt();
 static TreeNode * asmStmt();
 static TreeNode * importStmt();
+static void addTypedef();
+static int indexOfTypeMap(char * key);
+
 //help function
 static TreeNode * parseOneVar();
 static TreeNode * parseOneExp();
@@ -45,9 +53,10 @@ static TreeNode * parseIndexNode(TreeNode*);
 static TreeNode * parseSwitchStmt();
 static TreeNode * parseCaseNode();
 static TypeInfo parseBaseType(void);
+static TypeInfo parseDeclareType();
 static TypeInfo parsePointerType(TypeInfo);
 static void rollback(int);
-static bool checkTokenIsType(TokenType);
+static bool checkTokenIsType(TokenType,char *);
 
 
 static void initTokens();
@@ -64,6 +73,7 @@ static void syntaxError(char * message)
 	fprintf(listing, "\n>>> ");
 	fprintf(listing, "Syntax error at line %d: %s", lineno, message);
 	Error = TRUE;
+	assert(!message);
 }
 
 static TokenType tryNextToken()
@@ -110,8 +120,9 @@ TreeNode * stmt_sequence(void)
 		   (token != RBRACKET) && (token != ELSE) &&
 		   (token != CASE))
 	{
-		TreeNode * q;
-		q = statement();
+		// typedef 比较特殊,单独处理
+
+		TreeNode * q = statement();
 		if (q != NULL) 
 		{
 			if (t == NULL) t = p = q;
@@ -124,6 +135,38 @@ TreeNode * stmt_sequence(void)
 	}
 	return t;
 }
+
+// 解析typedef语句
+void addTypedef()
+{
+	matchWithoutSkipLineEnd(TYPEDEF);
+	TypeInfo type = parseDeclareType();
+	int i = 0;
+	char * key = copyString(tokenString);
+	while (i < MAX_TYPE_DEF && type_map[i].key != NULL){ ++i; }
+	assert(i < MAX_TYPE_DEF);
+	
+	type_map[i].key = key;
+	type_map[i].type = type;
+	match(ID);
+}
+
+// 用来获取对应的type的index
+int indexOfTypeMap (char * key)
+{
+	int i = 0;
+	while (i < MAX_TYPE_DEF)
+	{
+		if (type_map[i].key != NULL && strcmp(type_map[i].key, key) == 0)
+		{
+			break;
+		}
+		++i;
+	}
+	if (i == MAX_TYPE_DEF) { return -1; }
+	return i;
+}
+
 
 
 TreeNode * statement(void)
@@ -138,6 +181,10 @@ TreeNode * statement(void)
 	case RETURN:t = return_stmt(); break;
 	case LPAREN:t = lparenStartstmt();break;
 	case ID:
+		// 非类型ID单独开头只可能是 表达式
+		if (indexOfTypeMap(tokenString) == -1) { t = parseExp(); }
+		else { t = declare_stmt(); }
+		break;
 	case TIMES:
 	case PPLUS:
 	case MMINUS:
@@ -155,6 +202,10 @@ TreeNode * statement(void)
 	case VOID:
 	case CHAR:
 		t = declare_stmt();
+		break;
+	case TYPEDEF:
+		addTypedef();
+		t = statement();//单独处理
 		break;
 	case STRUCT:
 		t = parseStruct();
@@ -346,11 +397,8 @@ static TreeNode* paramK_stmt(void)
 	
 	if ((token == VOID  && tryNextToken() == RPAREN) || token == RPAREN)
 	{
-        if (token == VOID)
-        {
-            matchWithoutSkipLineEnd(VOID);
-        }
-
+		if (token == VOID) { matchWithoutSkipLineEnd(VOID); }
+        
         match(RPAREN);
         return NULL;
     }
@@ -413,7 +461,6 @@ TreeNode* parseOneExp()
 		 syntaxError("the required toke should be");
 		 printToken(expected, "");
 		 fprintf(listing, "      ");
-		 assert(0);
 	 }
  }
 
@@ -492,7 +539,8 @@ TreeNode* parseOneExp()
  {
 	 TypeInfo type = createTypeFromBasic(Void);
 	 bool is_const = false;
-	 
+	 int index = -1;
+
 	 if (token == CONST)
 	 {
 		 is_const = true;
@@ -528,14 +576,23 @@ TreeNode* parseOneExp()
 		 type.sname = copyString(tokenString);
 		 matchWithoutSkipLineEnd(ID);// struct name
 		 break;
+	 case ID:
+		 index = indexOfTypeMap(tokenString);
+		 if (index >= 0){ 
+			 type = type_map[index].type;
+			 matchWithoutSkipLineEnd(ID);// type name
+		 }
+		 else { syntaxError("undefined type");}
+		 break;
+	 
 	 default:
 		 matchWithoutSkipLineEnd(token);
-		 type = createTypeFromBasic(ErrorType);
 		 syntaxError("undefined type");
-		 assert(0);
 		 break;
 	 }
-	 type.is_const = is_const;
+
+	 // 此处考虑 typedef const x type 这样的可能,type本身就是const的了
+	 type.is_const = is_const || type.is_const;
 	 return type;
  }
 
@@ -594,7 +651,7 @@ TreeNode* parseOneExp()
 		 matchWithoutSkipLineEnd(LPAREN);
 	 }
 	 
-	 if (checkTokenIsType(token))
+	 if (checkTokenIsType(token,tokenString))
 	 {
 		 while (tryNextToken() != ID && tryNextToken() != LINEEND)
 		 {
@@ -618,7 +675,7 @@ TreeNode* parseOneExp()
 {
 	 // todo: typedef 的时候还需要处理
 	 // 强制转换
-	 if (checkTokenIsType(token))
+	 if (checkTokenIsType(token,tokenString))
 	 {
 		 TypeInfo type = parseDeclareType();
 		 TreeNode * t = newExpNode(SingleOpK);
@@ -831,7 +888,7 @@ TreeNode * factor(void)
 		t->attr.op = SIZEOF;
 		matchWithoutSkipLineEnd(SIZEOF);
 		matchWithoutSkipLineEnd(LPAREN);
-		if (checkTokenIsType(token)){
+		if (checkTokenIsType(token,tokenString)){
 			t->return_type = parseDeclareType();
 		}
 		else {
@@ -1016,9 +1073,9 @@ TreeNode * parseStructDef()
 	 while (pos > pos_backup) unGetToken(); 
  }
 
- static bool checkTokenIsType(TokenType token)
+ static bool checkTokenIsType(TokenType token,char * tokenStr)
  {
 	 return token == INT || token == FLOAT || 
 			token == CHAR || token == STRUCT ||
-			token == VOID;
+			token == VOID || (indexOfTypeMap(tokenStr) > 0);
  }
