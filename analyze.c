@@ -368,7 +368,9 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				)
 				typeError(t, "Op applied to type beyond bool,integer,float");
 			// todo 用一个小函数来优化
-			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE) || (op == NOTEQ)){
+			if ((op == EQ) || (op == LT) || (op == LE) || (op == GT) || (op == GE) || (op == NOTEQ)
+				|| (op == AND) || (op == OR) || (op == NOT))
+			{
 				t->type = createTypeFromBasic(Boolean);
 				t->converted_type = t->type;
 			}

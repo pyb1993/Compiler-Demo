@@ -9,7 +9,7 @@ typedef enum
 {
 	START, INASSIGN, INCOMMENT, INMULCOMMENT, INNUM, INFLOATNUM, INID, OVER_OR_COMMENT,
 	INASSIGN_OR_EQ, MINUS_START, LT_OR_LE, GT_OR_GE,IN_STR,
-	PLUS_START, NOT_OR_NOTEQ,
+	PLUS_START, NOT_OR_NOTEQ,AND_START,OR_START,
 	DONE
 } StateType;
 
@@ -113,9 +113,6 @@ TokenType getToken(void)
 				save = FALSE;
 				SET_CUR_TOKEN(LINEEND);
 			}
-			else if (c == '&'){
-				SET_CUR_TOKEN(BITAND);
-			}
 			else if (c == '/'){
 				state = OVER_OR_COMMENT;
 			}
@@ -136,6 +133,12 @@ TokenType getToken(void)
 			}
 			else if (c == '!'){
 				state = NOT_OR_NOTEQ;
+			}
+			else if (c == '&'){
+				state = AND_START;
+			}
+			else if (c == '|'){
+				state = OR_START;
 			}
 			//consider specific case
 			else
@@ -184,6 +187,24 @@ TokenType getToken(void)
 					currentToken = ERROR;
 					break;
 				}
+			}
+			break;
+
+		case AND_START:
+			if (c == '&'){
+				SET_CUR_TOKEN(AND);
+			}
+			else{
+				SET_CUR_TOKEN_AND_UNGET(BITAND);
+			}
+			break;
+		case OR_START:
+			if (c == '|'){
+				SET_CUR_TOKEN(OR);
+			}
+			else{
+				SET_CUR_TOKEN_AND_UNGET(BITOR);
+
 			}
 			break;
 		case PLUS_START:

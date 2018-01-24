@@ -841,7 +841,7 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 		emitRM("LDC", ac, 0, ac, "false case");
 		emitRM("LDA", pc, 1, pc, "unconditional jmp");
 		emitRM("LDC", ac, 1, ac, "true case");
-		emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		emitRM("PUSH", ac, 0, mp, ""); //reg[ac1] = mem[reg[mp] + tmpoffset]
 		break;
 	}
 	case EQ:
@@ -852,9 +852,25 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 		emitRM("LDC", ac, 0, ac, "false case");
 		emitRM("LDA", pc, 1, pc, "unconditional jmp");
 		emitRM("LDC", ac, 1, ac, "true case");
-		emitRM("PUSH", ac, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		emitRM("PUSH", ac, 0, mp, ""); //reg[ac1] = mem[reg[mp] + tmpoffset]
 		break;
 		}
+	case AND:
+		emitRM("JEQ", reg, 3, pc, "br if false");// lhs == 0,go to false case
+		emitRM("JEQ", reg1, 2, pc, "br if false");// rhs == 0,go to false case
+		emitRM("LDC", ac, 1, ac, "true case");
+		emitRM("LDA", pc, 1, pc, "unconditional jmp");
+		emitRM("LDC", ac, 0, ac, "false case");
+		emitRM("PUSH", ac, 0, mp, ""); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
+	case OR:
+		emitRM("JNE", reg, 3, pc, "br if true");// lhs == 1,go to true case
+		emitRM("JNE", reg1, 2, pc, "br if true");// rhs == 1,go to true case
+		emitRM("LDC", ac, 0, ac, "false case");
+		emitRM("LDA", pc, 1, pc, "unconditional jmp");
+		emitRM("LDC", ac, 1, ac, "true case");
+		emitRM("PUSH", ac, 0, mp, ""); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
 	default:
 		emitComment("BUG: Unknown operator");
 		break;

@@ -27,6 +27,7 @@ static TreeNode * break_stmt();
 static TreeNode * continue_stmt();
 static TreeNode * return_stmt();
 static TreeNode * parseExp();
+static TreeNode * conditionExp();
 static TreeNode * parseAssignExp();
 static TreeNode * parsePointExp(TreeNode*);
 static TreeNode * parseArrowExp(TreeNode*);
@@ -668,42 +669,28 @@ TreeNode* parseOneExp()
 	 return state == 0 ? declare_stmt() : parseExp();
  }
 
- // 复杂的case: float(a = b = c <= d + e * f->g[h].i++)
- // 其中大多数元素可以用(任意表达式来替换)
- // 这一层处理 强制转换 int()
+ // 优先级别最低
  TreeNode * parseExp()
 {
-	 // todo: typedef 的时候还需要处理
-	 // 强制转换
-	 if (checkTokenIsType(token,tokenString))
-	 {
-		 TypeInfo type = parseDeclareType();
-		 TreeNode * t = newExpNode(SingleOpK);
-		 TreeNode * exp = parseAssignExp();
-		 t->child[0] = exp;
-		 t->attr.op = CONVERSION;
-		 t->type = type;
-		 return t;
-	 }
-	 else
-	 {
-		 return parseAssignExp();
-	 }
+	 return conditionExp();
 }
 
-// 用来处理 a = b = c
-TreeNode * parseAssignExp()
+
+
+// 处理各种逻辑表达符号 eg:&&,||,!
+TreeNode * conditionExp()
 {
 	TreeNode * t = compare_exp();
-	while (token == ASSIGN)
+	while (token == AND || token == OR)
 	{
-		TreeNode * p = newExpNode(AssignK);
+		TreeNode * p = newExpNode(OpK);
 		if (p != NULL)
 		{
 			p->child[0] = t;
-			t = p;
+			p->attr.op = token;
 			matchWithoutSkipLineEnd(token);
-			t->child[1] = parseExp();// why? because the x = y = z,y = z is also a assinK
+			p->child[1] = compare_exp();
+			t = p;
 		}
 	}
 	return t;
@@ -711,7 +698,7 @@ TreeNode * parseAssignExp()
 
 TreeNode * compare_exp(void)
 {
-	TreeNode * t = simple_exp();
+	TreeNode * t = parseAssignExp();
 	if ((token == LT) || (token == EQ) || (token == GT) || (token == LE) || (token == GE) || (token == NOTEQ))
 	{
 		TreeNode * p = newExpNode(OpK);
@@ -722,11 +709,30 @@ TreeNode * compare_exp(void)
 		}
 		matchWithoutSkipLineEnd(token);
 		if (t != NULL)
-			t->child[1] = simple_exp();
+			t->child[1] = parseAssignExp();
 	}
 
 	return t;
 }
+
+// 用来处理 a = b = c
+TreeNode * parseAssignExp()
+{
+	TreeNode * t = simple_exp();
+	while (token == ASSIGN)
+	{
+		TreeNode * p = newExpNode(AssignK);
+		if (p != NULL)
+		{
+			p->child[0] = t;
+			t = p;
+			matchWithoutSkipLineEnd(token);
+			t->child[1] = simple_exp();// why? because the x = y = z = w,y = z = w is also a assinK
+		}
+	}
+	return t;
+}
+
 
 TreeNode * simple_exp(void)
 {
@@ -800,6 +806,8 @@ TreeNode * term(void)
 	return t;
 }
 /*
+   单目操作符号,它和前面的操作是帮定在一起的,结合顺序定义为从左到右
+   同时注意到特点是先有左边的结果,然后才有右边符号的结合。
    exp[a].s[6]
 */
 TreeNode * piexp()
@@ -818,23 +826,37 @@ TreeNode * piexp()
 	return t;
 }
 
+// 处理所有优先级别最高的表达式
 TreeNode * factor(void)
 {
 	TreeNode * t = NULL;
     TokenType last_token;
 
+	// 如果是 type(exp) 的类型表达式
+	if (checkTokenIsType(token, tokenString))
+	{
+		TypeInfo type = parseDeclareType();
+		TreeNode * t = newExpNode(SingleOpK);
+		TreeNode * exp = parseExp();
+		t->child[0] = exp;
+		t->attr.op = CONVERSION;
+		t->type = type;
+		return t;
+	}
+
+	// 接下来是各种普通表达式子
 	switch (token) 
 	{
 	case MINUS:
 		matchWithoutSkipLineEnd(MINUS);
 		t = newExpNode(SingleOpK);
-		t->child[0] = factor();
+		t->child[0] = piexp();
 		t->attr.op = NEG;
 		break;
 	case TIMES:
 		matchWithoutSkipLineEnd(TIMES);
 		t = newExpNode(SingleOpK);
-		t->child[0] = factor();
+		t->child[0] = piexp();
 		t->attr.op = UNREF;
 		break;
 	case BITAND:
