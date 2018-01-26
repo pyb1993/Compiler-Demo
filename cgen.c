@@ -207,7 +207,9 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitComment(current_function);
 
 				char * last_current = current_function;
-				if (scope > 0) insertNode(tree, scope);
+				if (scope > 0) { insertNode(tree, scope); }
+
+				emitRM("LDA", sp, -1, sp, "stack expand");
 
 				insertParam(tree->child[0], scope + 1);
 				// set function adress
@@ -241,15 +243,13 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitRestore();
 				current_function = last_current;
 			}
-			else// variable
+			else
 			{
-                cgenCodeForInsertNode(tree,scope);
+				cgenCodeForInsertNode(tree, scope);
+				if (tree->child[2] != NULL){
+					cgen_assign(tree, tree->child[2], scope);
+				}
 			}
-
-			if (tree->child[2] != NULL){
-				cgen_assign(tree, tree->child[2], scope);
-			}
-
 			break;
 		case StructDefineK:
 		{
@@ -983,7 +983,7 @@ void initStructInstance(TreeNode * t,int scope)
          {
              int offset = mem->offset;
              emitRM("LDC",ac1, mem->typeinfo.func_type.adress, 0,"get function adress from struct");
-             emitRM("ST", ac1, offset,sp,"Init Struct Instance");
+             emitRM("ST", ac1, offset + 1,sp,"Init Struct Instance");
          }
      }
  }

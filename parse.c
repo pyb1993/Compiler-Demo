@@ -771,6 +771,7 @@ TreeNode * simple_exp(void)
 	return t;
 }
 
+// l.x-- => (l.x)--
 TreeNode * term(void)
 {
 	TreeNode * t = piexp();
@@ -1099,5 +1100,5 @@ TreeNode * parseStructDef()
  {
 	 return token == INT || token == FLOAT || 
 			token == CHAR || token == STRUCT ||
-			token == VOID || (indexOfTypeMap(tokenStr) > 0);
+			token == VOID || (indexOfTypeMap(tokenStr) >= 0);
  }

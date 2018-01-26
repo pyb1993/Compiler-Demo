@@ -21,14 +21,17 @@ struct listNode
     void *value
 }
 
+typedef struct listNode listNode
+
+
  // 链表的数据结构
  struct list 
  {
     // 表头节点
-    struct listNode *head
+    listNode *head
 
     // 节点
-    struct listNode *tail
+    listNode *tail
 
     // 链表所包含的节点数量
     int len
@@ -43,11 +46,12 @@ struct listNode
 	// 节点值对比函数 -1 代表 小于 0 等于, 1大于
     int match (void *ptr, void *key){} 
 } 
+typedef struct list list
 
 /*********创建一个链表节点****************/
-struct listNode * createListNode()
+listNode * createListNode()
 {
-	struct listNode  * node = malloc(sizeof(struct listNode))
+	listNode  * node = malloc(sizeof( listNode))
 
 	node->prev = NULL 
 	node->next = NULL
@@ -56,9 +60,9 @@ struct listNode * createListNode()
 }
 
 /*********创建一个双端链表***************/
-struct list createList()
+list createList()
 {
-	struct list l
+	list l
 	void * NULL = 0 // 为了以后兼容
 	l.head =  createListNode()
 	l.tail = l.head
@@ -68,12 +72,12 @@ struct list createList()
 
 
 /*********按顺序插入一个节点***************/
-void insertSortedList(struct list * l,struct listNode * node)
+void insertSortedList(list * l, listNode * node)
 {
 	if (node == NULL) return
 	
 	l->len += 1
-	struct listNode * cur = l->head
+	listNode * cur = l->head
 
 	while(cur->next != NULL )
 	{
@@ -81,7 +85,7 @@ void insertSortedList(struct list * l,struct listNode * node)
 		cur = cur->next
 	}
 	
-	struct listNode * cur_next = cur->next
+	listNode * cur_next = cur->next
 	cur->next = node
 	node->next = cur_next
 	node->prev = cur
@@ -89,23 +93,62 @@ void insertSortedList(struct list * l,struct listNode * node)
 	else {l->tail = node	} // case2 cur node NULL
 }
 
-/**********append一个节点******************************************/
-void append(struct list * l,struct listNode * node)
+/**********append一个节点***************/
+void append(list * l,listNode * node)
 {
 	if(l == NULL ) return
 	if(node == NULL) return
-	
-	
+		
 	l->tail->next = node
 	node->prev = l->tail
 	node->next = NULL
+
 	l->tail = node
 }
 
 
 // 删除一个节点
-void removeList(struct list * l,void * value)
+void popRight( list * l)
 {
-	if(value == NULL) return	
-	
+	if(l == NULL || l->len <= 0) return
+	l->len--
+
+	listNode * pre = l->tail->prev
+	pre->next = NULL
+	free(l->tail)
+	l->tail = pre
+}
+
+void popLeft(list * l)
+{	
+	if(l == NULL || l->len <= 0) return
+	l->len--
+
+	listNode * next = l->head->next->next // maybe NULL
+	free(l->head->next)
+
+	l->head->next = next
+	if(next != NULL){
+		next->prev = l->head
+	} 
+}
+
+void removeList(list * l,void * val)
+{
+	if(l == NULL || l->len <= 0) return
+	l->len--
+	listNode * cur = l->head->next
+	while(cur != NULL && l->match(cur->value,val) != 0)
+	{
+		cur = cur->next
+	}
+
+	if(cur == NULL) return
+
+	listNode * prev = cur->prev
+	listNode * next = cur->next
+	prev->next = next
+	if(next != NULL) next->prev = prev
+	if(cur == l->tail) l->tail = NULL 
+	free(cur)
 }
