@@ -346,6 +346,23 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			TreeNode *e = tree->child[0];
 			FuncType ftype = tree->child[1]->type.func_type;
 			ParamNode *p = ftype.params;
+
+			// push self parameter
+			if (strncmp("self__", tree->attr.name, 6) == 0)
+			{
+				TreeNode * struct_node = tree->child[1]->child[0];
+				TreeNode * exp_node = tree->child[1];
+				if (exp_node->kind.exp == PointK){
+					cGenInAdressMode(struct_node, scope, start_label, end_label);
+					emitRM("POP", ac, 0, mp, "");
+					emitRM("PUSH", ac, 0, sp, "");
+				}
+				else if (exp_node->kind.exp == ArrowK){
+				
+				}
+			}
+
+
 			pushParam(e, p, scope + 1);
 			emitComment("call function: ");
 			emitComment(tree->attr.name);
@@ -509,6 +526,8 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			else
 			{
 				// copy from memory to memory
+				// todo,可以在这里进行检查，给定结构体的地址
+
 				cGenInValueMode(tree->child[0], scope, start_label, end_label);//generate the adress
 				getRealAdressBy(tree);
 			}

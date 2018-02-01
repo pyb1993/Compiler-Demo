@@ -11,6 +11,7 @@
 #include "analyze.h"
 #include "tinytype.h"
 #include "assert.h"
+#include "util.h"
 
 //#define ERROR_UNLESS(cond,msg) do {if(!(cond)) assert(!msg);}while(0)
 //static TypeInfo * ftype__;
@@ -42,6 +43,7 @@ static void incrWhileDepth(int);
 static void incrCaseDepth(int);
 static void checkEmptyExp(TreeNode *);
 static void stInsertVar(TreeNode *,int);
+
 static void defineError(TreeNode * t ,char * msg)
 {
     fprintf(listing,"Define error at line %d: %s\n",t->lineno,msg);
@@ -165,13 +167,15 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
             {
                 if (is_basic_type(t->type, Func))
 			   {
-				 t->type.func_type = new_func_type(t);//allocate memory for function name
-                 stInsertVar(t,scope);
-                 insertTree(t->child[1],scope + 1 );
-				 insertParam(t->child[0], scope + 1);// use st_insert(share memory of name)
-				 deleteParams(t->child[0], scope + 1);
-                 deleteVarOfField(t->child[1], scope + 1);
-				 //if(t->type.func_type.params != NULL) ftype__ = t->type.func_type.params->type;
+
+				// 可能需要隐式传入一个self参数
+				t->type.func_type = new_func_type(t);//allocate memory for params/function name
+				appendSelfToParamAndSetStruct(t);
+                stInsertVar(t,scope);
+                insertTree(t->child[1],scope + 1 );
+				insertParam(t->child[0], scope + 1);// use st_insert(share memory of name)
+				deleteParams(t->child[0], scope + 1);
+                deleteVarOfField(t->child[1], scope + 1);
 			  }
 				else{
                 stInsertVar(t,scope);
@@ -456,10 +460,10 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			/*check the paramter type is legal*/                
 			ParamNode *param_type_node = ftype.params;
 			TreeNode * param_node = t->child[0];
+			
 			while (param_type_node != NULL && param_node != NULL )
 			{
 				checkNodeType(param_node, current_function, scope + 1);
-
 				if (!can_convert(param_node->converted_type, *(param_type_node->type)))
 				{
 					assert(!"parameter cannot match the function definition");
@@ -762,4 +766,29 @@ char * setStructInfo(char * s, int mode)
     char * tmp = sname;
     sname = s;
     return tmp;
+}
+
+// 向结构体成员函数的参数list添加self指针
+void appendSelfToParamAndSetStruct(TreeNode * function_node)
+{
+	char * struct_name;
+	TreeNode* t;
+	if ((struct_name = setStructInfo(NULL, 0)) == NULL) return;
+	if (function_node->child[0] != NULL && 
+		strcmp("self", function_node->child[0]->attr.name) == 0)
+		return;//已添加过一次
+
+	if (strncmp("self__", function_node->attr.name, 6) != 0) return;
+	function_node->type.func_type.is_in_struct = true;
+
+	t = newStmtNode(DeclareK);
+	t->attr.name = copyString("self");
+	t->type = createTypeFromBasic(Pointer);
+	t->type.point_type.plevel = 1;
+	*t->type.point_type.pointKind = createTypeFromBasic(Struct);
+	t->type.point_type.pointKind->sname = copyString(struct_name);
+
+	TreeNode * params = function_node->child[0];
+	if (params == NULL) { function_node->child[0] = t;}
+	else{ function_node->child[0] = t; t->sibling = params; }
 }

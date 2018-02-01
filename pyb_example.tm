@@ -1811,667 +1811,685 @@
 1328:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
 1273:    LDA  7,55(7) 	skip the function body
+1329:    LDA  3,-1(3) 	stack expand
+* function entry:
+* self__f
+1330:    LDA  3,-1(3) 	stack expand
+1332:    MOV  1,2,0 	store the caller fp temporarily
+1333:    MOV  2,3,0 	exchang the stack(context)
+1334:   PUSH  1,0(3) 	push the caller fp
+1335:   PUSH  0,0(3) 	push the return adress
+* -> Id
+1336:     LD  0,1(2) 	load id value
+1337:   PUSH  0,0(6) 	store exp
+* <- Id
+1338:    POP  1,0,6 	load adress of lhs struct
+1339:    LDC  0,0,0 	load offset of member
+1340:    ADD  0,0,1 	compute the real adress if pointK
+1341:   PUSH  0,0(6) 	
+1342:    POP  0,0(6) 	load adress from mp
+1343:     LD  1,0(0) 	copy bytes
+1344:   PUSH  1,0(6) 	push a.x value into tmp
+1345:    POP  0,0(6) 	move result to register
+1346:    OUT  0,0,0 	output value in register[ac / fac]
+1347:    MOV  3,2,0 	restore the caller sp
+1348:     LD  2,0(2) 	resotre the caller fp
+1349:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+* function end
+1331:    LDA  7,18(7) 	skip the function body
+1350:    MOV  3,2,0 	resotre stack in struct
 * function entry:
 * makeList
-1329:    LDA  3,-1(3) 	stack expand
-1330:    LDC  0,1333(0) 	get function adress
-1331:     ST  0,-11(5) 	set function adress
-1333:    MOV  1,2,0 	store the caller fp temporarily
-1334:    MOV  2,3,0 	exchang the stack(context)
-1335:   PUSH  1,0(3) 	push the caller fp
-1336:   PUSH  0,0(3) 	push the return adress
+1351:    LDA  3,-1(3) 	stack expand
+1352:    LDC  0,1355(0) 	get function adress
+1353:     ST  0,-11(5) 	set function adress
+1355:    MOV  1,2,0 	store the caller fp temporarily
+1356:    MOV  2,3,0 	exchang the stack(context)
+1357:   PUSH  1,0(3) 	push the caller fp
+1358:   PUSH  0,0(3) 	push the return adress
 * function entry:
 * compare
-1337:    LDA  3,-1(3) 	stack expand
-1338:    LDC  0,1341(0) 	get function adress
-1339:     ST  0,-2(2) 	set function adress
-1341:    MOV  1,2,0 	store the caller fp temporarily
-1342:    MOV  2,3,0 	exchang the stack(context)
-1343:   PUSH  1,0(3) 	push the caller fp
-1344:   PUSH  0,0(3) 	push the return adress
-1345:    LDA  3,-1(3) 	stack expand
+1359:    LDA  3,-1(3) 	stack expand
+1360:    LDC  0,1363(0) 	get function adress
+1361:     ST  0,-2(2) 	set function adress
+1363:    MOV  1,2,0 	store the caller fp temporarily
+1364:    MOV  2,3,0 	exchang the stack(context)
+1365:   PUSH  1,0(3) 	push the caller fp
+1366:   PUSH  0,0(3) 	push the return adress
+1367:    LDA  3,-1(3) 	stack expand
 * ->Single Op
 * ->Single Op
 * -> Id
-1346:     LD  0,1(2) 	load id value
-1347:   PUSH  0,0(6) 	store exp
+1368:     LD  0,1(2) 	load id value
+1369:   PUSH  0,0(6) 	store exp
 * <- Id
-1348:    POP  0,0(6) 	pop right
-1349:   PUSH  0,0(6) 	
+1370:    POP  0,0(6) 	pop right
+1371:   PUSH  0,0(6) 	
 * <-Single Op
-1350:    POP  0,0(6) 	pop the adress
-1351:     LD  1,0(0) 	load bytes
-1352:   PUSH  1,0(6) 	push bytes 
+1372:    POP  0,0(6) 	pop the adress
+1373:     LD  1,0(0) 	load bytes
+1374:   PUSH  1,0(6) 	push bytes 
 * <-Single Op
-1353:    LDA  1,-3(2) 	move the adress of ID
-1354:    POP  0,0(6) 	copy bytes
-1355:     ST  0,0(1) 	copy bytes
-1356:    LDA  3,-1(3) 	stack expand
+1375:    LDA  1,-3(2) 	move the adress of ID
+1376:    POP  0,0(6) 	copy bytes
+1377:     ST  0,0(1) 	copy bytes
+1378:    LDA  3,-1(3) 	stack expand
 * ->Single Op
 * ->Single Op
 * -> Id
-1357:     LD  0,2(2) 	load id value
-1358:   PUSH  0,0(6) 	store exp
+1379:     LD  0,2(2) 	load id value
+1380:   PUSH  0,0(6) 	store exp
 * <- Id
-1359:    POP  0,0(6) 	pop right
-1360:   PUSH  0,0(6) 	
+1381:    POP  0,0(6) 	pop right
+1382:   PUSH  0,0(6) 	
 * <-Single Op
-1361:    POP  0,0(6) 	pop the adress
-1362:     LD  1,0(0) 	load bytes
-1363:   PUSH  1,0(6) 	push bytes 
+1383:    POP  0,0(6) 	pop the adress
+1384:     LD  1,0(0) 	load bytes
+1385:   PUSH  1,0(6) 	push bytes 
 * <-Single Op
-1364:    LDA  1,-4(2) 	move the adress of ID
-1365:    POP  0,0(6) 	copy bytes
-1366:     ST  0,0(1) 	copy bytes
+1386:    LDA  1,-4(2) 	move the adress of ID
+1387:    POP  0,0(6) 	copy bytes
+1388:     ST  0,0(1) 	copy bytes
 * -> if
 * -> Op
 * -> Id
-1367:     LD  0,-3(2) 	load id value
-1368:   PUSH  0,0(6) 	store exp
+1389:     LD  0,-3(2) 	load id value
+1390:   PUSH  0,0(6) 	store exp
 * <- Id
 * -> Id
-1369:     LD  0,-4(2) 	load id value
-1370:   PUSH  0,0(6) 	store exp
+1391:     LD  0,-4(2) 	load id value
+1392:   PUSH  0,0(6) 	store exp
 * <- Id
-1371:    POP  1,0(6) 	pop right
-1372:    POP  0,0(6) 	pop left
-1373:    SUB  0,0,1 	op <
-1374:    JLT  0,2(7) 	br if true
-1375:    LDC  0,0(0) 	false case
-1376:    LDA  7,1(7) 	unconditional jmp
-1377:    LDC  0,1(0) 	true case
-1378:   PUSH  0,0(6) 	
+1393:    POP  1,0(6) 	pop right
+1394:    POP  0,0(6) 	pop left
+1395:    SUB  0,0,1 	op <
+1396:    JLT  0,2(7) 	br if true
+1397:    LDC  0,0(0) 	false case
+1398:    LDA  7,1(7) 	unconditional jmp
+1399:    LDC  0,1(0) 	true case
+1400:   PUSH  0,0(6) 	
 * <- Op
-1379:    POP  0,0(6) 	pop from the mp
-1380:    JNE  0,1,7 	true case:, execute if part
-1381:     GO  28,0,0 	go to label
+1401:    POP  0,0(6) 	pop from the mp
+1402:    JNE  0,1,7 	true case:, execute if part
+1403:     GO  28,0,0 	go to label
 * ->Single Op
 * -> Const
-1382:    LDC  0,1(0) 	load integer const
-1383:   PUSH  0,0(6) 	store exp
+1404:    LDC  0,1(0) 	load integer const
+1405:   PUSH  0,0(6) 	store exp
 * <- Const
-1384:    POP  0,0(6) 	pop right
-1385:    NEG  0,0,0 	single op (-)
-1386:   PUSH  0,0(6) 	op: load left
+1406:    POP  0,0(6) 	pop right
+1407:    NEG  0,0,0 	single op (-)
+1408:   PUSH  0,0(6) 	op: load left
 * <-Single Op
-1387:    MOV  3,2,0 	restore the caller sp
-1388:     LD  2,0(2) 	resotre the caller fp
-1389:  RETURN  0,-1,3 	return to the caller
-1390:     GO  29,0,0 	go to label
-1391:  LABEL  28,0,0 	generate label
+1409:    MOV  3,2,0 	restore the caller sp
+1410:     LD  2,0(2) 	resotre the caller fp
+1411:  RETURN  0,-1,3 	return to the caller
+1412:     GO  29,0,0 	go to label
+1413:  LABEL  28,0,0 	generate label
 * if: jump to else
-1392:  LABEL  29,0,0 	generate label
+1414:  LABEL  29,0,0 	generate label
 * <- if
 * -> if
 * -> Op
 * -> Id
-1393:     LD  0,-3(2) 	load id value
-1394:   PUSH  0,0(6) 	store exp
+1415:     LD  0,-3(2) 	load id value
+1416:   PUSH  0,0(6) 	store exp
 * <- Id
 * -> Id
-1395:     LD  0,-4(2) 	load id value
-1396:   PUSH  0,0(6) 	store exp
+1417:     LD  0,-4(2) 	load id value
+1418:   PUSH  0,0(6) 	store exp
 * <- Id
-1397:    POP  1,0(6) 	pop right
-1398:    POP  0,0(6) 	pop left
-1399:    SUB  0,0,1 	op <
-1400:    JGT  0,2(7) 	br if true
-1401:    LDC  0,0(0) 	false case
-1402:    LDA  7,1(7) 	unconditional jmp
-1403:    LDC  0,1(0) 	true case
-1404:   PUSH  0,0(6) 	
+1419:    POP  1,0(6) 	pop right
+1420:    POP  0,0(6) 	pop left
+1421:    SUB  0,0,1 	op <
+1422:    JGT  0,2(7) 	br if true
+1423:    LDC  0,0(0) 	false case
+1424:    LDA  7,1(7) 	unconditional jmp
+1425:    LDC  0,1(0) 	true case
+1426:   PUSH  0,0(6) 	
 * <- Op
-1405:    POP  0,0(6) 	pop from the mp
-1406:    JNE  0,1,7 	true case:, execute if part
-1407:     GO  30,0,0 	go to label
+1427:    POP  0,0(6) 	pop from the mp
+1428:    JNE  0,1,7 	true case:, execute if part
+1429:     GO  30,0,0 	go to label
 * -> Const
-1408:    LDC  0,1(0) 	load integer const
-1409:   PUSH  0,0(6) 	store exp
+1430:    LDC  0,1(0) 	load integer const
+1431:   PUSH  0,0(6) 	store exp
 * <- Const
-1410:    MOV  3,2,0 	restore the caller sp
-1411:     LD  2,0(2) 	resotre the caller fp
-1412:  RETURN  0,-1,3 	return to the caller
-1413:     GO  31,0,0 	go to label
-1414:  LABEL  30,0,0 	generate label
+1432:    MOV  3,2,0 	restore the caller sp
+1433:     LD  2,0(2) 	resotre the caller fp
+1434:  RETURN  0,-1,3 	return to the caller
+1435:     GO  31,0,0 	go to label
+1436:  LABEL  30,0,0 	generate label
 * if: jump to else
-1415:  LABEL  31,0,0 	generate label
+1437:  LABEL  31,0,0 	generate label
 * <- if
 * -> Const
-1416:    LDC  0,0(0) 	load integer const
-1417:   PUSH  0,0(6) 	store exp
+1438:    LDC  0,0(0) 	load integer const
+1439:   PUSH  0,0(6) 	store exp
 * <- Const
-1418:    MOV  3,2,0 	restore the caller sp
-1419:     LD  2,0(2) 	resotre the caller fp
-1420:  RETURN  0,-1,3 	return to the caller
-1421:    MOV  3,2,0 	restore the caller sp
-1422:     LD  2,0(2) 	resotre the caller fp
-1423:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+1440:    MOV  3,2,0 	restore the caller sp
+1441:     LD  2,0(2) 	resotre the caller fp
+1442:  RETURN  0,-1,3 	return to the caller
+1443:    MOV  3,2,0 	restore the caller sp
+1444:     LD  2,0(2) 	resotre the caller fp
+1445:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-1340:    LDA  7,83(7) 	skip the function body
-1424:    LDA  3,-6(3) 	stack expand
-1425:    LDC  1,61(0) 	get function adress from struct
-1426:     ST  1,4(3) 	Init Struct Instance
-1427:    LDC  1,70(0) 	get function adress from struct
-1428:     ST  1,5(3) 	Init Struct Instance
-1429:    LDC  1,79(0) 	get function adress from struct
-1430:     ST  1,6(3) 	Init Struct Instance
+1362:    LDA  7,83(7) 	skip the function body
+1446:    LDA  3,-6(3) 	stack expand
+1447:    LDC  1,61(0) 	get function adress from struct
+1448:     ST  1,4(3) 	Init Struct Instance
+1449:    LDC  1,70(0) 	get function adress from struct
+1450:     ST  1,5(3) 	Init Struct Instance
+1451:    LDC  1,79(0) 	get function adress from struct
+1452:     ST  1,6(3) 	Init Struct Instance
 * call function: 
 * createList
 * -> Id
-1431:     LD  0,-4(5) 	load id value
-1432:   PUSH  0,0(6) 	store exp
+1453:     LD  0,-4(5) 	load id value
+1454:   PUSH  0,0(6) 	store exp
 * <- Id
-1433:    LDC  0,1435(0) 	store the return adress
-1434:    POP  7,0(6) 	ujp to the function body
-1435:    LDA  3,0(3) 	pop parameters
-1436:    LDA  1,-8(2) 	move the adress of ID
-1437:    POP  0,0(6) 	copy bytes
-1438:     ST  0,5(1) 	copy bytes
-1439:    POP  0,0(6) 	copy bytes
-1440:     ST  0,4(1) 	copy bytes
-1441:    POP  0,0(6) 	copy bytes
-1442:     ST  0,3(1) 	copy bytes
-1443:    POP  0,0(6) 	copy bytes
-1444:     ST  0,2(1) 	copy bytes
-1445:    POP  0,0(6) 	copy bytes
-1446:     ST  0,1(1) 	copy bytes
-1447:    POP  0,0(6) 	copy bytes
-1448:     ST  0,0(1) 	copy bytes
+1455:    LDC  0,1457(0) 	store the return adress
+1456:    POP  7,0(6) 	ujp to the function body
+1457:    LDA  3,0(3) 	pop parameters
+1458:    LDA  1,-8(2) 	move the adress of ID
+1459:    POP  0,0(6) 	copy bytes
+1460:     ST  0,5(1) 	copy bytes
+1461:    POP  0,0(6) 	copy bytes
+1462:     ST  0,4(1) 	copy bytes
+1463:    POP  0,0(6) 	copy bytes
+1464:     ST  0,3(1) 	copy bytes
+1465:    POP  0,0(6) 	copy bytes
+1466:     ST  0,2(1) 	copy bytes
+1467:    POP  0,0(6) 	copy bytes
+1468:     ST  0,1(1) 	copy bytes
+1469:    POP  0,0(6) 	copy bytes
+1470:     ST  0,0(1) 	copy bytes
 * -> assign
 * -> Id
-1449:     LD  0,-2(2) 	load id value
-1450:   PUSH  0,0(6) 	store exp
+1471:     LD  0,-2(2) 	load id value
+1472:   PUSH  0,0(6) 	store exp
 * <- Id
 * -> Id
-1451:    LDA  0,-8(2) 	load id adress
-1452:   PUSH  0,0(6) 	push array adress to mp
+1473:    LDA  0,-8(2) 	load id adress
+1474:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
-1453:    POP  1,0,6 	load adress of lhs struct
-1454:    LDC  0,5,0 	load offset of member
-1455:    ADD  0,0,1 	compute the real adress if pointK
-1456:   PUSH  0,0(6) 	
-1457:    POP  1,0(6) 	move the adress of referenced
-1458:    POP  0,0(6) 	copy bytes
-1459:     ST  0,0(1) 	copy bytes
+1475:    POP  1,0,6 	load adress of lhs struct
+1476:    LDC  0,5,0 	load offset of member
+1477:    ADD  0,0,1 	compute the real adress if pointK
+1478:   PUSH  0,0(6) 	
+1479:    POP  1,0(6) 	move the adress of referenced
+1480:    POP  0,0(6) 	copy bytes
+1481:     ST  0,0(1) 	copy bytes
 * <- assign
 * -> Id
-1460:     LD  0,-8(2) 	load id value
-1461:   PUSH  0,0(6) 	store exp
-1462:     LD  0,-7(2) 	load id value
-1463:   PUSH  0,0(6) 	store exp
-1464:     LD  0,-6(2) 	load id value
-1465:   PUSH  0,0(6) 	store exp
-1466:     LD  0,-5(2) 	load id value
-1467:   PUSH  0,0(6) 	store exp
-1468:     LD  0,-4(2) 	load id value
-1469:   PUSH  0,0(6) 	store exp
-1470:     LD  0,-3(2) 	load id value
-1471:   PUSH  0,0(6) 	store exp
+1482:     LD  0,-8(2) 	load id value
+1483:   PUSH  0,0(6) 	store exp
+1484:     LD  0,-7(2) 	load id value
+1485:   PUSH  0,0(6) 	store exp
+1486:     LD  0,-6(2) 	load id value
+1487:   PUSH  0,0(6) 	store exp
+1488:     LD  0,-5(2) 	load id value
+1489:   PUSH  0,0(6) 	store exp
+1490:     LD  0,-4(2) 	load id value
+1491:   PUSH  0,0(6) 	store exp
+1492:     LD  0,-3(2) 	load id value
+1493:   PUSH  0,0(6) 	store exp
 * <- Id
-1472:    MOV  3,2,0 	restore the caller sp
-1473:     LD  2,0(2) 	resotre the caller fp
-1474:  RETURN  0,-1,3 	return to the caller
-1475:    MOV  3,2,0 	restore the caller sp
-1476:     LD  2,0(2) 	resotre the caller fp
-1477:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+1494:    MOV  3,2,0 	restore the caller sp
+1495:     LD  2,0(2) 	resotre the caller fp
+1496:  RETURN  0,-1,3 	return to the caller
+1497:    MOV  3,2,0 	restore the caller sp
+1498:     LD  2,0(2) 	resotre the caller fp
+1499:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-1332:    LDA  7,145(7) 	skip the function body
+1354:    LDA  7,145(7) 	skip the function body
 * function entry:
 * test
-1478:    LDA  3,-1(3) 	stack expand
-1479:    LDC  0,1482(0) 	get function adress
-1480:     ST  0,-12(5) 	set function adress
-1482:    MOV  1,2,0 	store the caller fp temporarily
-1483:    MOV  2,3,0 	exchang the stack(context)
-1484:   PUSH  1,0(3) 	push the caller fp
-1485:   PUSH  0,0(3) 	push the return adress
+1500:    LDA  3,-1(3) 	stack expand
+1501:    LDC  0,1504(0) 	get function adress
+1502:     ST  0,-12(5) 	set function adress
+1504:    MOV  1,2,0 	store the caller fp temporarily
+1505:    MOV  2,3,0 	exchang the stack(context)
+1506:   PUSH  1,0(3) 	push the caller fp
+1507:   PUSH  0,0(3) 	push the return adress
 * -> Id
-1486:     LD  0,1(2) 	load id value
-1487:   PUSH  0,0(6) 	store exp
+1508:     LD  0,1(2) 	load id value
+1509:   PUSH  0,0(6) 	store exp
 * <- Id
-1488:    POP  0,0(6) 	move result to register
-1489:    OUT  0,0,0 	output value in register[ac / fac]
+1510:    POP  0,0(6) 	move result to register
+1511:    OUT  0,0,0 	output value in register[ac / fac]
 * -> Id
-1490:     LD  0,1(2) 	load id value
-1491:   PUSH  0,0(6) 	store exp
+1512:     LD  0,1(2) 	load id value
+1513:   PUSH  0,0(6) 	store exp
 * <- Id
-1492:    POP  1,0,6 	load adress of lhs struct
-1493:    LDC  0,0,0 	load offset of member
-1494:    ADD  0,0,1 	compute the real adress if pointK
-1495:   PUSH  0,0(6) 	
-1496:    POP  0,0(6) 	load adress from mp
-1497:     LD  1,0(0) 	copy bytes
-1498:   PUSH  1,0(6) 	push a.x value into tmp
-1499:    POP  0,0(6) 	move result to register
-1500:    OUT  0,0,0 	output value in register[ac / fac]
-1501:    MOV  3,2,0 	restore the caller sp
-1502:     LD  2,0(2) 	resotre the caller fp
-1503:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+1514:    POP  1,0,6 	load adress of lhs struct
+1515:    LDC  0,0,0 	load offset of member
+1516:    ADD  0,0,1 	compute the real adress if pointK
+1517:   PUSH  0,0(6) 	
+1518:    POP  0,0(6) 	load adress from mp
+1519:     LD  1,0(0) 	copy bytes
+1520:   PUSH  1,0(6) 	push a.x value into tmp
+1521:    POP  0,0(6) 	move result to register
+1522:    OUT  0,0,0 	output value in register[ac / fac]
+1523:    MOV  3,2,0 	restore the caller sp
+1524:     LD  2,0(2) 	resotre the caller fp
+1525:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-1481:    LDA  7,22(7) 	skip the function body
+1503:    LDA  7,22(7) 	skip the function body
 * function entry:
 * example
-1504:    LDA  3,-1(3) 	stack expand
-1505:    LDC  0,1508(0) 	get function adress
-1506:     ST  0,-13(5) 	set function adress
-1508:    MOV  1,2,0 	store the caller fp temporarily
-1509:    MOV  2,3,0 	exchang the stack(context)
-1510:   PUSH  1,0(3) 	push the caller fp
-1511:   PUSH  0,0(3) 	push the return adress
+1526:    LDA  3,-1(3) 	stack expand
+1527:    LDC  0,1530(0) 	get function adress
+1528:     ST  0,-13(5) 	set function adress
+1530:    MOV  1,2,0 	store the caller fp temporarily
+1531:    MOV  2,3,0 	exchang the stack(context)
+1532:   PUSH  1,0(3) 	push the caller fp
+1533:   PUSH  0,0(3) 	push the return adress
 * function entry:
 * opera
-1512:    LDA  3,-1(3) 	stack expand
-1513:    LDC  0,1516(0) 	get function adress
-1514:     ST  0,-2(2) 	set function adress
-1516:    MOV  1,2,0 	store the caller fp temporarily
-1517:    MOV  2,3,0 	exchang the stack(context)
-1518:   PUSH  1,0(3) 	push the caller fp
-1519:   PUSH  0,0(3) 	push the return adress
-1520:    MOV  3,2,0 	restore the caller sp
-1521:     LD  2,0(2) 	resotre the caller fp
-1522:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+1534:    LDA  3,-1(3) 	stack expand
+1535:    LDC  0,1538(0) 	get function adress
+1536:     ST  0,-2(2) 	set function adress
+1538:    MOV  1,2,0 	store the caller fp temporarily
+1539:    MOV  2,3,0 	exchang the stack(context)
+1540:   PUSH  1,0(3) 	push the caller fp
+1541:   PUSH  0,0(3) 	push the return adress
+1542:    MOV  3,2,0 	restore the caller sp
+1543:     LD  2,0(2) 	resotre the caller fp
+1544:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-1515:    LDA  7,7(7) 	skip the function body
+1537:    LDA  7,7(7) 	skip the function body
 * -> assign
 * -> Id
-1523:     LD  0,-5(5) 	load id value
-1524:   PUSH  0,0(6) 	store exp
+1545:     LD  0,-5(5) 	load id value
+1546:   PUSH  0,0(6) 	store exp
 * <- Id
-1525:    LDA  1,-2(2) 	move the adress of ID
-1526:    POP  0,0(6) 	copy bytes
-1527:     ST  0,0(1) 	copy bytes
+1547:    LDA  1,-2(2) 	move the adress of ID
+1548:    POP  0,0(6) 	copy bytes
+1549:     ST  0,0(1) 	copy bytes
 * <- assign
-1528:    LDA  3,-6(3) 	stack expand
-1529:    LDC  1,61(0) 	get function adress from struct
-1530:     ST  1,4(3) 	Init Struct Instance
-1531:    LDC  1,70(0) 	get function adress from struct
-1532:     ST  1,5(3) 	Init Struct Instance
-1533:    LDC  1,79(0) 	get function adress from struct
-1534:     ST  1,6(3) 	Init Struct Instance
+1550:    LDA  3,-6(3) 	stack expand
+1551:    LDC  1,61(0) 	get function adress from struct
+1552:     ST  1,4(3) 	Init Struct Instance
+1553:    LDC  1,70(0) 	get function adress from struct
+1554:     ST  1,5(3) 	Init Struct Instance
+1555:    LDC  1,79(0) 	get function adress from struct
+1556:     ST  1,6(3) 	Init Struct Instance
 * call function: 
 * makeList
 * -> Id
-1535:     LD  0,-11(5) 	load id value
-1536:   PUSH  0,0(6) 	store exp
-* <- Id
-1537:    LDC  0,1539(0) 	store the return adress
-1538:    POP  7,0(6) 	ujp to the function body
-1539:    LDA  3,0(3) 	pop parameters
-1540:    LDA  1,-8(2) 	move the adress of ID
-1541:    POP  0,0(6) 	copy bytes
-1542:     ST  0,5(1) 	copy bytes
-1543:    POP  0,0(6) 	copy bytes
-1544:     ST  0,4(1) 	copy bytes
-1545:    POP  0,0(6) 	copy bytes
-1546:     ST  0,3(1) 	copy bytes
-1547:    POP  0,0(6) 	copy bytes
-1548:     ST  0,2(1) 	copy bytes
-1549:    POP  0,0(6) 	copy bytes
-1550:     ST  0,1(1) 	copy bytes
-1551:    POP  0,0(6) 	copy bytes
-1552:     ST  0,0(1) 	copy bytes
-* -> Const
-1553:    LDC  0,1(0) 	load integer const
-1554:   PUSH  0,0(6) 	store exp
-* <- Const
-1555:    POP  0,0(6) 	copy bytes
-1556:   PUSH  0,0(3) 	PUSH bytes
-* call function: 
-* makeNode
-* -> Id
-1557:     LD  0,-10(5) 	load id value
+1557:     LD  0,-11(5) 	load id value
 1558:   PUSH  0,0(6) 	store exp
 * <- Id
 1559:    LDC  0,1561(0) 	store the return adress
 1560:    POP  7,0(6) 	ujp to the function body
-1561:    LDA  3,1(3) 	pop parameters
-1562:    POP  0,0(6) 	copy bytes
-1563:   PUSH  0,0(3) 	PUSH bytes
-* ->Single Op
-* -> Id
-1564:    LDA  0,-8(2) 	load id adress
-1565:   PUSH  0,0(6) 	push array adress to mp
-* <- Id
-* <-Single Op
-1566:    POP  0,0(6) 	copy bytes
-1567:   PUSH  0,0(3) 	PUSH bytes
-* call function: 
-* opera
-* -> Id
-1568:     LD  0,-2(2) 	load id value
-1569:   PUSH  0,0(6) 	store exp
-* <- Id
-1570:    LDC  0,1572(0) 	store the return adress
-1571:    POP  7,0(6) 	ujp to the function body
-1572:    LDA  3,2(3) 	pop parameters
-* ->Single Op
+1561:    LDA  3,0(3) 	pop parameters
+1562:    LDA  1,-8(2) 	move the adress of ID
+1563:    POP  0,0(6) 	copy bytes
+1564:     ST  0,5(1) 	copy bytes
+1565:    POP  0,0(6) 	copy bytes
+1566:     ST  0,4(1) 	copy bytes
+1567:    POP  0,0(6) 	copy bytes
+1568:     ST  0,3(1) 	copy bytes
+1569:    POP  0,0(6) 	copy bytes
+1570:     ST  0,2(1) 	copy bytes
+1571:    POP  0,0(6) 	copy bytes
+1572:     ST  0,1(1) 	copy bytes
+1573:    POP  0,0(6) 	copy bytes
+1574:     ST  0,0(1) 	copy bytes
 * -> Const
-1573:    LDC  0,1(0) 	load integer const
-1574:   PUSH  0,0(6) 	store exp
+1575:    LDC  0,1(0) 	load integer const
+1576:   PUSH  0,0(6) 	store exp
 * <- Const
-1575:    POP  0,0(6) 	pop right
-1576:    NEG  0,0,0 	single op (-)
-1577:   PUSH  0,0(6) 	op: load left
-* <-Single Op
-1578:    POP  0,0(6) 	copy bytes
-1579:   PUSH  0,0(3) 	PUSH bytes
+1577:    POP  0,0(6) 	copy bytes
+1578:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
 * makeNode
 * -> Id
-1580:     LD  0,-10(5) 	load id value
-1581:   PUSH  0,0(6) 	store exp
+1579:     LD  0,-10(5) 	load id value
+1580:   PUSH  0,0(6) 	store exp
 * <- Id
-1582:    LDC  0,1584(0) 	store the return adress
-1583:    POP  7,0(6) 	ujp to the function body
-1584:    LDA  3,1(3) 	pop parameters
-1585:    POP  0,0(6) 	copy bytes
-1586:   PUSH  0,0(3) 	PUSH bytes
+1581:    LDC  0,1583(0) 	store the return adress
+1582:    POP  7,0(6) 	ujp to the function body
+1583:    LDA  3,1(3) 	pop parameters
+1584:    POP  0,0(6) 	copy bytes
+1585:   PUSH  0,0(3) 	PUSH bytes
 * ->Single Op
 * -> Id
-1587:    LDA  0,-8(2) 	load id adress
-1588:   PUSH  0,0(6) 	push array adress to mp
+1586:    LDA  0,-8(2) 	load id adress
+1587:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
 * <-Single Op
-1589:    POP  0,0(6) 	copy bytes
-1590:   PUSH  0,0(3) 	PUSH bytes
+1588:    POP  0,0(6) 	copy bytes
+1589:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
 * opera
 * -> Id
-1591:     LD  0,-2(2) 	load id value
-1592:   PUSH  0,0(6) 	store exp
+1590:     LD  0,-2(2) 	load id value
+1591:   PUSH  0,0(6) 	store exp
 * <- Id
-1593:    LDC  0,1595(0) 	store the return adress
-1594:    POP  7,0(6) 	ujp to the function body
-1595:    LDA  3,2(3) 	pop parameters
+1592:    LDC  0,1594(0) 	store the return adress
+1593:    POP  7,0(6) 	ujp to the function body
+1594:    LDA  3,2(3) 	pop parameters
 * ->Single Op
 * -> Const
-1596:    LDC  0,20(0) 	load integer const
-1597:   PUSH  0,0(6) 	store exp
+1595:    LDC  0,1(0) 	load integer const
+1596:   PUSH  0,0(6) 	store exp
 * <- Const
-1598:    POP  0,0(6) 	pop right
-1599:    NEG  0,0,0 	single op (-)
-1600:   PUSH  0,0(6) 	op: load left
+1597:    POP  0,0(6) 	pop right
+1598:    NEG  0,0,0 	single op (-)
+1599:   PUSH  0,0(6) 	op: load left
 * <-Single Op
-1601:    POP  0,0(6) 	copy bytes
-1602:   PUSH  0,0(3) 	PUSH bytes
+1600:    POP  0,0(6) 	copy bytes
+1601:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
 * makeNode
 * -> Id
-1603:     LD  0,-10(5) 	load id value
-1604:   PUSH  0,0(6) 	store exp
+1602:     LD  0,-10(5) 	load id value
+1603:   PUSH  0,0(6) 	store exp
 * <- Id
-1605:    LDC  0,1607(0) 	store the return adress
-1606:    POP  7,0(6) 	ujp to the function body
-1607:    LDA  3,1(3) 	pop parameters
-1608:    POP  0,0(6) 	copy bytes
-1609:   PUSH  0,0(3) 	PUSH bytes
+1604:    LDC  0,1606(0) 	store the return adress
+1605:    POP  7,0(6) 	ujp to the function body
+1606:    LDA  3,1(3) 	pop parameters
+1607:    POP  0,0(6) 	copy bytes
+1608:   PUSH  0,0(3) 	PUSH bytes
 * ->Single Op
 * -> Id
-1610:    LDA  0,-8(2) 	load id adress
-1611:   PUSH  0,0(6) 	push array adress to mp
+1609:    LDA  0,-8(2) 	load id adress
+1610:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
 * <-Single Op
-1612:    POP  0,0(6) 	copy bytes
-1613:   PUSH  0,0(3) 	PUSH bytes
+1611:    POP  0,0(6) 	copy bytes
+1612:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
 * opera
 * -> Id
-1614:     LD  0,-2(2) 	load id value
-1615:   PUSH  0,0(6) 	store exp
+1613:     LD  0,-2(2) 	load id value
+1614:   PUSH  0,0(6) 	store exp
 * <- Id
-1616:    LDC  0,1618(0) 	store the return adress
-1617:    POP  7,0(6) 	ujp to the function body
-1618:    LDA  3,2(3) 	pop parameters
+1615:    LDC  0,1617(0) 	store the return adress
+1616:    POP  7,0(6) 	ujp to the function body
+1617:    LDA  3,2(3) 	pop parameters
+* ->Single Op
 * -> Const
-1619:    LDC  0,100(0) 	load integer const
-1620:   PUSH  0,0(6) 	store exp
+1618:    LDC  0,20(0) 	load integer const
+1619:   PUSH  0,0(6) 	store exp
 * <- Const
-1621:    POP  0,0(6) 	copy bytes
-1622:   PUSH  0,0(3) 	PUSH bytes
+1620:    POP  0,0(6) 	pop right
+1621:    NEG  0,0,0 	single op (-)
+1622:   PUSH  0,0(6) 	op: load left
+* <-Single Op
+1623:    POP  0,0(6) 	copy bytes
+1624:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
 * makeNode
 * -> Id
-1623:     LD  0,-10(5) 	load id value
-1624:   PUSH  0,0(6) 	store exp
+1625:     LD  0,-10(5) 	load id value
+1626:   PUSH  0,0(6) 	store exp
 * <- Id
-1625:    LDC  0,1627(0) 	store the return adress
-1626:    POP  7,0(6) 	ujp to the function body
-1627:    LDA  3,1(3) 	pop parameters
-1628:    POP  0,0(6) 	copy bytes
-1629:   PUSH  0,0(3) 	PUSH bytes
+1627:    LDC  0,1629(0) 	store the return adress
+1628:    POP  7,0(6) 	ujp to the function body
+1629:    LDA  3,1(3) 	pop parameters
+1630:    POP  0,0(6) 	copy bytes
+1631:   PUSH  0,0(3) 	PUSH bytes
 * ->Single Op
 * -> Id
-1630:    LDA  0,-8(2) 	load id adress
-1631:   PUSH  0,0(6) 	push array adress to mp
+1632:    LDA  0,-8(2) 	load id adress
+1633:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
 * <-Single Op
-1632:    POP  0,0(6) 	copy bytes
-1633:   PUSH  0,0(3) 	PUSH bytes
+1634:    POP  0,0(6) 	copy bytes
+1635:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
 * opera
 * -> Id
-1634:     LD  0,-2(2) 	load id value
-1635:   PUSH  0,0(6) 	store exp
+1636:     LD  0,-2(2) 	load id value
+1637:   PUSH  0,0(6) 	store exp
 * <- Id
-1636:    LDC  0,1638(0) 	store the return adress
-1637:    POP  7,0(6) 	ujp to the function body
-1638:    LDA  3,2(3) 	pop parameters
-1639:    LDA  3,-1(3) 	stack expand
-* ->Single Op
+1638:    LDC  0,1640(0) 	store the return adress
+1639:    POP  7,0(6) 	ujp to the function body
+1640:    LDA  3,2(3) 	pop parameters
 * -> Const
-1640:    LDC  0,11(0) 	load integer const
-1641:   PUSH  0,0(6) 	store exp
+1641:    LDC  0,100(0) 	load integer const
+1642:   PUSH  0,0(6) 	store exp
 * <- Const
-1642:    POP  0,0(6) 	pop right
-1643:    NEG  0,0,0 	single op (-)
-1644:   PUSH  0,0(6) 	op: load left
-* <-Single Op
-1645:    LDA  1,-9(2) 	move the adress of ID
-1646:    POP  0,0(6) 	copy bytes
-1647:     ST  0,0(1) 	copy bytes
-* ->Single Op
-* ->Single Op
-* -> Id
-1648:    LDA  0,-9(2) 	load id adress
-1649:   PUSH  0,0(6) 	push array adress to mp
-* <- Id
-* <-Single Op
-1650:    POP  0,0(6) 	pop right
-1651:   PUSH  0,0(6) 	
-* <-Single Op
-1652:    POP  0,0(6) 	copy bytes
-1653:   PUSH  0,0(3) 	PUSH bytes
-* ->Single Op
-* -> Id
-1654:    LDA  0,-8(2) 	load id adress
-1655:   PUSH  0,0(6) 	push array adress to mp
-* <- Id
-* <-Single Op
-1656:    POP  0,0(6) 	copy bytes
-1657:   PUSH  0,0(3) 	PUSH bytes
+1643:    POP  0,0(6) 	copy bytes
+1644:   PUSH  0,0(3) 	PUSH bytes
 * call function: 
-* removeList
+* makeNode
 * -> Id
-1658:     LD  0,-9(5) 	load id value
-1659:   PUSH  0,0(6) 	store exp
+1645:     LD  0,-10(5) 	load id value
+1646:   PUSH  0,0(6) 	store exp
 * <- Id
-1660:    LDC  0,1662(0) 	store the return adress
-1661:    POP  7,0(6) 	ujp to the function body
-1662:    LDA  3,2(3) 	pop parameters
-1663:    LDA  3,-1(3) 	stack expand
+1647:    LDC  0,1649(0) 	store the return adress
+1648:    POP  7,0(6) 	ujp to the function body
+1649:    LDA  3,1(3) 	pop parameters
+1650:    POP  0,0(6) 	copy bytes
+1651:   PUSH  0,0(3) 	PUSH bytes
+* ->Single Op
 * -> Id
-1664:    LDA  0,-8(2) 	load id adress
-1665:   PUSH  0,0(6) 	push array adress to mp
+1652:    LDA  0,-8(2) 	load id adress
+1653:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
-1666:    POP  1,0,6 	load adress of lhs struct
-1667:    LDC  0,0,0 	load offset of member
-1668:    ADD  0,0,1 	compute the real adress if pointK
-1669:   PUSH  0,0(6) 	
-1670:    POP  0,0(6) 	load adress from mp
-1671:     LD  1,0(0) 	copy bytes
-1672:   PUSH  1,0(6) 	push a.x value into tmp
-1673:    POP  1,0,6 	load adress of lhs struct
-1674:    LDC  0,1,0 	load offset of member
-1675:    ADD  0,0,1 	compute the real adress if pointK
-1676:   PUSH  0,0(6) 	
-1677:    POP  0,0(6) 	load adress from mp
-1678:     LD  1,0(0) 	copy bytes
-1679:   PUSH  1,0(6) 	push a.x value into tmp
-1680:    LDA  1,-10(2) 	move the adress of ID
-1681:    POP  0,0(6) 	copy bytes
-1682:     ST  0,0(1) 	copy bytes
+* <-Single Op
+1654:    POP  0,0(6) 	copy bytes
+1655:   PUSH  0,0(3) 	PUSH bytes
+* call function: 
+* opera
+* -> Id
+1656:     LD  0,-2(2) 	load id value
+1657:   PUSH  0,0(6) 	store exp
+* <- Id
+1658:    LDC  0,1660(0) 	store the return adress
+1659:    POP  7,0(6) 	ujp to the function body
+1660:    LDA  3,2(3) 	pop parameters
+1661:    LDA  3,-1(3) 	stack expand
+* -> Id
+1662:    LDA  0,-8(2) 	load id adress
+1663:   PUSH  0,0(6) 	push array adress to mp
+* <- Id
+1664:    POP  1,0,6 	load adress of lhs struct
+1665:    LDC  0,0,0 	load offset of member
+1666:    ADD  0,0,1 	compute the real adress if pointK
+1667:   PUSH  0,0(6) 	
+1668:    POP  0,0(6) 	load adress from mp
+1669:     LD  1,0(0) 	copy bytes
+1670:   PUSH  1,0(6) 	push a.x value into tmp
+1671:    POP  1,0,6 	load adress of lhs struct
+1672:    LDC  0,1,0 	load offset of member
+1673:    ADD  0,0,1 	compute the real adress if pointK
+1674:   PUSH  0,0(6) 	
+1675:    POP  0,0(6) 	load adress from mp
+1676:     LD  1,0(0) 	copy bytes
+1677:   PUSH  1,0(6) 	push a.x value into tmp
+1678:    LDA  1,-9(2) 	move the adress of ID
+1679:    POP  0,0(6) 	copy bytes
+1680:     ST  0,0(1) 	copy bytes
 * -> repeat
 * while stmt:
-1683:  LABEL  32,0,0 	generate label
+1681:  LABEL  32,0,0 	generate label
 * -> Op
 * -> Id
-1684:     LD  0,-10(2) 	load id value
+1682:     LD  0,-9(2) 	load id value
+1683:   PUSH  0,0(6) 	store exp
+* <- Id
+* -> Id
+1684:     LD  0,-2(5) 	load id value
 1685:   PUSH  0,0(6) 	store exp
 * <- Id
-* -> Id
-1686:     LD  0,-2(5) 	load id value
-1687:   PUSH  0,0(6) 	store exp
-* <- Id
-1688:    POP  1,0(6) 	pop right
-1689:    POP  0,0(6) 	pop left
-1690:    SUB  0,0,1 	op ==, convertd_type
-1691:    JNE  0,2(7) 	br if true
-1692:    LDC  0,0(0) 	false case
-1693:    LDA  7,1(7) 	unconditional jmp
-1694:    LDC  0,1(0) 	true case
-1695:   PUSH  0,0(6) 	
+1686:    POP  1,0(6) 	pop right
+1687:    POP  0,0(6) 	pop left
+1688:    SUB  0,0,1 	op ==, convertd_type
+1689:    JNE  0,2(7) 	br if true
+1690:    LDC  0,0(0) 	false case
+1691:    LDA  7,1(7) 	unconditional jmp
+1692:    LDC  0,1(0) 	true case
+1693:   PUSH  0,0(6) 	
 * <- Op
-1696:    POP  0,0(6) 	pop from the mp
-1697:    JNE  0,1,7 	true case:, skip the break, execute the block code
-1698:     GO  33,0,0 	go to label
+1694:    POP  0,0(6) 	pop from the mp
+1695:    JNE  0,1,7 	true case:, skip the break, execute the block code
+1696:     GO  33,0,0 	go to label
 * ->Single Op
 * -> Id
-1699:     LD  0,-10(2) 	load id value
-1700:   PUSH  0,0(6) 	store exp
+1697:     LD  0,-9(2) 	load id value
+1698:   PUSH  0,0(6) 	store exp
 * <- Id
-1701:    POP  1,0,6 	load adress of lhs struct
-1702:    LDC  0,2,0 	load offset of member
-1703:    ADD  0,0,1 	compute the real adress if pointK
-1704:   PUSH  0,0(6) 	
-1705:    POP  0,0(6) 	load adress from mp
-1706:     LD  1,0(0) 	copy bytes
-1707:   PUSH  1,0(6) 	push a.x value into tmp
-1708:    POP  0,0(6) 	pop the adress
-1709:     LD  1,0(0) 	load bytes
-1710:   PUSH  1,0(6) 	push bytes 
+1699:    POP  1,0,6 	load adress of lhs struct
+1700:    LDC  0,2,0 	load offset of member
+1701:    ADD  0,0,1 	compute the real adress if pointK
+1702:   PUSH  0,0(6) 	
+1703:    POP  0,0(6) 	load adress from mp
+1704:     LD  1,0(0) 	copy bytes
+1705:   PUSH  1,0(6) 	push a.x value into tmp
+1706:    POP  0,0(6) 	pop the adress
+1707:     LD  1,0(0) 	load bytes
+1708:   PUSH  1,0(6) 	push bytes 
 * <-Single Op
-1711:    POP  0,0(6) 	move result to register
-1712:    OUT  0,0,0 	output value in register[ac / fac]
+1709:    POP  0,0(6) 	move result to register
+1710:    OUT  0,0,0 	output value in register[ac / fac]
 * -> assign
 * -> Id
-1713:     LD  0,-10(2) 	load id value
-1714:   PUSH  0,0(6) 	store exp
+1711:     LD  0,-9(2) 	load id value
+1712:   PUSH  0,0(6) 	store exp
 * <- Id
-1715:    POP  1,0,6 	load adress of lhs struct
-1716:    LDC  0,1,0 	load offset of member
-1717:    ADD  0,0,1 	compute the real adress if pointK
-1718:   PUSH  0,0(6) 	
-1719:    POP  0,0(6) 	load adress from mp
-1720:     LD  1,0(0) 	copy bytes
-1721:   PUSH  1,0(6) 	push a.x value into tmp
-1722:    LDA  1,-10(2) 	move the adress of ID
-1723:    POP  0,0(6) 	copy bytes
-1724:     ST  0,0(1) 	copy bytes
+1713:    POP  1,0,6 	load adress of lhs struct
+1714:    LDC  0,1,0 	load offset of member
+1715:    ADD  0,0,1 	compute the real adress if pointK
+1716:   PUSH  0,0(6) 	
+1717:    POP  0,0(6) 	load adress from mp
+1718:     LD  1,0(0) 	copy bytes
+1719:   PUSH  1,0(6) 	push a.x value into tmp
+1720:    LDA  1,-9(2) 	move the adress of ID
+1721:    POP  0,0(6) 	copy bytes
+1722:     ST  0,0(1) 	copy bytes
 * -> Id
-1725:     LD  0,-10(2) 	load id value
-1726:   PUSH  0,0(6) 	store exp
+1723:     LD  0,-9(2) 	load id value
+1724:   PUSH  0,0(6) 	store exp
 * <- Id
 * <- assign
-1727:     GO  32,0,0 	go to label
-1728:  LABEL  33,0,0 	generate label
+1725:     GO  32,0,0 	go to label
+1726:  LABEL  33,0,0 	generate label
 * <- repeat
 * ->Single Op
 * -> Id
-1729:    LDA  0,-8(2) 	load id adress
-1730:   PUSH  0,0(6) 	push array adress to mp
+1727:    LDA  0,-8(2) 	load id adress
+1728:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
-1731:    POP  1,0,6 	load adress of lhs struct
-1732:    LDC  0,0,0 	load offset of member
-1733:    ADD  0,0,1 	compute the real adress if pointK
-1734:   PUSH  0,0(6) 	
-1735:    POP  0,0(6) 	load adress from mp
-1736:     LD  1,0(0) 	copy bytes
-1737:   PUSH  1,0(6) 	push a.x value into tmp
-1738:    POP  1,0,6 	load adress of lhs struct
-1739:    LDC  0,1,0 	load offset of member
-1740:    ADD  0,0,1 	compute the real adress if pointK
-1741:   PUSH  0,0(6) 	
-1742:    POP  0,0(6) 	load adress from mp
-1743:     LD  1,0(0) 	copy bytes
-1744:   PUSH  1,0(6) 	push a.x value into tmp
-1745:    POP  1,0,6 	load adress of lhs struct
-1746:    LDC  0,2,0 	load offset of member
-1747:    ADD  0,0,1 	compute the real adress if pointK
-1748:   PUSH  0,0(6) 	
-1749:    POP  0,0(6) 	load adress from mp
-1750:     LD  1,0(0) 	copy bytes
-1751:   PUSH  1,0(6) 	push a.x value into tmp
-1752:    POP  0,0(6) 	pop the adress
-1753:     LD  1,0(0) 	load bytes
-1754:   PUSH  1,0(6) 	push bytes 
+1729:    POP  1,0,6 	load adress of lhs struct
+1730:    LDC  0,0,0 	load offset of member
+1731:    ADD  0,0,1 	compute the real adress if pointK
+1732:   PUSH  0,0(6) 	
+1733:    POP  0,0(6) 	load adress from mp
+1734:     LD  1,0(0) 	copy bytes
+1735:   PUSH  1,0(6) 	push a.x value into tmp
+1736:    POP  1,0,6 	load adress of lhs struct
+1737:    LDC  0,1,0 	load offset of member
+1738:    ADD  0,0,1 	compute the real adress if pointK
+1739:   PUSH  0,0(6) 	
+1740:    POP  0,0(6) 	load adress from mp
+1741:     LD  1,0(0) 	copy bytes
+1742:   PUSH  1,0(6) 	push a.x value into tmp
+1743:    POP  1,0,6 	load adress of lhs struct
+1744:    LDC  0,2,0 	load offset of member
+1745:    ADD  0,0,1 	compute the real adress if pointK
+1746:   PUSH  0,0(6) 	
+1747:    POP  0,0(6) 	load adress from mp
+1748:     LD  1,0(0) 	copy bytes
+1749:   PUSH  1,0(6) 	push a.x value into tmp
+1750:    POP  0,0(6) 	pop the adress
+1751:     LD  1,0(0) 	load bytes
+1752:   PUSH  1,0(6) 	push bytes 
 * <-Single Op
-1755:    POP  0,0(6) 	move result to register
-1756:    OUT  0,0,0 	output value in register[ac / fac]
+1753:    POP  0,0(6) 	move result to register
+1754:    OUT  0,0,0 	output value in register[ac / fac]
 * ->Single Op
 * -> Id
-1757:    LDA  0,-8(2) 	load id adress
-1758:   PUSH  0,0(6) 	push array adress to mp
+1755:    LDA  0,-8(2) 	load id adress
+1756:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
-1759:    POP  1,0,6 	load adress of lhs struct
-1760:    LDC  0,1,0 	load offset of member
-1761:    ADD  0,0,1 	compute the real adress if pointK
-1762:   PUSH  0,0(6) 	
-1763:    POP  0,0(6) 	load adress from mp
-1764:     LD  1,0(0) 	copy bytes
-1765:   PUSH  1,0(6) 	push a.x value into tmp
-1766:    POP  1,0,6 	load adress of lhs struct
-1767:    LDC  0,2,0 	load offset of member
-1768:    ADD  0,0,1 	compute the real adress if pointK
-1769:   PUSH  0,0(6) 	
-1770:    POP  0,0(6) 	load adress from mp
-1771:     LD  1,0(0) 	copy bytes
-1772:   PUSH  1,0(6) 	push a.x value into tmp
-1773:    POP  0,0(6) 	pop the adress
-1774:     LD  1,0(0) 	load bytes
-1775:   PUSH  1,0(6) 	push bytes 
+1757:    POP  1,0,6 	load adress of lhs struct
+1758:    LDC  0,1,0 	load offset of member
+1759:    ADD  0,0,1 	compute the real adress if pointK
+1760:   PUSH  0,0(6) 	
+1761:    POP  0,0(6) 	load adress from mp
+1762:     LD  1,0(0) 	copy bytes
+1763:   PUSH  1,0(6) 	push a.x value into tmp
+1764:    POP  1,0,6 	load adress of lhs struct
+1765:    LDC  0,2,0 	load offset of member
+1766:    ADD  0,0,1 	compute the real adress if pointK
+1767:   PUSH  0,0(6) 	
+1768:    POP  0,0(6) 	load adress from mp
+1769:     LD  1,0(0) 	copy bytes
+1770:   PUSH  1,0(6) 	push a.x value into tmp
+1771:    POP  0,0(6) 	pop the adress
+1772:     LD  1,0(0) 	load bytes
+1773:   PUSH  1,0(6) 	push bytes 
 * <-Single Op
-1776:    POP  0,0(6) 	move result to register
-1777:    OUT  0,0,0 	output value in register[ac / fac]
-1778:    MOV  3,2,0 	restore the caller sp
-1779:     LD  2,0(2) 	resotre the caller fp
-1780:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+1774:    POP  0,0(6) 	move result to register
+1775:    OUT  0,0,0 	output value in register[ac / fac]
+1776:    MOV  3,2,0 	restore the caller sp
+1777:     LD  2,0(2) 	resotre the caller fp
+1778:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-1507:    LDA  7,273(7) 	skip the function body
+1529:    LDA  7,249(7) 	skip the function body
 * function entry:
 * main
-1781:    LDA  3,-1(3) 	stack expand
-1782:    LDC  0,1785(0) 	get function adress
-1783:     ST  0,-14(5) 	set function adress
-1785:    MOV  1,2,0 	store the caller fp temporarily
-1786:    MOV  2,3,0 	exchang the stack(context)
-1787:   PUSH  1,0(3) 	push the caller fp
-1788:   PUSH  0,0(3) 	push the return adress
-* call function: 
-* example
+1779:    LDA  3,-1(3) 	stack expand
+1780:    LDC  0,1783(0) 	get function adress
+1781:     ST  0,-14(5) 	set function adress
+1783:    MOV  1,2,0 	store the caller fp temporarily
+1784:    MOV  2,3,0 	exchang the stack(context)
+1785:   PUSH  1,0(3) 	push the caller fp
+1786:   PUSH  0,0(3) 	push the return adress
+1787:    LDA  3,-2(3) 	stack expand
+1788:    LDC  1,1332(0) 	get function adress from struct
+1789:     ST  1,2(3) 	Init Struct Instance
+* -> assign
+* -> Const
+1790:    LDC  0,100(0) 	load integer const
+1791:   PUSH  0,0(6) 	store exp
+* <- Const
 * -> Id
-1789:     LD  0,-13(5) 	load id value
-1790:   PUSH  0,0(6) 	store exp
+1792:    LDA  0,-3(2) 	load id adress
+1793:   PUSH  0,0(6) 	push array adress to mp
 * <- Id
-1791:    LDC  0,1793(0) 	store the return adress
-1792:    POP  7,0(6) 	ujp to the function body
-1793:    LDA  3,0(3) 	pop parameters
-1794:    MOV  3,2,0 	restore the caller sp
-1795:     LD  2,0(2) 	resotre the caller fp
-1796:  RETURN  0,-1,3 	return to adress : reg[fp]+1
+1794:    POP  1,0,6 	load adress of lhs struct
+1795:    LDC  0,0,0 	load offset of member
+1796:    ADD  0,0,1 	compute the real adress if pointK
+1797:   PUSH  0,0(6) 	
+1798:    POP  1,0(6) 	move the adress of referenced
+1799:    POP  0,0(6) 	copy bytes
+1800:     ST  0,0(1) 	copy bytes
+* <- assign
+* -> Id
+1801:    LDA  0,-3(2) 	load id adress
+1802:   PUSH  0,0(6) 	push array adress to mp
+* <- Id
+1803:    POP  0,0(6) 	
+1804:   PUSH  0,0(3) 	
+* call function: 
+* self__f
+* -> Id
+1805:    LDA  0,-3(2) 	load id adress
+1806:   PUSH  0,0(6) 	push array adress to mp
+* <- Id
+1807:    POP  1,0,6 	load adress of lhs struct
+1808:    LDC  0,1,0 	load offset of member
+1809:    ADD  0,0,1 	compute the real adress if pointK
+1810:   PUSH  0,0(6) 	
+1811:    POP  0,0(6) 	load adress from mp
+1812:     LD  1,0(0) 	copy bytes
+1813:   PUSH  1,0(6) 	push a.x value into tmp
+1814:    LDC  0,1816(0) 	store the return adress
+1815:    POP  7,0(6) 	ujp to the function body
+1816:    LDA  3,0(3) 	pop parameters
+1817:    MOV  3,2,0 	restore the caller sp
+1818:     LD  2,0(2) 	resotre the caller fp
+1819:  RETURN  0,-1,3 	return to adress : reg[fp]+1
 * function end
-1784:    LDA  7,12(7) 	skip the function body
+1782:    LDA  7,37(7) 	skip the function body
 * call main function
-1797:     LD  1,-14(5) 	get main function adress
-1798:    LDC  0,1800(0) 	store the return adress
-1799:    LDA  7,0(1) 	ujp to the function body
-1800:   HALT  0,0,0 	
+1820:     LD  1,-14(5) 	get main function adress
+1821:    LDC  0,1823(0) 	store the return adress
+1822:    LDA  7,0(1) 	ujp to the function body
+1823:   HALT  0,0,0 	

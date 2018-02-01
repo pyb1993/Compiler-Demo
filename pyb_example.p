@@ -11,6 +11,13 @@ listNode * makeNode(int val)
 	return node
 }
 
+struct test{
+
+	int x
+	void self__f(){write self->x}
+
+}
+
 list makeList()
 {
 	int compare(void * a, void * b)
@@ -41,7 +48,7 @@ void example()
 	opera(&l,makeNode(-1))
 	opera(&l,makeNode(-20))
 	opera(&l,makeNode(100))
-	removeList(&l,void*(&x))
+
 	
 	listNode * cur = l.head->next
 	
@@ -57,5 +64,8 @@ void example()
 
 void main()
 {
-	example()
+	struct test t
+	t.x = 100
+	t.self__f()
+	//example()
 }

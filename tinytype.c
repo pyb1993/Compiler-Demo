@@ -28,6 +28,7 @@ FuncType new_func_type(TreeNode * tree)
 	*ftype.return_type = tree->return_type;
 	ftype.params = new_param_node(tree->child[0]);
 	ftype.name = copyString(tree->attr.name);
+	ftype.is_in_struct = false;
 	return ftype;
 }
 

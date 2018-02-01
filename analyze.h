@@ -14,6 +14,7 @@ void  insertParam(TreeNode * t,int scope_depth);
 void deleteVar(TreeNode * t,int scope_depth);
 void deleteVarOfField(TreeNode * tree, int scope);
 void deleteParams(TreeNode * tree, int scope);
+void appendSelfToParamAndSetStruct(TreeNode * function_node);
 
 void gen_converted_type(TreeNode * tree);
 bool isExp(TreeNode * t, ExpKind ekind);

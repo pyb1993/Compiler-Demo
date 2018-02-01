@@ -176,6 +176,6 @@ feature 记录:实现sizeof(exp) 和 sizeof(type)
 
 feature 记录: 实现了import,在analyze部分执行import的逻辑,所以在parse的时候,typedef之类的声明无法传递到别的文件
 			
-
+feacture: self实现为一个隐式传入的指针，难点在于不重复插入。
 
 */

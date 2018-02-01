@@ -152,3 +152,4 @@ void removeList(list * l,void * val)
 	if(cur == l->tail) l->tail = NULL 
 	free(cur)
 }
+

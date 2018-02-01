@@ -38,6 +38,7 @@ typedef struct _FuncType
 {
 	TypeInfo * return_type;
 	ParamNode * params;
+	bool is_in_struct;
 	char * name;
 	int scope_depth;
 	int adress;
