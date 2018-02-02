@@ -791,15 +791,8 @@ TreeNode * term(void)
 		else if (token == LPAREN)
 		{
 			unGetToken();
-			if (t->kind.exp == PointK || t->kind.exp == ArrowK)
-			{
-				// 只能是结构体的成员函数
-				if (strncmp("self__", tokenString, 6) == 0)
-				{
-					t->type.is_const = true;
-				}
-			}
 			t = funcall_exp(t);
+			
 		}
 		else
 		{

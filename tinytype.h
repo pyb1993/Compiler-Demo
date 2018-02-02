@@ -151,4 +151,5 @@ void freeParamNode(ParamNode * p);
 
 void deleteStructType(char * key);
 void initTypeCollection();
+bool isStructFunction(TreeNode * function);
 #endif /* tinytype_h */

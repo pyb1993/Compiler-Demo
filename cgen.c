@@ -348,25 +348,23 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			ParamNode *p = ftype.params;
 
 			// push self parameter
-			if (strncmp("self__", tree->attr.name, 6) == 0)
+			if (isStructFunction(tree->attr.name))
 			{
 				TreeNode * struct_node = tree->child[1]->child[0];
 				TreeNode * exp_node = tree->child[1];
-				if (exp_node->kind.exp == PointK){
-					cGenInAdressMode(struct_node, scope, start_label, end_label);
-					emitRM("POP", ac, 0, mp, "");
-					emitRM("PUSH", ac, 0, sp, "");
-				}
-				else if (exp_node->kind.exp == ArrowK){
-				
-				}
-			}
+				ExpKind kind = exp_node->kind.exp;
 
+				if (kind == PointK) { cGenInAdressMode(struct_node, scope, start_label, end_label); }
+				else if (kind == ArrowK) { cGenInValueMode(struct_node, scope, start_label, end_label); }
+				emitRM("POP", ac, 0, mp, "");
+				emitRM("PUSH", ac, 0, sp, "");
+			}
 
 			pushParam(e, p, scope + 1);
 			emitComment("call function: ");
 			emitComment(tree->attr.name);
 			jumpToFunction(tree, NULL, scope);
+			if (isStructFunction(tree)){ emitRM("LDA", sp, 1, sp, "pop parameters");}
 			popParam(p);
 			break;
 		case SingleOpK:

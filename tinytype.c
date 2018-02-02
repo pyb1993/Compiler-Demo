@@ -315,7 +315,14 @@ Member* getMember(StructType stype,char * name)
 	{
 		members = members->next_member;
 	}
-	assert(members != NULL || "member is not defined!");
+	assert(members != NULL || !"member is not defined!");
 	return members;
 }
 
+// 判断一个AST节点是不是含有self指针的函数(满足名字)
+// TODO:加上对于
+bool isStructFunction(const char * fname)
+{
+	if (fname == NULL) return false;
+	return (strncmp(fname, "self__", 6) == 0);
+}

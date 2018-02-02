@@ -1,4 +1,4 @@
-import list
+/*import list
 typedef struct list list
 typedef struct listNode listNode
 
@@ -11,12 +11,6 @@ listNode * makeNode(int val)
 	return node
 }
 
-struct test{
-
-	int x
-	void self__f(){write self->x}
-
-}
 
 list makeList()
 {
@@ -61,11 +55,25 @@ void example()
 	write *(l.head->next->value)
 	write *(l.tail->value)
 }
+*/
+
+struct test{
+
+	int x
+	void self__f()
+	{
+		write self->x
+		self->x += -11
+	}
+
+}
 
 void main()
 {
+	void f(){}
 	struct test t
 	t.x = 100
 	t.self__f()
+	write t.x
 	//example()
 }

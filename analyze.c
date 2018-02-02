@@ -678,6 +678,9 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 						(left->type.point_type.pointKind->is_const),
 						"only const char * is available for static string");
 	  }
+	  ERROR_UNLESS(left->type.typekind != Func || !isStructFunction(left->attr.name),
+		  "funtion bind to struct cannot be assigned");
+	  ERROR_UNLESS(isStructFunction(right->attr.name) == false, "struct function should not be assiged to others");
 	  ERROR_UNLESS(left->type.is_const == false, "const cannot be assigned");
 	  ERROR_UNLESS(right->nodekind == ExpK,"const variable cannot be assigned");
 	  ERROR_UNLESS(!is_basic_type(left->type, Array), "Array canot be assigned");
