@@ -16,7 +16,6 @@
 
 /* the hash table */
 static BucketList hashTable[SIZE];
-
 static int hash(char * key);
 static BucketList construct_node(char * name, int lineno, int loc, int size,int depth,TypeInfo type);
 static BucketList insert_into_list( BucketList list,BucketList inserted);
@@ -201,3 +200,10 @@ void printSymTab(FILE * listing)
      
     }
 } /* printSymTab */
+
+
+void clearSymTable()
+{
+	int size = sizeof(hashTable);
+	memset(hashTable, 0,sizeof(hashTable));
+}

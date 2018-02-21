@@ -103,7 +103,9 @@ Member * new_member_list(TreeNode * tree,int offset)
 		member->offset = offset;
 		member->member_name = copyString(tree->attr.name);
 		offset += var_size_of_type(tree->type);
-	
+		if (isStructFunction(member->member_name)){
+			int x = 1;
+		}
 		member->next_member = new_member_list(tree->sibling, offset);
 		return member;
 	}
@@ -308,6 +310,16 @@ ensure_type_defined(char * key)
 	return getIndexOfSType(key) != -1;
 }
 
+bool memberExist(StructType stype, char * name){
+
+	Member* members = stype.members;
+	while (members != NULL && strcmp(members->member_name, name) != 0)
+	{
+		members = members->next_member;
+	}
+	return members != NULL;
+}
+
 Member* getMember(StructType stype,char * name)
 {
 	Member* members = stype.members;
@@ -315,7 +327,9 @@ Member* getMember(StructType stype,char * name)
 	{
 		members = members->next_member;
 	}
-	assert(members != NULL || !"member is not defined!");
+	if (members == NULL){
+		assert(members != NULL || !"member is not defined!");
+	}
 	return members;
 }
 

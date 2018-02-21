@@ -36,23 +36,99 @@ typedef struct listNode listNode
     // 链表所包含的节点数量
     int len
 
-
     // 节点值复制函数
     void* dup (void *ptr){}
 
     // 节点值释放函数，注意不是系统free函数
-    void free (void *ptr){}
+    void freeList (void *ptr){}
 
 	// 节点值对比函数 -1 代表 小于 0 等于, 1大于
     int match (void *ptr, void *key){} 
+	
+	/*删除一个给定节点的值*/
+	void self__removeList(void * val)
+	{
+		if(self->len <= 0) return
+		self->len--
+		listNode * cur = self->head->next
+		while(cur != NULL && self->match(cur->value,val) != 0)
+		{
+			cur = cur->next
+		}
+			
+		if(cur == NULL) return
+		listNode * prev = cur->prev
+		listNode * next = cur->next
+		prev->next = next
+		if(next != NULL) next->prev = prev
+		if(cur == self->tail) {self->tail = prev }
+		free(cur)
+	}
+
+	/**********append一个节点***************/
+	void self__append(listNode * node)
+	{
+		if(node == NULL) return
+		self->len++	
+		self->tail->next = node
+		node->prev = self->tail
+		node->next = NULL
+
+		self->tail = node
+	}
+
+
+	/*********按顺序插入一个节点***************/
+void self__insertSortedList(listNode * node)
+{
+	if (node == NULL) return
+	int x = 10
+	self->len += 1
+	listNode * cur = self->head
+	while(cur->next != NULL )
+	{
+		if(self->match(cur->next->value, node->value) >= 0){ break }
+		cur = cur->next
+	}
+	
+	listNode * cur_next = cur->next
+	cur->next = node
+	node->next = cur_next
+	node->prev = cur
+	if(cur_next != NULL) {cur_next->prev = node} // case1 cur node cur->next
+	else {self->tail = node	} // case2 cur node NULL
+}
+
+	void self__popRight()
+	{
+		if(self == NULL || self->len <= 0) return
+		self->len--
+		listNode * pre = self->tail->prev
+		pre->next = NULL
+		free(self->tail)
+		self->tail = pre
+	}
+
+		void self__popLeft()
+	{	
+		if(self == NULL || self->len <= 0) return
+		self->len--
+
+		listNode * next = self->head->next->next // maybe NULL
+		free(self->head->next)
+
+		self->head->next = next
+		if(next != NULL){
+			next->prev = self->head
+		} 
+	}
+
 } 
 typedef struct list list
-
 /*********创建一个链表节点****************/
 listNode * createListNode()
 {
 	listNode  * node = malloc(sizeof( listNode))
-
 	node->prev = NULL 
 	node->next = NULL
 	node->value = NULL
@@ -69,87 +145,3 @@ list createList()
 	l.len = 0
 	return l
 }
-
-
-/*********按顺序插入一个节点***************/
-void insertSortedList(list * l, listNode * node)
-{
-	if (node == NULL) return
-	
-	l->len += 1
-	listNode * cur = l->head
-
-	while(cur->next != NULL )
-	{
-		if(l->match(cur->next->value, node->value) >= 0){ break }
-		cur = cur->next
-	}
-	
-	listNode * cur_next = cur->next
-	cur->next = node
-	node->next = cur_next
-	node->prev = cur
-	if(cur_next != NULL) {cur_next->prev = node} // case1 cur node cur->next
-	else {l->tail = node	} // case2 cur node NULL
-}
-
-/**********append一个节点***************/
-void append(list * l,listNode * node)
-{
-	if(l == NULL ) return
-	if(node == NULL) return
-		
-	l->tail->next = node
-	node->prev = l->tail
-	node->next = NULL
-
-	l->tail = node
-}
-
-
-// 删除一个节点
-void popRight( list * l)
-{
-	if(l == NULL || l->len <= 0) return
-	l->len--
-
-	listNode * pre = l->tail->prev
-	pre->next = NULL
-	free(l->tail)
-	l->tail = pre
-}
-
-void popLeft(list * l)
-{	
-	if(l == NULL || l->len <= 0) return
-	l->len--
-
-	listNode * next = l->head->next->next // maybe NULL
-	free(l->head->next)
-
-	l->head->next = next
-	if(next != NULL){
-		next->prev = l->head
-	} 
-}
-
-void removeList(list * l,void * val)
-{
-	if(l == NULL || l->len <= 0) return
-	l->len--
-	listNode * cur = l->head->next
-	while(cur != NULL && l->match(cur->value,val) != 0)
-	{
-		cur = cur->next
-	}
-
-	if(cur == NULL) return
-
-	listNode * prev = cur->prev
-	listNode * next = cur->next
-	prev->next = next
-	if(next != NULL) next->prev = prev
-	if(cur == l->tail) l->tail = NULL 
-	free(cur)
-}
-

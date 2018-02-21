@@ -23,10 +23,8 @@ static void ERROR_UNLESS(bool cond, char * msg)
 	
 }
 
-
-
 static int location = 0;
-static int stack_offset = -2;
+int stack_offset = -2;
 static int while_depth = 0;
 static int case_depth = 0;
 static bool allowed_empty_exp = false;
@@ -42,7 +40,6 @@ static bool checkInCase();
 static void incrWhileDepth(int);
 static void incrCaseDepth(int);
 static void checkEmptyExp(TreeNode *);
-static void stInsertVar(TreeNode *,int);
 
 static void defineError(TreeNode * t ,char * msg)
 {
@@ -91,7 +88,8 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		}
 
 		int var_size = var_size_of(t);
-		if (is_basic_type(t->type, Array)){
+		if (is_basic_type(t->type, Array))
+		{
 			var_size = 1;
 			TypeInfo point_type; // not use createTypeInfoFromBasic to avoid alloc and free memory
 			point_type.typekind = Pointer;
@@ -111,7 +109,9 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 	}
 }
 
- void __deleteVarOfField(TreeNode * tree,int scope)
+ /*local function的stack由CALLER自己来控制(因为需要创建新的stack)
+   普通的作用域则自己控制	*/
+ void __deleteVarOfField(TreeNode * tree,int scope,bool in_block)
  {
 	 TreeNode * t = tree;
 	 if (scope == 0) return;
@@ -120,17 +120,27 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 if (isStmt(t, DeclareK))
 		 {
 			 deleteVar(t, scope);
-			 stack_offset += var_size_of(t);
+			 if (in_block){
+				 stack_offset += var_size_of(t);
+			 }
 		 }
 		 t = t->sibling;
 	 }
  }
 
- // delete all local variable from the stmtseq
+ // delete all local variable from the block field
  void deleteVarOfField(TreeNode * tree, int scope)
  {
-	 __deleteVarOfField(tree, scope);
+	 __deleteVarOfField(tree, scope,true);
  }
+
+ // delete all local variable from the FUNCTION
+ void deleteVarOfFunction(TreeNode * tree, int scope)
+ {
+	 __deleteVarOfField(tree, scope, false);
+ }
+
+
 
  // delete all params from the stmtseq
  void deleteParams(TreeNode * tree, int scope)
@@ -171,13 +181,16 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 				// 可能需要隐式传入一个self参数
 				t->type.func_type = new_func_type(t);//allocate memory for params/function name
 				appendSelfToParamAndSetStruct(t);
-                stInsertVar(t,scope);
-                insertTree(t->child[1],scope + 1 );
+				stInsertVar(t,scope);
 				insertParam(t->child[0], scope + 1);// use st_insert(share memory of name)
+				int old_off = stack_offset;
+				stack_offset = -2;
+				insertTree(t->child[1],scope + 1 );
+				stack_offset = old_off;
+				deleteVarOfFunction(t->child[1], scope + 1);
 				deleteParams(t->child[0], scope + 1);
-                deleteVarOfField(t->child[1], scope + 1);
 			  }
-				else{
+			else{
                 stInsertVar(t,scope);
             }
 			 break;
@@ -264,9 +277,9 @@ void buildSymtab(TreeNode * syntaxTree)
 { 
 	initTypeCollection();
 	insertTree(syntaxTree, 0);// insert node and check them
-	printf("insert tree is done %d \n",stack_offset);
+	if(TraceAnalyze) printf("insert tree is done %d \n",stack_offset);
 	checkTree(syntaxTree, NULL, 0);
-	printf("check tree is done %d \n", stack_offset);
+	if (TraceAnalyze) printf("check tree is done %d \n", stack_offset);
 
 }
 
@@ -509,17 +522,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			checkNodeType(t->child[0],current_function,scope);
             // todo now the current function may be struct
             TypeInfo function_return_type;
-            if(setStructInfo(NULL,0) == NULL)
-            {
-                function_return_type = *st_lookup_type(current_function).func_type.return_type;
-            }
-            else
-            {
-                // todo : the return_type share same memory with function_return_type!!!
-                StructType stype = getStructType(setStructInfo(NULL, 0));
-                function_return_type = *getMember(stype,current_function)->typeinfo.func_type.return_type;
-            }
-                
+			function_return_type = *st_lookup_type(current_function).func_type.return_type;
 			TypeInfo return_exp_type = t->child[0] == NULL ? createTypeFromBasic(Void) : t->child[0]->type;
 			if (!can_convert(return_exp_type, function_return_type))
 			{
@@ -564,6 +567,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case DeclareK:
 			if (is_basic_type(t->type,Func))
 			{
+				//这里不需要考虑STACK_OFFSET
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
@@ -678,8 +682,8 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 						(left->type.point_type.pointKind->is_const),
 						"only const char * is available for static string");
 	  }
-	  ERROR_UNLESS(left->type.typekind != Func || !isStructFunction(left->attr.name),
-		  "funtion bind to struct cannot be assigned");
+	  //ERROR_UNLESS(left->type.typekind != Func || !isStructFunction(left->attr.name),
+		//  "funtion bind to struct cannot be assigned");
 	  ERROR_UNLESS(isStructFunction(right->attr.name) == false, "struct function should not be assiged to others");
 	  ERROR_UNLESS(left->type.is_const == false, "const cannot be assigned");
 	  ERROR_UNLESS(right->nodekind == ExpK,"const variable cannot be assigned");
@@ -736,14 +740,14 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 			  (isExp(t,SingleOpK) && (t->attr.op == PPLUS || t->attr.op == MMINUS)),
 			  "empty exp beyond call and assign or ++/-- is not allowed!");
 	 // todo; check all function exp
-     /*if (isExp(t, FuncallK))
+     if (isExp(t, FuncallK))
 	 {
 		 TreeNode * function_format = t->child[1];
 		 if (function_format->kind.exp == IdK){
 			 ERROR_UNLESS(is_basic_type(*st_lookup_type(t->attr.name).func_type.return_type, Void),
 				 "only function return nothing can be the empty exp");
 		 }
-	 }*/
+	 }
  }
 
 void stInsertVar(TreeNode * t,int scope)
@@ -778,10 +782,11 @@ void appendSelfToParamAndSetStruct(TreeNode * function_node)
 	TreeNode* t;
 	if ((struct_name = setStructInfo(NULL, 0)) == NULL) return;
 	if (function_node->child[0] != NULL && 
-		strcmp("self", function_node->child[0]->attr.name) == 0)
+		strcmp(function_node->child[0]->attr.name,"self") == 0)
 		return;//已添加过一次
 
-	if (strncmp("self__", function_node->attr.name, 6) != 0) return;
+	// 不是self函数
+	if (isStructFunction(function_node->attr.name) == 0) return;
 	function_node->type.func_type.is_in_struct = true;
 
 	t = newStmtNode(DeclareK);

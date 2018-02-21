@@ -53,7 +53,7 @@ void compile(char *filename, char * targetFileName)
 {
 
 	TreeNode *t = parse();
-	printTree(t);
+	if(TraceParse) printTree(t);
 
 	if (!Error)
 	{

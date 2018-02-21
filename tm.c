@@ -383,7 +383,7 @@ STEPRESULT stepTM(void)
 
 	//printf("run ins:%d\n", pc_pos);
 
-	if (pc_pos == 957)
+	if (pc_pos == 383)
 	{
 		ok = 36;
 	}
@@ -431,7 +431,7 @@ STEPRESULT stepTM(void)
 	{ /* RR instructions */
 	case opHALT:
 		/***********************************/
-		printf("HALT: %1d,%1d,%1d\n", r, s, t);
+		if(traceflag) printf("HALT: %1d,%1d,%1d\n", r, s, t);
 		return srHALT;
 		/* break; */
 
@@ -465,13 +465,13 @@ STEPRESULT stepTM(void)
 
 	case opOUT:
 		if (same_reg_type(r, ac)) {
-			if (s == 0) printf("OUT instruction prints int: %d\n", reg[r]);
-			else if (s == 1){ printf("OUT instruction prints char: %c\n", reg[r]); }
-			else if (s == 2){ int p = reg[r]; while (dMem[p] != '\0') putc(dMem[p++], stdout); putc('\n',stdout); }
+			if (s == 0) fprintf(listing,"OUT instruction prints int: %d\n", reg[r]);
+			else if (s == 1){ fprintf(listing,"OUT instruction prints char: %c\n", reg[r]); }
+			else if (s == 2){ int p = reg[r]; while (dMem[p] != '\0') putc(dMem[p++], listing); putc('\n',listing); }
 		}
 		else if (same_reg_type(r, fac)) {
 			flt_num = flt_from_reg(r);
-			printf("OUT instruction prints float: %f\n", flt_num);
+			fprintf(listing,"OUT instruction prints float: %f\n", flt_num);
 		}
 		break;
 	case opMOV:	 
@@ -528,7 +528,171 @@ STEPRESULT stepTM(void)
 } /* stepTM */
 
 /********************************************/
-int doCommand(void)
+
+int executeCommand(void){
+	char cmd = 'g';
+}
+
+int doCommand(char cmd){
+	int stepcnt = 0, i;
+	int printcnt;
+	int stepResult;
+	int regNo, loc;	
+	
+	switch (cmd)
+	{
+	case 't':
+		/***********************************/
+		traceflag = !traceflag;
+		printf("Tracing now ");
+		if (traceflag) printf("on.\n"); else printf("off.\n");
+		break;
+
+	case 'h':
+		/***********************************/
+		printf("Commands are:\n");
+		printf("   s(tep <n>      "\
+			"Execute n (default 1) TM instructions\n");
+		printf("   g(o            "\
+			"Execute TM instructions until HALT\n");
+		printf("   r(egs          "\
+			"Print the contents of the registers\n");
+		printf("   i(Mem <b <n>>  "\
+			"Print n iMem locations starting at b\n");
+		printf("   d(Mem <b <n>>  "\
+			"Print n dMem locations starting at b\n");
+		printf("   t(race         "\
+			"Toggle instruction trace\n");
+		printf("   p(rint         "\
+			"Toggle print of total instructions executed"\
+			" ('go' only)\n");
+		printf("   c(lear         "\
+			"Reset simulator for new execution of program\n");
+		printf("   h(elp          "\
+			"Cause this list of commands to be printed\n");
+		printf("   q(uit          "\
+			"Terminate the simulation\n");
+		break;
+
+	case 'p':
+		/***********************************/
+		icountflag = !icountflag;
+		printf("Printing instruction count now ");
+		if (icountflag) printf("on.\n"); else printf("off.\n");
+		break;
+
+	case 's':
+		/***********************************/
+		if (atEOL())  stepcnt = 1;
+		else if (getNum())  stepcnt = abs(num);
+		else   printf("Step count?\n");
+		break;
+
+	case 'g':   stepcnt = 1;     break;
+
+	case 'r':
+		/***********************************/
+		for (i = 0; i < NO_REGS; i++)
+		{
+			printf("%1d: %4d    ", i, reg[i]);
+			if ((i % 4) == 3) printf("\n");
+		}
+		break;
+
+	case 'i':
+		/***********************************/
+		printcnt = 1;
+		if (getNum())
+		{
+			iloc = num;
+			if (getNum()) printcnt = num;
+		}
+		if (!atEOL())
+			printf("Instruction locations?\n");
+		else
+		{
+			while ((iloc >= 0) && (iloc < IADDR_SIZE)
+				&& (printcnt > 0))
+			{
+				writeInstruction(iloc);
+				iloc++;
+				printcnt--;
+			}
+		}
+		break;
+
+	case 'd':
+		/***********************************/
+		printcnt = 1;
+		if (getNum())
+		{
+			dloc = num;
+			if (getNum()) printcnt = num;
+		}
+		if (!atEOL())
+			printf("Data locations?\n");
+		else
+		{
+			while ((dloc >= 0) && (dloc < DADDR_SIZE)
+				&& (printcnt > 0))
+			{
+				printf("%5d: %5d\n", dloc, dMem[dloc]);
+				dloc++;
+				printcnt--;
+			}
+		}
+		break;
+
+	case 'c':
+		/***********************************/
+		iloc = 0;
+		dloc = 0;
+		stepcnt = 0;
+		for (regNo = 0; regNo < NO_REGS; regNo++)
+			reg[regNo] = 0;
+		dMem[0] = DADDR_SIZE - 1;
+		for (loc = 1; loc < DADDR_SIZE; loc++)
+			dMem[loc] = 0;
+		break;
+
+	case 'q': return FALSE;  /* break; */
+
+	default: printf("Command %c unknown.\n", cmd); break;
+	}  /* case */
+
+	stepResult = srOKAY;
+	if (stepcnt > 0)
+	{
+		if (cmd == 'g')
+		{
+			stepcnt = 0;
+			while (stepResult == srOKAY)
+			{
+				iloc = reg[PC_REG];
+				if (traceflag) writeInstruction(iloc);
+				stepResult = stepTM();
+				stepcnt++;
+			}
+			if (icountflag)
+				printf("Number of instructions executed = %d\n", stepcnt);
+		}
+		else
+		{
+			while ((stepcnt > 0) && (stepResult == srOKAY))
+			{
+				iloc = reg[PC_REG];
+				if (traceflag) writeInstruction(iloc);
+				stepResult = stepTM();
+				stepcnt--;
+			}
+		}
+		if(traceflag) printf("%s\n", stepResultTab[stepResult]);
+	}
+	return TRUE;
+}
+
+
+int doCommand2(void)
 {
 	char cmd;
 	int stepcnt = 0, i;

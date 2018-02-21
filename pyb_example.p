@@ -1,4 +1,4 @@
-/*import list
+import list
 typedef struct list list
 typedef struct listNode listNode
 
@@ -27,53 +27,39 @@ list makeList()
 	return l
 }
 
-void test(list * l){
-	write l
-	write l->head
-}
 
 void example()
 {
-	void opera(list * l,listNode * node){}
-	opera = insertSortedList
 	list l = makeList()
+	int i = 100
+	void opera(list * l,listNode * node){}
+ 
 
-	opera(&l,makeNode(1)) 
-	opera(&l,makeNode(-1))
-	opera(&l,makeNode(-20))
-	opera(&l,makeNode(100))
+	opera = insertSortedList
+	opera(&l,makeNode(-1)) 
+	opera(&l,makeNode(1))
+	opera(&l,makeNode(-20)) 
+ 	opera(&l,makeNode(100)) 
 
-	
 	listNode * cur = l.head->next
-	
-	while(cur != NULL){
+	while(cur != NULL)
+	{
 		write *(cur->value)
 		cur = cur->next
 	}
-
-
-	write *(l.head->next->value)
-	write *(l.tail->value)
-}
-*/
-
-struct test{
-
-	int x
-	void self__f()
+	
+	l.self__removeList2(&i)
+	cur = l.head->next
+	while(cur != NULL)
 	{
-		write self->x
-		self->x += -11
+		write *(cur->value)
+		cur = cur->next
 	}
-
 }
+
+
 
 void main()
 {
-	void f(){}
-	struct test t
-	t.x = 100
-	t.self__f()
-	write t.x
-	//example()
+	example()
 }

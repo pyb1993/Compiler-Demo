@@ -10,5 +10,5 @@
 
 
 void codeGen(TreeNode * syntaxTree, char * codefile);
-
+void clearGode();
 #endif /* cgen_h */

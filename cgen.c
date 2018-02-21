@@ -20,6 +20,7 @@ static void emitLabel(int);
 static void emitGoto(int);
 static void setFunctionAdress(char * current_function,char *, int scope);
 static void jumpToFunction(TreeNode *,char *,int scope);
+static void pushSelfParam(TreeNode * tree, int scope);
 static bool checkInMainModule();
 
 static void cgen_assign(TreeNode *,TreeNode *,int);
@@ -153,8 +154,14 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
     
 		case WriteK:
             /* generate code for expression to write */
+			if (tree->child[0]->kind.exp == FuncallK)
+			{
+				int a = 0;
+			}
 			cGenInValueMode(tree->child[0], scope, start_label, end_label);
 			type = tree->child[0]->type;
+			const char * name = tree->child[0]->attr.name;
+		
 			int mode = 0;// 0代表数,1代表字符,2代表字符串
 			emitRM("POP", get_reg(getBasicType(type)), 0, mp, "move result to register");
 			if (is_basic_type(type, Char)) mode = 1;
@@ -207,40 +214,37 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitComment(current_function);
 
 				char * last_current = current_function;
-				if (scope > 0) { insertNode(tree, scope); }
+			
+				if (scope > 0) { 
+					stInsertVar(tree, scope);
+				}
 
-				emitRM("LDA", sp, -1, sp, "stack expand");
-
+				int old_stack = stack_offset;
+				stack_offset = -2;
+				if (strcmp(current_function, "main") != 0){
+					emitRM("LDA", sp, -1, sp, "stack expand for function variable");
+				}
 				insertParam(tree->child[0], scope + 1);
-				// set function adress
-				if (setStructInfo(NULL, 0) == NULL ){
-					setFunctionAdress(tree->attr.name, NULL,scope);
-				}
-				else{// declare function in struct
-					setFunctionAdress(tree->attr.name, setStructInfo(NULL, 0),scope);
-				}
-				int skip_adress = emitSkip(1);
-
+				int func_end = genLabel();
+				setFunctionAdress(tree->attr.name, setStructInfo(NULL, 0), scope);
 				// assume the caller move return adress in reg[ac]
+				emitGoto(func_end);
 				emitRO("MOV", ac1, fp, 0,"store the caller fp temporarily");// store the caller fp
 				emitRO("MOV", fp,  sp, 0, "exchang the stack(context)");//reg[fp] = reg[sp]
 
 				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
 				emitRM("PUSH", ac,  0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
-				
+			
 				cGenInValueMode(tree->child[1], scope + 1, start_label, end_label);// generate code for the function body,insert local variable
+				stack_offset = old_stack;
 				deleteParams(tree->child[0], scope + 1);
-				deleteVarOfField(tree->child[1], scope + 1);
-
+				deleteVarOfFunction(tree->child[1], scope + 1);
 				//todo this should be moved to return node
 				emitRO("MOV", sp, fp, 0, "restore the caller sp");// restore the sp;reg[sp] = reg[fp]
 				emitRM("LD", fp, 0, fp, "resotre the caller fp");//resotre the fp;reg[fp] = dMem[reg[fp]]
 				emitRO("RETURN", 0, -1, sp, "return to adress : reg[fp]+1");// execute reg[pc] = return adress
-				emitComment("function end");
-				int leave_adress = emitSkip(0);
-				emitBackup(skip_adress);
-				emitRM_Abs("LDA",pc,leave_adress,"skip the function body");
-				emitRestore();
+				emitComment("function end:");
+				emitLabel(func_end);
 				current_function = last_current;
 			}
 			else
@@ -254,10 +258,9 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 		case StructDefineK:
 		{
 			char * last_sname = setStructInfo(tree->attr.name,1);
-            
 			cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);// will insert all function
             deleteVarOfField(tree->child[0],scope + 1 );
-            emitRO("MOV",sp,fp,0,"resotre stack in struct");
+            //emitRO("MOV",sp,fp,0,"resotre stack in struct");
             setStructInfo(last_sname, 1);//restore
 			break;
 		}
@@ -347,24 +350,14 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			FuncType ftype = tree->child[1]->type.func_type;
 			ParamNode *p = ftype.params;
 
-			// push self parameter
-			if (isStructFunction(tree->attr.name))
-			{
-				TreeNode * struct_node = tree->child[1]->child[0];
-				TreeNode * exp_node = tree->child[1];
-				ExpKind kind = exp_node->kind.exp;
-
-				if (kind == PointK) { cGenInAdressMode(struct_node, scope, start_label, end_label); }
-				else if (kind == ArrowK) { cGenInValueMode(struct_node, scope, start_label, end_label); }
-				emitRM("POP", ac, 0, mp, "");
-				emitRM("PUSH", ac, 0, sp, "");
+			pushParam(e, p, scope + 1);
+			if (isStructFunction(tree->attr.name)){ 
+				pushSelfParam(tree, scope); 
 			}
 
-			pushParam(e, p, scope + 1);
 			emitComment("call function: ");
 			emitComment(tree->attr.name);
 			jumpToFunction(tree, NULL, scope);
-			if (isStructFunction(tree)){ emitRM("LDA", sp, 1, sp, "pop parameters");}
 			popParam(p);
 			break;
 		case SingleOpK:
@@ -457,8 +450,11 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 
 			break;
 		case AssignK:
+		{
 			if (TraceCode) emitComment("-> assign");
 			cgen_assign(tree->child[0], tree->child[1], scope);
+			const char * name = tree->child[0]->attr.name;
+		
 			if (!tree->empty_exp)
 			{
 				// generate value for write  x = y
@@ -466,6 +462,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			}
 			if (TraceCode)  emitComment("<- assign");
 			break; /* assign_k */
+		}
 		case IndexK:
 			if (TraceCode) emitComment("->index k");
 			
@@ -593,7 +590,7 @@ void codeGen(TreeNode * syntaxTree, char * codefile)
 { 
 	char *s = copyString("File: ");
     strcat(s,codefile);
-    emitComment(s);
+     emitComment(s);
     /* generate st\andard prelude */
     emitComment("Standard prelude:");
 	emitRM("LDC", mp, MP_ADRESS, 0, "load mp adress");//reg[mp] = dMem[reg[ac]] 
@@ -678,6 +675,7 @@ void pushParam(TreeNode * e,ParamNode * p,int scope)
 		assert(p == NULL);
 		return;
 	}
+	emitComment("push function parameters");
 	genExp(e, scope,-1,-1,false);// very important! cannot use cGen to avoid cGen generate exp list automatically
 
 	int exp_reg = get_reg(getBasicType(e->converted_type));
@@ -954,22 +952,29 @@ void cgenPushObj(int origin_reg, int target_reg, int offset)
 	 emitRM("PUSH", target_reg, 0, target_adress_reg, "PUSH bytes");
  }
 
- void setFunctionAdress(char * fname,char * struct_name, int scope)
+ void setFunctionAdress(char * fname, char * struct_name,  int scope)
  {
-	 if (struct_name == NULL)
+	 StructType stype;
+	 bool is_struct_function = false;
+	
+	 // 该function可能会是struct里面函数的局部函数
+	 if (struct_name != NULL )
 	 {
+         stype = getStructType(struct_name);
+		 is_struct_function = memberExist(stype, fname);
+	 }
+
+	 if (is_struct_function){
+		 Member * mem = getMember(stype, fname);
+		 mem->typeinfo.func_type.adress = emitSkip(0) + 1;
+	 }
+	 else{
 		 int entry_adress = emitSkip(0) + 3;
 		 int loc = st_lookup(fname);
 		 emitRM("LDC", ac, entry_adress, 0, "get function adress");
 		 emitRM("ST", ac, loc, get_stack_bottom(scope), "set function adress");
 	 }
-	 else
-	 {
-         // set adress for struct type
-         StructType stype = getStructType(struct_name);
-         Member * mem = getMember(stype,fname);
-         mem->typeinfo.func_type.adress = emitSkip(0) + 1;
-	 }
+
  }
 
  void jumpToFunction(TreeNode * tree,char * main_func,int scope)
@@ -984,8 +989,11 @@ void cgenPushObj(int origin_reg, int target_reg, int offset)
 		 emitRM("LDA", pc, 0, ac1, "ujp to the function body");
 	 }
 	 else{
-		 cGenInValueMode(tree->child[1], scope, -1, -1);// now adress in mp
+		 cGenInValueMode(tree->child[1], scope, -1, -1);// now value in mp
 		 emitRM("LDC", ac, emitSkip(0) + 2, 0, "store the return adress");
+		 if (strcmp(tree->attr.name, "free") == 0){
+			 int x = 111;
+		 }
 		 emitRM("POP", pc, 0, mp, "ujp to the function body");
 	 }
  }
@@ -1021,4 +1029,20 @@ void cgenCodeForInsertNode(TreeNode * t, int scope)
 static bool checkInMainModule()
 {
 	return st_get_node("main") != NULL;
+}
+
+void pushSelfParam(TreeNode * tree,int scope)
+{
+	TreeNode * struct_node = tree->child[1]->child[0];
+	TreeNode * exp_node = tree->child[1];
+	ExpKind kind = exp_node->kind.exp;
+
+	if (kind == PointK) { cGenInAdressMode(struct_node, scope, -1, -1); }
+	else if (kind == ArrowK) { cGenInValueMode(struct_node, scope, -1, -1); }
+	emitRM("POP", ac, 0, mp, "");
+	emitRM("PUSH", ac, 0, sp, "");
+
+}
+void clearGode(){
+	emitBackup(0);
 }

@@ -22,4 +22,5 @@ int  st_lookup_scope(char * name);
 int st_lookup(char * name); /*   Function st_lookup returns the memory location of a variable or -1 if not found*/
 void printSymTab(FILE * listing);
 bool is_duplicate_var(char * name, int depth);
+void clearSymTable();
 #endif

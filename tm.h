@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "globals.h"
 
 
 /******* type  *******/
@@ -72,7 +73,7 @@ typedef struct {
 
 
 int readInstructions(FILE *pgm);
-int doCommand(void);
+int doCommand(char);
 
 
 

@@ -18,27 +18,7 @@ write t2
 write t2 / 3.0
 
 /*
-float n
-n = 10
-float f(int n)
-{
-	if (n <= 2)
-		return 1
-	else
-		return f(n-1)+f(n-2)
-}
 
-float f2(int a,int b,float c)
-{
-    return a * b * c
-}
-
-
-void main()
-{
-	write f(f2(f2(4,f(4),0.4),1,1))
-	write f(8) + f2(1,2,6)
-}
 
 
 
@@ -177,5 +157,10 @@ feature 记录:实现sizeof(exp) 和 sizeof(type)
 feature 记录: 实现了import,在analyze部分执行import的逻辑,所以在parse的时候,typedef之类的声明无法传递到别的文件
 			
 feacture: self实现为一个隐式传入的指针，难点在于不重复插入。
+bug: 出现一个比较	诡异的问题，在局部函数里调用成员函数会出现	
+	诡异的错误
+
+bug记录:需要处理在struct里面的函数里面定义的局部函数
+bug记录:需将局部函数的stack_offset在cgen里面也要处理,因为setFunctionAdress用到了
 
 */
