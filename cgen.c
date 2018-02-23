@@ -302,17 +302,16 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 				break;
 			case String:
 				if (tree->attr.name != NULL){
-					int i = 0;
 					char * name = tree->attr.name;
 					for (int i = 0; *name != '\0'; i++){
 						emitRM("LDC", ac, *name, 0, "load char const");// reg[ac] = tree->ttr.val.integer
-						emitRM("ST", ac, tree->attr.val.integer + i, cp, "store exp");
+						emitRM("ST", ac, tree->attr.val.integer + i, cp, "store exp");// dMem[reg[cp] + offset] = ac
 						name++;
 					}
 					free(tree->attr.name);
 					tree->attr.name = NULL;
 				}
-				emitRM("LDA", ac, tree->attr.val.integer , cp, "load char const");// reg[ac] = tree->ttr.val.integer
+				emitRM("LDA", ac, tree->attr.val.integer, cp, "load char const");// reg[ac] = tree->ttr.val.integer
 				emitRM("PUSH", ac, 0, mp, "store exp");
 				break;
 			default:
@@ -325,7 +324,6 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
         case IdK :
             if (TraceCode) emitComment("-> Id");
             loc = st_lookup(tree->attr.name);
-			
 			if (checkInAdressMode() || is_basic_type(tree->converted_type, Array))
 			{
 				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			

@@ -40,6 +40,10 @@ static FILE * file;
 void setTestFailLog(char * msg);
 void testListOperation();
 void testListInsert();
+
+void testHash();
+void testHashPut();
+
 void testFunctionCall();
 void testInteger(int ret, int real);
 void skipInstruction();
@@ -164,7 +168,17 @@ void testFunctionCall()
 	testFloat(13.20, getFloatNum());
 }
 
+void testHash(){
+	AROUND_UNIT_TEST("test Hash", testHashPut());
 
+
+}
+
+void testHashPut(){
+	MainModule = "hash_example.p";
+	initResultFile(MainModule);	/*------ test hash  ----------*/
+	SET_FAIL_SUB_LOG("test hash:");
+}
 
 
 
@@ -225,10 +239,10 @@ void test()
 	 Error = FALSE;
 	 done = FALSE;
 
-
-	testList();
+	 testHash();
+	/*testList();
 	testFuntion();
-	testStatistic();
+	testStatistic();*/
 	return;
 }
 

@@ -28,7 +28,7 @@ int stack_offset = -2;
 static int while_depth = 0;
 static int case_depth = 0;
 static bool allowed_empty_exp = false;
-static int const_area_loc = 0;
+static int in_nested = 0;
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
@@ -40,6 +40,8 @@ static bool checkInCase();
 static void incrWhileDepth(int);
 static void incrCaseDepth(int);
 static void checkEmptyExp(TreeNode *);
+void setNestedFunction(int in_or_out){ in_nested += in_or_out ; };
+bool inNestedFunction(){ return in_nested > 1; };
 
 static void defineError(TreeNode * t ,char * msg)
 {
@@ -200,7 +202,8 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 allowed_empty_exp = TRUE;
 			 insertNode(t->child[0],scope + 1);
 			 allowed_empty_exp = FALSE;
-			 insertNode(t->child[1], scope);
+			 insertTree(t->child[1], scope + 1);
+			 deleteVarOfField(t->child[1], scope + 1);
 			 incrWhileDepth(-1);
 			 break;
 		 case BlockK:
@@ -235,6 +238,9 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 allowed_empty_exp = FALSE;
 			 insertTree(t->child[1], scope + 1);
 			 insertTree(t->child[2], scope + 1);
+			 deleteVarOfField(t->child[1], scope + 1);
+			 deleteVarOfField(t->child[2], scope + 1);
+
 			 break;
 		 case BreakK:
 			 ERROR_UNLESS(checkInWhile() || checkInCase(), "break can only be in while/case");
@@ -418,6 +424,15 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 		case IdK:
 			ERROR_UNLESS(st_lookup(t->attr.name) != NOTFOUND, "undefined variable");
+			if (inNestedFunction())
+			{
+				// 检查是否存在对外部函数变量的引用
+				int current_scope_depth;
+				current_scope_depth = st_lookup_scope(current_function);
+				
+				int scope = st_lookup_scope(t->attr.name);
+				ERROR_UNLESS(scope == 0 || current_scope_depth < scope, "reference to parent function/struct");
+			}
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
@@ -434,7 +449,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				t->type = *(t->child[0]->type.array_type.ele_type);
 			}
 			else{
-				t->type = *(t->child[0]->type.point_type.pointKind);
+				if (t->child[0]->type.point_type.plevel == 1){
+					t->type = *(t->child[0]->type.point_type.pointKind);
+				}
+				else{
+					t->type = t->child[0]->type;
+					t->type.point_type.plevel--;
+				}
 			}
 			t->converted_type = t->type;
 			break;
@@ -494,8 +515,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			if (is_basic_type(t->type,String))
 			{
 				t->type.is_const = true;
-				const_area_loc -= strlen(t->attr.name);
 				t->attr.val.integer = location + 1;
+				location -= (strlen(t->attr.name) + 1);
 			}
 			break;
 		default:
@@ -532,11 +553,13 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 		case RepeatK:
 			incrWhileDepth(1);
 			checkNodeType(t->child[0],current_function, scope + 1);
+			insertTree(t->child[1], scope + 1);
 			checkTree(t->child[1],current_function, scope + 1);
 			if (!is_basic_type(t->child[0]->type,Boolean))
 			{
 				typeError(t->child[0], "repeat test is not Boolean");
 			}
+			deleteVarOfField(t->child[1], scope + 1);
 			incrWhileDepth(-1);
 			break;
 		case CaseK:
@@ -570,7 +593,10 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				//这里不需要考虑STACK_OFFSET
 				insertParam(t->child[0], scope + 1);
 				insertTree(t->child[1], scope + 1);
+				setNestedFunction(1);
 				checkTree(t->child[1], t->attr.name, scope + 1);
+				setNestedFunction(-1);
+
 				deleteParams(t->child[0], scope + 1);
 				deleteVarOfField(t->child[1], scope + 1);
 			}
@@ -591,7 +617,9 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
             //first, to insert all the variable.
             insertTree(t->child[0], scope + 1);
             char * last_struct = setStructInfo(t->attr.name, 1);
-            checkTree(t->child[0],current_function, scope + 1);
+			setNestedFunction(1);
+			checkTree(t->child[0],current_function, scope + 1);
+			setNestedFunction(-1);
             setStructInfo(last_struct, 1);
             deleteVarOfField(t->child[0],scope + 1);
             break;

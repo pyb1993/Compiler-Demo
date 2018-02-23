@@ -275,6 +275,8 @@ int var_size_of_type(TypeInfo vtype)
 	if (type == Pointer) return 1;
 	if (type == Func) return 1;
 	if (type == Void) return 1;
+	if (type == String) return 1;
+
 	if (type == Array)
 	{
 		ArrayType atype = vtype.array_type;
