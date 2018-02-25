@@ -13,11 +13,16 @@ static StructType STypeCollection[MAXTYPENUM];
 static ParamNode * new_param_node(TreeNode * tree);
 static int getIndexOfSType(char * key);
 static int var_size_of_members(Member* members);
+static void deleteStructType(char * key);
 
 
 void initTypeCollection()
 {
-	for (int i = 0; i < MAXTYPENUM; ++i){ STypeCollection[i].typeinfo.sname = NULL; }
+
+	/*for (int i = 0; i < MAXTYPENUM; ++i){ if (STypeCollection[i].typeinfo.sname)
+	{ 
+		deleteStructType(STypeCollection[i].typeinfo.sname); }; 
+	}*/
 }
 
 /*return the func_type, which is consisted of paramNode and return type*/
@@ -28,7 +33,7 @@ FuncType new_func_type(TreeNode * tree)
 	*ftype.return_type = tree->return_type;
 	ftype.params = new_param_node(tree->child[0]);
 	ftype.name = copyString(tree->attr.name);
-	ftype.is_in_struct = false;
+	ftype.StructFunction = false;
 	return ftype;
 }
 
@@ -103,9 +108,6 @@ Member * new_member_list(TreeNode * tree,int offset)
 		member->offset = offset;
 		member->member_name = copyString(tree->attr.name);
 		offset += var_size_of_type(tree->type);
-		if (isStructFunction(member->member_name)){
-			int x = 1;
-		}
 		member->next_member = new_member_list(tree->sibling, offset);
 		return member;
 	}
@@ -209,7 +211,9 @@ getIndexOfSType(char * key)
  StructType getStructType(char * key)
  {
 	int i = getIndexOfSType(key);
-	assert(i != -1 || !"struct type not exist");
+	if (i == -1){
+		assert(i != -1 || !"struct type not exist");
+	}
 	return STypeCollection[i];
  }
 
@@ -238,14 +242,16 @@ addStructType(char * type_name, StructType stype)
 	for (int j = 0; j < MAXTYPENUM; ++j)
 	{
 		if (STypeCollection[j].members != NULL){
-			assert(STypeCollection[j].typeinfo.sname || !"struct name is null");
+			if (!STypeCollection[j].typeinfo.sname){
+				assert(STypeCollection[j].typeinfo.sname || !"struct name is null");
+			}
 			ensure_not_same_name(type_name, STypeCollection[j].typeinfo.sname);
 		}
 	}
 	int i = 0;
 	while (i < MAXTYPENUM && STypeCollection[i].typeinfo.sname != NULL){ i++; }
 	assert(i < MAXTYPENUM || "struct exceed limit!!!");
-	stype.typeinfo.sname = type_name;
+	stype.typeinfo.sname = copyString(type_name);
 	STypeCollection[i] = stype;
 }
 
@@ -262,6 +268,7 @@ void deleteStructType(char * key)
     
     STypeCollection[i].members = NULL;
 	STypeCollection[i].typeinfo = createTypeFromBasic(ErrorType);
+	free(STypeCollection[i].typeinfo.sname);
 	STypeCollection[i].typeinfo.sname = NULL;
 }
 

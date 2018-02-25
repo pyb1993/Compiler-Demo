@@ -1,9 +1,9 @@
 import hash
 typedef struct hash hash
+typedef struct hash_slot hash_slot
 
 hash makeHash()
 {
-	
 	int equal(char * s1,char * s2){
 		while(*s1 != 0 && *s2 != 0 && (*s1 == *s2)){
 			s1++
@@ -19,7 +19,7 @@ hash makeHash()
 			sum += *key
 			key++
 		}
-		return sum / 10000
+		return sum 
 	}
 
 	hash h = createHash(0)	
@@ -28,9 +28,14 @@ hash makeHash()
 	return h
 }
 
-void main(){
-
+void main()
+{
 	hash h = makeHash()
-	h.self__put("1","234")
-	write 1233
+	h.put("1","2345")
+	printStr(h.get("1"))
+	h.put("nihao","fuck you")
+	h.delete("1")
+	printStr(h.get("1"))
+	printStr(h.get("nihao"))
+
 }

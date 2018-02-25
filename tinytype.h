@@ -11,7 +11,7 @@ typedef enum
 	/* multicharacter tokens */
 	ID, NEG, ADRESS, UNREF, NUM, FlOATNUM,
 	/* special symbols */
-	ASSIGN, EQ, LT, GT, LE, GE,NOTEQ,NOT,AND,OR, PLUS, PPLUS, PLUSASSIGN, MINUS, MMINUS, MINUSASSIGN, TIMES, 
+	ASSIGN, EQ, LT, GT, LE, GE,NOTEQ,NOT,AND,OR, PLUS, PPLUS, PLUSASSIGN, MINUS,MOD, MMINUS, MINUSASSIGN, TIMES, 
 	OVER, BITAND,BITOR, LPAREN, RPAREN, SEMI, COMMA,POINT, ARROW, LBRACKET, RBRACKET, LSQUARE,CLON, 
 	RSQUARE, CHARACTER, STRING, STRUCT,CONST,SWITCH,CASE,CONVERSION,SIZEOF,TYPEDEF,
 	/*variable type*/
@@ -38,7 +38,7 @@ typedef struct _FuncType
 {
 	TypeInfo * return_type;
 	ParamNode * params;
-	bool is_in_struct;
+	bool StructFunction;
 	char * name;
 	int scope_depth;
 	int adress;

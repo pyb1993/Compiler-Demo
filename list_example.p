@@ -17,11 +17,11 @@ list makeList()
 	{
 		int av = *(int *(a)) 
 		int bv = *(int *(b)) 
-		if (av < bv) return -1
-		if (av > bv) return 1
+		if (av < bv) return -10
+		if (av > bv) return 10
 		return 0
 	}
-	struct list l  = createList()
+	list l  = createList()
 	l.match = compare
 	return l
 }
@@ -30,14 +30,14 @@ list makeList()
 void test_insertSortedList()
 {
 	list l = makeList()
-	l.self__insertSortedList(makeNode(-1)) 
-	l.self__insertSortedList(makeNode(1))
-	l.self__insertSortedList(makeNode(-20)) 
-	l.self__insertSortedList(makeNode(-20)) 
-	l.self__insertSortedList(makeNode(-20)) 
-	l.self__insertSortedList(makeNode(-100000))
-	l.self__insertSortedList(makeNode(2000))
- 	l.self__insertSortedList(makeNode(100)) 
+	l.insertSortedList(makeNode(-1)) 
+	l.insertSortedList(makeNode(1))
+	l.insertSortedList(makeNode(-20)) 
+	l.insertSortedList(makeNode(-20)) 
+	l.insertSortedList(makeNode(-20)) 
+	l.insertSortedList(makeNode(-100000))
+	l.insertSortedList(makeNode(2000))
+ 	l.insertSortedList(makeNode(100)) 
 
 	listNode * cur = l.head->next
 	while(cur != NULL)
@@ -52,14 +52,14 @@ void test_appendList()
 {
 	list l = makeList()
 	void opera(list * l,listNode * node){}
-	l.self__append(makeNode(-1)) 
-	l.self__append(makeNode(1))
-	l.self__append(makeNode(-20)) 
-	l.self__append(makeNode(-20)) 
-	l.self__append(makeNode(-20)) 
-	l.self__append(makeNode(-100000))
-	l.self__append(makeNode(2000))
- 	l.self__append(makeNode(100)) 
+	l.append(makeNode(-1)) 
+	l.append(makeNode(1))
+	l.append(makeNode(-20)) 
+	l.append(makeNode(-20)) 
+	l.append(makeNode(-20)) 
+	l.append(makeNode(-100000))
+	l.append(makeNode(2000))
+ 	l.append(makeNode(100)) 
 
 	listNode * cur = l.head->next
 	while(cur != NULL)
@@ -74,21 +74,21 @@ void test_removeList()
 	list l = makeList()
 	int i = 100
 
-	l.self__insertSortedList(makeNode(-1)) 
-	l.self__insertSortedList(makeNode(1))
-	l.self__insertSortedList(makeNode(-20)) 
- 	l.self__insertSortedList(makeNode(100)) 
-	l.self__insertSortedList(makeNode(2001515)) 
- 	l.self__insertSortedList(makeNode(5453)) 
- 	l.self__insertSortedList(makeNode(5675541)) 
+	l.insertSortedList(makeNode(-1)) 
+	l.insertSortedList(makeNode(1))
+	l.insertSortedList(makeNode(-20)) 
+ 	l.insertSortedList(makeNode(100)) 
+	l.insertSortedList(makeNode(2001515)) 
+ 	l.insertSortedList(makeNode(5453)) 
+ 	l.insertSortedList(makeNode(5675541)) 
 
 
 	listNode * cur = l.head->next
-	l.self__removeList(&i)
+	l.removeList(&i)
 	i = 2001515
-	l.self__removeList(&i)
+	l.removeList(&i)
 	i = 5453
-	l.self__removeList(&i)
+	l.removeList(&i)
 
 	cur = l.head->next
 	while(cur != NULL)
@@ -101,17 +101,17 @@ void test_removeList()
 void test_pop()
 {
 	list l = makeList()
-	l.self__insertSortedList(makeNode(-1)) 
-	l.self__insertSortedList(makeNode(1))
-	l.self__insertSortedList(makeNode(-20)) 
- 	l.self__insertSortedList(makeNode(100)) 
-	l.self__insertSortedList(makeNode(2001515)) 
- 	l.self__insertSortedList(makeNode(5453)) 
- 	l.self__insertSortedList(makeNode(5675541)) 
+	l.insertSortedList(makeNode(-1)) 
+	l.insertSortedList(makeNode(1))
+	l.insertSortedList(makeNode(-20)) 
+ 	l.insertSortedList(makeNode(100)) 
+	l.insertSortedList(makeNode(2001515)) 
+ 	l.insertSortedList(makeNode(5453)) 
+ 	l.insertSortedList(makeNode(5675541)) 
 
-	l.self__popRight()
-	l.self__popLeft()
-	l.self__popLeft()
+	l.popRight()
+	l.popLeft()
+	l.popLeft()
 
 	listNode * cur = l.head->next
 	while(cur != NULL)
@@ -121,9 +121,19 @@ void test_pop()
 	}
 }
 
+void testMatch(){
+	list l = makeList()
+	int a = 1
+	int b = 1
+
+	write l.match(&a,&b)
+}
+
 
 void main()
 {
+	testMatch()
+	
 	test_insertSortedList()
 	write "---------------"
 	test_appendList()
@@ -131,5 +141,6 @@ void main()
 	test_removeList()	
 	write "---------------"
 	test_pop()
+	
 
 }

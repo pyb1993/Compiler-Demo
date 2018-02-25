@@ -349,7 +349,7 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			ParamNode *p = ftype.params;
 
 			pushParam(e, p, scope + 1);
-			if (isStructFunction(tree->attr.name)){ 
+			if (ftype.StructFunction){
 				pushSelfParam(tree, scope); 
 			}
 
@@ -357,6 +357,9 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
 			emitComment(tree->attr.name);
 			jumpToFunction(tree, NULL, scope);
 			popParam(p);
+			if (ftype.StructFunction){ 
+				emitRM("LDA", sp, 1, sp, "pop parameters");
+			}			
 			break;
 		case SingleOpK:
 			if (TraceCode) emitComment("->Single Op");
@@ -831,6 +834,10 @@ void cgenOp(TreeNode * left,TreeNode * right,TokenType op, int scope,int start_l
 		emitRO("DIV", reg, reg, reg1, "op /");
 		emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
 		break;
+	case MOD:
+		emitRO("MOD", reg, reg, reg1, "op %");
+		emitRM("PUSH", reg, 0, mp, "op: load left"); //reg[ac1] = mem[reg[mp] + tmpoffset]
+		break;
 	case LT:
 	case GT:
 	case LE:
@@ -1037,9 +1044,9 @@ void pushSelfParam(TreeNode * tree,int scope)
 
 	if (kind == PointK) { cGenInAdressMode(struct_node, scope, -1, -1); }
 	else if (kind == ArrowK) { cGenInValueMode(struct_node, scope, -1, -1); }
+	else{ assert(0);}
 	emitRM("POP", ac, 0, mp, "");
 	emitRM("PUSH", ac, 0, sp, "");
-
 }
 void clearGode(){
 	emitBackup(0);

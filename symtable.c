@@ -12,8 +12,6 @@
 /* SHIFT is the power of two used as multiplierin hash function  */
 #define SHIFT 4
 
-
-
 /* the hash table */
 static BucketList hashTable[SIZE];
 static int hash(char * key);
@@ -143,6 +141,7 @@ int st_lookup ( char * name )
 TypeInfo st_lookup_type(char * name)
 {
 	BucketList l = st_get_node(name);
+	if (l == NULL)
 	assert(l != NULL);
 	return l->var_type;
 }

@@ -9,11 +9,11 @@
 #include "assert.h"
 
 void compile(char *, char *);
+static int modules_imported = -1;
+static char * imported_modules[1000];
 
 // 是否已经import过了
 bool isAlreadyImported(char * file_name){
-	static char * imported_modules[1000];
-	static int modules_imported = -1;
 	assert(++modules_imported < 1000);
 
 	int i;
@@ -23,8 +23,14 @@ bool isAlreadyImported(char * file_name){
 		imported_modules[modules_imported] = copyString(file_name);
 		return false;
 	}
-
 	return true;
+}
+
+void clearImport(){
+	modules_imported = -1;
+	for (int i = 0; i < modules_imported; i++){ 
+		free(imported_modules[i]); imported_modules[i] = NULL; 
+	}
 }
 
 void import(char * filename)

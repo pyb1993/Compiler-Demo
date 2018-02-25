@@ -49,6 +49,7 @@ void testInteger(int ret, int real);
 void skipInstruction();
 void testStatistic();
 void testFloat(float expected, float real);
+void testChar(char,char);
 void clearFile(char * codeFileName)
 {
 	file = fopen(codeFileName, "w");//清理该文件
@@ -97,13 +98,18 @@ float getFloatNum()
 			float_part = float_part * 10 + c - '0';
 	}
 
-	while (float_part > 1) float_part /= 10;
+	float flt_part = float_part;
+	while (flt_part > 1) flt_part /= 10;
 
-	return ret + float_part;
-
-
-
+	return ret + flt_part;
 }
+
+char getChar(){
+	skipInstruction();
+	char c = getc(file);
+	return c;
+}
+
 
 
 
@@ -140,7 +146,9 @@ void initResultFile(char * procedure_file_name)
 	fclose(listing);
 	listing = fopen("test_result.p", "r");
 	clearSymTable();
+	clearImport();
 	clearGode();
+	clearVmem();
 }
 
 
@@ -165,7 +173,7 @@ void testFunctionCall()
 	SET_FAIL_SUB_LOG("insert sorted list:");
 	testFloat(3, getFloatNum());
 	testFloat(33, getFloatNum());
-	testFloat(13.20, getFloatNum());
+	testFloat(13.2, getFloatNum());
 }
 
 void testHash(){
@@ -178,6 +186,18 @@ void testHashPut(){
 	MainModule = "hash_example.p";
 	initResultFile(MainModule);	/*------ test hash  ----------*/
 	SET_FAIL_SUB_LOG("test hash:");
+	testInteger(2, getInteger());
+	testInteger(3, getInteger());
+	testInteger(4, getInteger());
+	testInteger(5, getInteger());
+	testChar('f', getChar());
+	testChar('u', getChar());
+	testChar('c', getChar());
+	testChar('k', getChar());
+	testChar('\n', getChar());
+	testChar('y', getChar());
+	testChar('o', getChar());
+	testChar('u', getChar());
 }
 
 
@@ -190,6 +210,10 @@ void testListOperation()
 {
 	MainModule = "list_example.p";
 	initResultFile(MainModule);
+
+	/*------ test list match  ----------*/
+	SET_FAIL_SUB_LOG("match listNode:");
+	testInteger(0, getInteger());
 
 	/*------ test insert list  ----------*/
 	SET_FAIL_SUB_LOG("insert sorted list:");
@@ -239,10 +263,10 @@ void test()
 	 Error = FALSE;
 	 done = FALSE;
 
-	 testHash();
-	/*testList();
+	testList();
+	testHash();
 	testFuntion();
-	testStatistic();*/
+	testStatistic();
 	return;
 }
 
@@ -256,7 +280,10 @@ void testInteger(int expected, int real)
 	TEST_ANY(expected, real, expected == real, printf("expected = %d, real = %d\n", expected, real));
 }
 
-void testFloat(float expected, float real){
-	TEST_ANY(expected, real, expected == real, printf("expected = %f, real = %f\n", expected, real));
+void testChar(char expected, char real){
+	TEST_ANY(expected, real, expected == real, printf("expected = %d, real = %d\n", expected, real));
+}
 
+void testFloat(float expected, float real){
+	TEST_ANY(expected, real, abs(expected - real) < 0.00001, printf("expected = %f, real = %f\n", expected, real));
 }

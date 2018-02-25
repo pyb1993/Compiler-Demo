@@ -775,7 +775,7 @@ TreeNode * simple_exp(void)
 TreeNode * term(void)
 {
 	TreeNode * t = piexp();
-	while ((token == TIMES) || (token == OVER) || (token == BITAND) || token == PPLUS || token  == MMINUS
+	while ((token == TIMES) || (token == OVER) || (token == MOD) || (token == BITAND) || token == PPLUS || token  == MMINUS
 		   || token == LPAREN)
 	{
 		if (token == PPLUS || token == MMINUS)
@@ -791,8 +791,7 @@ TreeNode * term(void)
 		else if (token == LPAREN)
 		{
 			unGetToken();
-			t = funcall_exp(t);
-			
+			t = funcall_exp(t);	
 		}
 		else
 		{

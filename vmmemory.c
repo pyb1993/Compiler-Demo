@@ -48,3 +48,7 @@ void pFree(Header *ap)
 	memptr = prev;
 }
 
+void clearVmem(){
+	memset(dMem, 0, sizeof(dMem));
+	memptr = NULL;
+}

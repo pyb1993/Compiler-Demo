@@ -20,7 +20,6 @@ static void ERROR_UNLESS(bool cond, char * msg)
 {
 	if (!cond)
 		assert(!msg);
-	
 }
 
 static int location = 0;
@@ -182,7 +181,12 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 
 				// 可能需要隐式传入一个self参数
 				t->type.func_type = new_func_type(t);//allocate memory for params/function name
-				appendSelfToParamAndSetStruct(t);
+				if (t->child[1] != NULL){
+					// null function body
+					appendSelfToParamAndSetStruct(t);
+					t->type.is_const = true;
+				}
+	
 				stInsertVar(t,scope);
 				insertParam(t->child[0], scope + 1);// use st_insert(share memory of name)
 				int old_off = stack_offset;
@@ -240,7 +244,6 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			 insertTree(t->child[2], scope + 1);
 			 deleteVarOfField(t->child[1], scope + 1);
 			 deleteVarOfField(t->child[2], scope + 1);
-
 			 break;
 		 case BreakK:
 			 ERROR_UNLESS(checkInWhile() || checkInCase(), "break can only be in while/case");
@@ -515,8 +518,8 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			if (is_basic_type(t->type,String))
 			{
 				t->type.is_const = true;
-				t->attr.val.integer = location + 1;
 				location -= (strlen(t->attr.name) + 1);
+				t->attr.val.integer = location + 1;
 			}
 			break;
 		default:
@@ -712,7 +715,7 @@ static void set_convertd_type(TreeNode * t, TypeInfo type)
 	  }
 	  //ERROR_UNLESS(left->type.typekind != Func || !isStructFunction(left->attr.name),
 		//  "funtion bind to struct cannot be assigned");
-	  ERROR_UNLESS(isStructFunction(right->attr.name) == false, "struct function should not be assiged to others");
+	  ERROR_UNLESS(isExp(right,FuncallK) || isStructFunction(right->attr.name) == false, "struct function should not be assiged to others");
 	  ERROR_UNLESS(left->type.is_const == false, "const cannot be assigned");
 	  ERROR_UNLESS(right->nodekind == ExpK,"const variable cannot be assigned");
 	  ERROR_UNLESS(!is_basic_type(left->type, Array), "Array canot be assigned");
@@ -810,12 +813,13 @@ void appendSelfToParamAndSetStruct(TreeNode * function_node)
 	TreeNode* t;
 	if ((struct_name = setStructInfo(NULL, 0)) == NULL) return;
 	if (function_node->child[0] != NULL && 
-		strcmp(function_node->child[0]->attr.name,"self") == 0)
+		function_node->type.func_type.StructFunction)
 		return;//已添加过一次
 
 	// 不是self函数
-	if (isStructFunction(function_node->attr.name) == 0) return;
-	function_node->type.func_type.is_in_struct = true;
+	 //if (isStructFunction(function_node->attr.name) == 0) return;
+	function_node->type.func_type.StructFunction = true;
+
 
 	t = newStmtNode(DeclareK);
 	t->attr.name = copyString("self");

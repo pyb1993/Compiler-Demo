@@ -1,5 +1,4 @@
-import list
-typedef struct list list
+import pyb_example_2
 
 struct hash_slot{
 void * next
@@ -13,14 +12,15 @@ struct hash{
 	int size
 	int capacity
 	
-	int hash_func(void * key){
-		return 2
-	}
-	int equal(void * key1,void * key2)
+	int hash_func(void * key){}
+	int get_idx(void * key){return self->hash_func(key) % self->size}
 
-	void self__put(void * key, void * val)
+	void slot_free(hash_slot* slot){}
+	int equal(void * key1,void * key2){}
+
+	void put(void * key, void * val)
 	{
-		int idx = self->hash_func(key)
+		int idx = self->get_idx(key)
 		
 		hash_slot * slot = self->data + idx
 		if(slot->key == NULL){
@@ -36,6 +36,44 @@ struct hash{
 		new_slot->next = slot->next
 		slot->next = new_slot
 		
+	}
+
+	void* get(void * key){
+		int idx = self->get_idx(key)
+		hash_slot * slot = self->data + idx
+		while(slot != NULL && slot->key != NULL && (self->equal(key,slot->key) != 1))
+		{
+			slot = slot->next
+		}
+
+		if(slot == NULL || slot->key == NULL){
+			return NULL
+		}
+		return slot->val
+	}
+
+	void delete(void * key)
+	{
+		int idx = self->get_idx(key)
+		hash_slot * slot = self->data + idx
+		hash_slot * prev = NULL
+		while(slot != NULL && slot->key != NULL && (self->equal(key,slot->key) != 1))
+		{
+			prev = slot
+			slot = slot->next
+		}
+
+		if(slot == NULL || slot->key == NULL){
+			return
+		}
+		else{
+			self->slot_free(slot)
+			slot->key = NULL
+			slot->val = NULL
+			if(prev != NULL){
+				prev->next = slot->next
+			}
+		}
 	}
 }
 

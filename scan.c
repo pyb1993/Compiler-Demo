@@ -113,6 +113,9 @@ TokenType getToken(void)
 				save = FALSE;
 				SET_CUR_TOKEN(LINEEND);
 			}
+			else if (c == '%'){
+				SET_CUR_TOKEN(MOD);
+			}
 			else if (c == '/'){
 				state = OVER_OR_COMMENT;
 			}

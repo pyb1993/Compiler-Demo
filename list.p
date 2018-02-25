@@ -4,8 +4,6 @@
 
 import pyb_example_2 
 
-const void * NULL = 0 // 为了以后兼容
-
 
 // 链表节点的数据结构
 struct listNode 
@@ -46,7 +44,7 @@ typedef struct listNode listNode
     int match (void *ptr, void *key){} 
 	
 	/*删除一个给定节点的值*/
-	void self__removeList(void * val)
+	void removeList(void * val)
 	{
 		if(self->len <= 0) return
 		self->len--
@@ -66,7 +64,7 @@ typedef struct listNode listNode
 	}
 
 	/**********append一个节点***************/
-	void self__append(listNode * node)
+	void append(listNode * node)
 	{
 		if(node == NULL) return
 		self->len++	
@@ -79,7 +77,7 @@ typedef struct listNode listNode
 
 
 	/*********按顺序插入一个节点***************/
-void self__insertSortedList(listNode * node)
+void insertSortedList(listNode * node)
 {
 	if (node == NULL) return
 	int x = 10
@@ -99,7 +97,7 @@ void self__insertSortedList(listNode * node)
 	else {self->tail = node	} // case2 cur node NULL
 }
 
-	void self__popRight()
+	void popRight()
 	{
 		if(self == NULL || self->len <= 0) return
 		self->len--
@@ -109,7 +107,7 @@ void self__insertSortedList(listNode * node)
 		self->tail = pre
 	}
 
-		void self__popLeft()
+		void popLeft()
 	{	
 		if(self == NULL || self->len <= 0) return
 		self->len--

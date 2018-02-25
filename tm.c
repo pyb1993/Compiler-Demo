@@ -36,7 +36,7 @@ int dMem[DADDR_SIZE];
 int reg[NO_REGS];
 
 char * opCodeTab[]
-= { "HALT", "IN", "OUT","MOV","NEG","ADD", "SUB", "MUL", "DIV","LABEL","GO", "????",
+= { "HALT", "IN", "OUT","MOV","NEG","ADD", "SUB", "MUL", "DIV","MOD","LABEL","GO", "????",
 /* RR opcodes */
 "LD", "ST","PUSH","POP","????", /* RM opcodes */
 "LDA", "LDC", "JLT", "JLE", "JGT", "JGE", "JEQ", "JNE", "RETURN", "????",
@@ -62,16 +62,17 @@ char ch;
 
 // macro used to DRY
 #define operand_proc(op,func) do{\
-					switch (op)\
-				{\
-					case '+': reg[r] = func(lhs + rhs); break;\
-					case '-': reg[r] = func(lhs - rhs); break;\
-					case '*': reg[r] = func(lhs * rhs); break;\
-					case '/':\
-						if (rhs == 0) return srZERODIVIDE;\
-						else reg[r] = func(lhs / rhs);\
-						break;\
-				}\
+	switch (op)\
+{\
+	case '+': reg[r] = func(lhs + rhs); break; \
+	case '-': reg[r] = func(lhs - rhs); break; \
+	case '*': reg[r] = func(lhs * rhs); break; \
+	case '/':\
+			if (rhs == 0) return srZERODIVIDE; \
+			else reg[r] = func(lhs / rhs); \
+			break; \
+	case '%':reg[r] = ((int)lhs % (int)rhs);break;\
+}\
 				return srOKAY;\
 				}while(0)
 
@@ -381,7 +382,7 @@ STEPRESULT stepTM(void)
 
 	pc_pos = reg[PC_REG];
 
-	printf("run ins:%d\n", pc_pos);
+	//printf("run ins:%d\n", pc_pos);
 
 	if (pc_pos == 383)
 	{
@@ -487,6 +488,9 @@ STEPRESULT stepTM(void)
 	case opDIV:
 		/***********************************/
 		if (operand(r, s, t, '/') != srOKAY) return srZERODIVIDE;
+		break;
+	case opMOD:
+		operand(r, s, t, '%');
 		break;
 	case opGO:	   reg[PC_REG] = labelLocMap[r]; break;
 	case opLAEBL: break;
