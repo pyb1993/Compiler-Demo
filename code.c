@@ -14,7 +14,7 @@ static int labNum = 0;
  */
 
 void emitComment( char * c )
-{ if (TraceCode) fprintf(code,"* %s\n",c);}
+{  fprintf(code,"* %s\n",c);}
 
 /* Procedure emitRO emits a register-only
  * TM instruction
@@ -31,7 +31,7 @@ void emitRO( char *op, int r, int s, int t, char *c)
 	}
 
 	fprintf(code,"%3d:  %5s  %d,%d,%d ",emitLoc++,op,r,s,t);
-    if (TraceCode) fprintf(code,"\t%s",c) ;
+    fprintf(code,"\t%s",c) ;
     fprintf(code,"\n") ;
     if (highEmitLoc < emitLoc) highEmitLoc = emitLoc ;
 } /* emitRO */
@@ -48,7 +48,7 @@ void emitRM( char * op, int r, int d, int s, char *c )
 {
 
 	fprintf(code, "%3d:  %5s  %d,%d(%d) ", emitLoc++, op, r, d, s);
-    if (TraceCode) fprintf(code,"\t%s",c) ;
+    fprintf(code,"\t%s",c) ;
     fprintf(code,"\n") ;
     if (highEmitLoc < emitLoc)  highEmitLoc = emitLoc ;
 } /* emitRM */
@@ -57,7 +57,7 @@ void emitSYS(char * op, int r, int d, int s, char *c)
 {
 
 	fprintf(code, "%3d:  %s  %d,%d(%d) ", emitLoc++, op, r, d, s);
-	if (TraceCode) fprintf(code, "\t%s", c);
+	fprintf(code, "\t%s", c);
 	fprintf(code, "\n");
 	if (highEmitLoc < emitLoc)  highEmitLoc = emitLoc;
 
@@ -112,7 +112,7 @@ void emitRM_Abs( char *op, int r, int a, char * c)
 { fprintf(code,"%3d:  %5s  %d,%d(%d) ",
           emitLoc,op,r,a-(emitLoc+1),pc);
     ++emitLoc ;
-    if (TraceCode) fprintf(code,"\t%s",c) ;
+    fprintf(code,"\t%s",c) ;
     fprintf(code,"\n") ;
     if (highEmitLoc < emitLoc) highEmitLoc = emitLoc ;
 } /* emitRM_Abs */

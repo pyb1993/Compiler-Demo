@@ -22,7 +22,13 @@ static void setFunctionAdress(char * current_function,char *, int scope);
 static void jumpToFunction(TreeNode *,char *,int scope);
 static void pushSelfParam(TreeNode * tree, int scope);
 static bool checkInMainModule();
-
+static int get_function_level(char * name){
+	if (name == NULL) { return 0; }
+	if (st_lookup(name) == NOTFOUND){
+		return -1;// 必然是struct的函数
+	}
+	return st_lookup_level(name); 
+}
 static void cgen_assign(TreeNode *,TreeNode *,int);
 static void cGenPushTemp(int size, int tar, int ori, int adress_reg);
 
@@ -209,12 +215,11 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 			/*deal with the function  */
 			if (is_basic_type(tree->type,Func)) 
 			{
+				char * last_current = current_function;
 				current_function = tree->attr.name;
 				emitComment("function entry:");
 				emitComment(current_function);
 
-				char * last_current = current_function;
-			
 				if (scope > 0) { 
 					stInsertVar(tree, scope);
 				}
@@ -224,6 +229,8 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				if (strcmp(current_function, "main") != 0){
 					emitRM("LDA", sp, -1, sp, "stack expand for function variable");
 				}
+				// setNestedFunction的顺序很重要
+				setNestedFunction(1);
 				insertParam(tree->child[0], scope + 1);
 				int func_end = genLabel();
 				setFunctionAdress(tree->attr.name, setStructInfo(NULL, 0), scope);
@@ -234,7 +241,7 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 
 				emitRM("PUSH", ac1, 0, sp, "push the caller fp");//dMem[reg[sp]--] = ac1 
 				emitRM("PUSH", ac,  0, sp, "push the return adress");// dMem[reg[sp]--] = return adress;assume the caller sotre the return adress reg[pc] in reg[ac]
-			
+				
 				cGenInValueMode(tree->child[1], scope + 1, start_label, end_label);// generate code for the function body,insert local variable
 				stack_offset = old_stack;
 				deleteParams(tree->child[0], scope + 1);
@@ -246,6 +253,8 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 				emitComment("function end:");
 				emitLabel(func_end);
 				current_function = last_current;
+				setNestedFunction(-1);
+
 			}
 			else
 			{
@@ -258,9 +267,11 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 		case StructDefineK:
 		{
 			char * last_sname = setStructInfo(tree->attr.name,1);
+			setDirectStructEnv(true);
 			cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);// will insert all function
             deleteVarOfField(tree->child[0],scope + 1 );
             //emitRO("MOV",sp,fp,0,"resotre stack in struct");
+			setDirectStructEnv(false);
             setStructInfo(last_sname, 1);//restore
 			break;
 		}
@@ -321,46 +332,117 @@ static void genExp( TreeNode * tree,int scope,int start_label,int end_label,bool
             if (TraceCode)  emitComment("<- Const") ;
             break; /* ConstK */
           
-        case IdK :
-            if (TraceCode) emitComment("-> Id");
-            loc = st_lookup(tree->attr.name);
-			if (checkInAdressMode() || is_basic_type(tree->converted_type, Array))
-			{
-				emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
-				emitRM("PUSH", ac, 0, mp, "push array adress to mp");
+		case IdK:
+		{
+		if (TraceCode) emitComment("-> Id");
+		loc = st_lookup(tree->attr.name);
+		int current_func_level = get_function_level(current_function);
+		int id_level = st_lookup_level(tree->attr.name);
+
+		if (id_level != 0 && id_level <= current_func_level){
+			emitRM("LDA", ac1, 0, fp, "store current fp");
+			int delta = current_func_level - id_level;
+			while (delta-- >= 0){
+				emitRM("LD", fp, 1, fp, "load env");// get parent fp	
 			}
-			else
+		}
+
+		if (checkInAdressMode() || is_basic_type(tree->converted_type, Array))
+		{
+			emitRM("LDA", ac, loc, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id adress");// reg[ac] = Mem[reg[gp] + loc]			
+			emitRM("PUSH", ac, 0, mp, "push array adress to mp");
+		}
+		else
+		{
+			int vsize = var_size_of(tree);
+			for (int i = 0; i < vsize; ++i)
 			{
-				int vsize = var_size_of(tree);
-				for (int i = 0; i < vsize; ++i)
-				{
-					emitRM("LD", get_reg(getBasicType(tree->type)), loc + i, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
-					emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
-					emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
-				}
+				emitRM("LD", get_reg(getBasicType(tree->type)), loc + i, get_stack_bottom(st_lookup_scope(tree->attr.name)), "load id value");// reg[ac] = Mem[reg[gp] + loc]			
+				emitRO("MOV", get_reg(getBasicType(type)), get_reg(getBasicType(tree->type)), 0, "move from one reg(s) to reg(r)");// tiny machine wuold analyze the instruction 
+				emitRM("PUSH", get_reg(getBasicType(type)), 0, mp, "store exp");
 			}
-			if (TraceCode)  emitComment("<- Id");
-            break; /* IdK */
+		}
+
+		if (id_level != 0 && id_level <= current_func_level){
+			emitRM("LDA", fp, 0, ac1, "restore fp");// get parent fp		
+		}
+
+		if (TraceCode)  emitComment("<- Id");
+		break; /* IdK */
+		}
 		case FuncallK:
+		{
 			//todo :tail recursion optimize
 			assert(tree->attr.name != NULL);
+			int current_fuction_level = get_function_level(current_function);
+			int call_function_level = get_function_level(tree->attr.name);
 			TreeNode *e = tree->child[0];
 			FuncType ftype = tree->child[1]->type.func_type;
 			ParamNode *p = ftype.params;
 
 			pushParam(e, p, scope + 1);
 			if (ftype.StructFunction){
-				pushSelfParam(tree, scope); 
+				pushSelfParam(tree, scope);
+			}
+
+			// 怎么处理被call的函数是结构体成员?
+			if (call_function_level == -1){
+				emitRM("LDA", ac, 0, fp, "load env");//注意到,这里保存的fp,sp在被调用的时候已经不存在了
+				emitRM("PUSH", ac, 0, sp, "store env");
+			}
+			else if (current_fuction_level < call_function_level){
+				/*
+				def f #level 1
+				def g #level 2
+				end
+				g()
+				end
+				*/
+				emitRM("LDA", ac, 0, fp, "load env");
+				emitRM("PUSH", ac, 0, sp, "store env");
+			}
+			else{
+				/*
+				def f #level 1
+
+				end
+				
+				def g #level 1
+					def z #level 2
+					
+					f() # level 1
+					end
+				end
+				*/
+
+				/*
+				def f #level1
+				end
+
+				def g #level 1
+					f() # delta = 0
+				end
+				*/
+
+				int delta = current_fuction_level - call_function_level;// eg 0 or 1 or 2
+				// 目标是找到对应的env,步骤是 env -> env -> env ... -> fp, 载入fp
+				emitRM("LD", ac, 1, fp, "load env");// load env,pointing to the parent fp
+				while (delta-- > 0){
+					emitRM("LD", ac, 1, ac, "load env1");// get 
+				}
+				emitRM("PUSH", ac, 0, sp, "store env");
 			}
 
 			emitComment("call function: ");
 			emitComment(tree->attr.name);
 			jumpToFunction(tree, NULL, scope);
 			popParam(p);
-			if (ftype.StructFunction){ 
+			emitRM("LDA", sp, 1, sp, "pop env");
+			if (ftype.StructFunction){
 				emitRM("LDA", sp, 1, sp, "pop parameters");
-			}			
+			}
 			break;
+		}
 		case SingleOpK:
 			if (TraceCode) emitComment("->Single Op");
 			p1 = tree->child[0];
@@ -740,22 +822,31 @@ void cgen_assign(TreeNode * left, TreeNode * right, int scope)
 
 	if (isExp(left,IdK) || isStmt(left,DeclareK))
 	{
-		char * name = left->attr.name;
+		//调用IDK对应的处理函数,为了统一处理嵌套变量
+		left->kind.exp = IdK;
+		left->nodekind = ExpK;
+		genExp(left, scope, -1, -1, 1);
+		emitRM("POP", ac1, 0, mp, "move the adress of ID");
+		left->kind.exp = DeclareK;
+		left->nodekind = StmtK;
+
+		/*char * name = left->attr.name;
 		int loc = st_lookup(name);// get the memory location of identifier
 		int var_stack_bottom = get_stack_bottom(st_lookup_scope(name));
-		emitRM("LDA", ac1, loc, var_stack_bottom, "move the adress of ID");
+		emitRM("LDA", ac1, loc, var_stack_bottom, "move the adress of ID");*/
 	}
 	else if (isExp(left, SingleOpK))
 	{
 		//  *..p = ffff 
 		// todo run in the adress mode
 		assert(left->attr.op == UNREF || !"illegal left operand on assign");
-		cGenInValueMode(left->child[0], scope, -1, -1);
+		genExp(left->child[0], scope, -1, -1,1);
 		emitRM("POP", ac1, 0, mp, "move the adress of referenced");
 	}
 	else if (isExp(left, IndexK) || isExp(left,PointK) || isExp(left,ArrowK))
 	{
-		cGenInAdressMode(left, scope, -1, -1);
+		//cGenInValueMode(left, scope, -1, -1, "f");
+		genExp(left, scope, -1, -1,1);
 		emitRM("POP", ac1, 0, mp, "move the adress of referenced");
 	}
 	cgenCopyObj(origin_reg, target_reg, vsize, ac1);

@@ -22,6 +22,10 @@ void gen_converted_type(TreeNode * tree);
 bool isExp(TreeNode * t, ExpKind ekind);
 bool isStmt(TreeNode * t, StmtKind skind);
 char * setStructInfo(char *, int mode);
+void setNestedFunction(int in_or_out);
+bool inNestedFunction();
+void setDirectStructEnv(bool in_or_not);
+bool inDirectStructEnv();
 
 extern int stack_offset ;
 

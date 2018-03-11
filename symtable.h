@@ -9,6 +9,8 @@ typedef struct BucketListRec
 	int memloc; /* memory location for variable */
 	int mem_size;/* memory size for this variable */
 	int scope_depth;// the scope depth
+	int function_depth;// the var defined environment
+	bool struct_var;
 	TypeInfo var_type;
 	struct BucketListRec * next;
 } *BucketList;
@@ -19,6 +21,7 @@ void st_insert(char * name, int lineno, int loc, int size,int depth,TypeInfo typ
 void st_delete(char * name);
 TypeInfo st_lookup_type(char * name);
 int  st_lookup_scope(char * name);
+int st_lookup_level(char * name);
 int st_lookup(char * name); /*   Function st_lookup returns the memory location of a variable or -1 if not found*/
 void printSymTab(FILE * listing);
 bool is_duplicate_var(char * name, int depth);

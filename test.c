@@ -170,10 +170,19 @@ void testFunctionCall()
 	initResultFile(MainModule);
 
 	/*------ test function, integer as parameters  ----------*/
-	SET_FAIL_SUB_LOG("insert sorted list:");
+	SET_FAIL_SUB_LOG("test function call list:");
+	testFloat(200, getFloatNum());
+	
 	testFloat(3, getFloatNum());
 	testFloat(33, getFloatNum());
 	testFloat(13.2, getFloatNum());
+	testInteger(101, getFloatNum());
+	testInteger(111, getFloatNum());
+	testInteger(121, getFloatNum());
+	testInteger(5, getFloatNum());
+	testInteger(8, getFloatNum());
+
+
 }
 
 void testHash(){
@@ -266,7 +275,7 @@ void test()
 	testList();
 	testHash();
 	testFuntion();
-	testStatistic();
+	//testStatistic();
 	return;
 }
 

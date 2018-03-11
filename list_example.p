@@ -22,7 +22,7 @@ list makeList()
 		return 0
 	}
 	list l  = createList()
-	l.match = compare
+	l.match = compare//导致计算上一个fp的位置
 	return l
 }
 
@@ -141,6 +141,4 @@ void main()
 	test_removeList()	
 	write "---------------"
 	test_pop()
-	
-
 }

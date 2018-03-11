@@ -47,7 +47,7 @@ void st_delete(char * name)
 * first time, otherwise ignored
 */
 
-void st_insert( char * name, int lineno, int loc,int size,int depth,TypeInfo type)
+void st_insert( char * name, int lineno, int loc,int size,int depth,TypeInfo type,int function_level,bool in_struct)
 {
 	if (is_duplicate_var(name, depth))
 	{
@@ -57,7 +57,11 @@ void st_insert( char * name, int lineno, int loc,int size,int depth,TypeInfo typ
     
 	int h = hash(name);
 	BucketList inserted = construct_node(name, lineno, loc, size, depth, type);
+	inserted->function_depth = function_level;
+	inserted->struct_var = in_struct;
 	hashTable[h] = insert_into_list(hashTable[h],inserted);
+	
+	return;
 } 
 
 /*
@@ -153,6 +157,14 @@ int st_lookup_scope(char * name)
 	return l->scope_depth;
 }
 
+int st_lookup_level(char * name){
+	BucketList l = st_get_node(name);
+	if (l == NULL){
+		assert(l != NULL || !"st_lookup failed");
+	}
+	return l->function_depth;
+}
+
 bool is_duplicate_var(char * name, int depth)
 {
 	BucketList l = st_get_node(name);
@@ -172,6 +184,8 @@ BucketList st_get_node(char * name)
 	while ((l != NULL) && (strcmp(name, l->name) != 0)) l = l->next;
 	return l;
 }
+
+
 
 /* Procedure printSymTab prints a formatted
  * listing of the symbol table contents

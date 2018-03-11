@@ -384,7 +384,7 @@ STEPRESULT stepTM(void)
 
 	//printf("run ins:%d\n", pc_pos);
 
-	if (pc_pos == 383)
+	if (pc_pos == 96)
 	{
 		ok = 36;
 	}
@@ -519,7 +519,9 @@ STEPRESULT stepTM(void)
 	/*sys instructions*/
 	case opMALLOC: 
 		m = pMalloc(reg[ac]);
-		if (m >= reg[sp]) assert(!"stack/heap overlap !!!");
+		if (m >= reg[sp]) {
+			assert(!"stack/heap overlap !!!"); 
+		}
 		dMem[reg[mp]--] = m;
 		break;
 	case opFREE:

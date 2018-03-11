@@ -27,7 +27,9 @@ int stack_offset = -2;
 static int while_depth = 0;
 static int case_depth = 0;
 static bool allowed_empty_exp = false;
-static int in_nested = 0;
+static int function_level = 0;
+static bool in_struct = false;
+
 /* 
  todo : convert the tranverse to more flexible ; similar to cgen!!!
 */
@@ -39,8 +41,11 @@ static bool checkInCase();
 static void incrWhileDepth(int);
 static void incrCaseDepth(int);
 static void checkEmptyExp(TreeNode *);
-void setNestedFunction(int in_or_out){ in_nested += in_or_out ; };
-bool inNestedFunction(){ return in_nested > 1; };
+
+void setNestedFunction(int in_or_out){ function_level += in_or_out; }
+bool inNestedFunction(){ return function_level > 1; };
+void setDirectStructEnv(bool in_or_not){ in_struct = in_or_not; setNestedFunction(in_or_not ? 1 : -1); }
+bool inDirectStructEnv(){ return in_struct;}
 
 static void defineError(TreeNode * t ,char * msg)
 {
@@ -81,7 +86,7 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
  void insertParam(TreeNode * t,int scope_depth)
 {
 	if (t == NULL) return;
-	int offset = 1;	
+	int offset = 2;	
 	while (t != NULL)
 	{	
 		if (is_duplicate_var(t->attr.name, scope_depth)){
@@ -96,14 +101,14 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 			point_type.typekind = Pointer;
 			point_type.point_type.pointKind = t->type.array_type.ele_type;
 			point_type.point_type.plevel = 1;
-			st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, point_type);
+			st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, point_type,function_level,in_struct);
 		}
 		else{
             if(is_basic_type(t->type, Func)){
                t->type.func_type = new_func_type((t));// set the functype of params
             }
             
-			st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type);
+			st_insert(t->attr.name, t->lineno, offset, var_size, scope_depth, t->type,function_level,in_struct);
 		}
 		offset += var_size;
 		t = t->sibling;
@@ -186,8 +191,9 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 					appendSelfToParamAndSetStruct(t);
 					t->type.is_const = true;
 				}
-	
-				stInsertVar(t,scope);
+				// 顺序很重要！
+				stInsertVar(t, scope);
+				setNestedFunction(1);
 				insertParam(t->child[0], scope + 1);// use st_insert(share memory of name)
 				int old_off = stack_offset;
 				stack_offset = -2;
@@ -195,6 +201,8 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 				stack_offset = old_off;
 				deleteVarOfFunction(t->child[1], scope + 1);
 				deleteParams(t->child[0], scope + 1);
+				setNestedFunction(-1);
+
 			  }
 			else{
                 stInsertVar(t,scope);
@@ -254,10 +262,12 @@ void tranverseSeq(TreeNode * t, int scope, void(*func) (TreeNode *, int));
 		 case StructDefineK:
 			 ERROR_UNLESS(scope == 0, "only support global struct define stmt");
              char * last_struct = setStructInfo(t->attr.name,1);
+			 setDirectStructEnv(true);
 			 insertTree(t->child[0], scope + 1);
 			 deleteVarOfField(t->child[0], scope + 1);
 			 addStructType(t->attr.name, new_struct_type(t));
              setStructInfo(last_struct,1);
+			 setDirectStructEnv(false);
             // todo support local struct
 			 break;
 		 default:
@@ -427,7 +437,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 
 		case IdK:
 			ERROR_UNLESS(st_lookup(t->attr.name) != NOTFOUND, "undefined variable");
-			if (inNestedFunction())
+			/*if (inNestedFunction())
 			{
 				// 检查是否存在对外部函数变量的引用
 				int current_scope_depth;
@@ -435,7 +445,7 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 				
 				int scope = st_lookup_scope(t->attr.name);
 				ERROR_UNLESS(scope == 0 || current_scope_depth < scope, "reference to parent function/struct");
-			}
+			}*/
 			t->type = st_lookup_type(t->attr.name);
 			t->converted_type = t->type;
 			break;
@@ -620,9 +630,9 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
             //first, to insert all the variable.
             insertTree(t->child[0], scope + 1);
             char * last_struct = setStructInfo(t->attr.name, 1);
-			setNestedFunction(1);
+			setDirectStructEnv(true);
 			checkTree(t->child[0],current_function, scope + 1);
-			setNestedFunction(-1);
+			setDirectStructEnv(false);
             setStructInfo(last_struct, 1);
             deleteVarOfField(t->child[0],scope + 1);
             break;
@@ -787,12 +797,12 @@ void stInsertVar(TreeNode * t,int scope)
     if (scope == 0) //global var
     {
         location -= var_szie;
-        st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope, t->type);
+        st_insert(t->attr.name, t->lineno, location + 1, var_szie, scope, t->type,function_level,in_struct);
     }
     else // local variable
     {
         stack_offset -= var_szie;
-        st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type);
+        st_insert(t->attr.name, t->lineno, stack_offset + 1, var_szie, scope, t->type,function_level,in_struct);
     }
 }
 
