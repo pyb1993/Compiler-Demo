@@ -576,17 +576,20 @@ void checkNodeType(TreeNode * t,char * current_function, int scope)
 			incrWhileDepth(-1);
 			break;
 		case CaseK:
+		case DefaultK:
 			incrCaseDepth(1);
 			insertTree(t->child[1], scope + 1);
-			checkNodeType(t->child[0], current_function, scope + 1);
-			ERROR_UNLESS(is_basic_type(t->child[0]->converted_type, Integer),"case exp:exp只能是整数表达式");
+			if (t->kind.stmt == CaseK){
+				checkNodeType(t->child[0], current_function, scope + 1);
+				ERROR_UNLESS(can_convert(t->child[0]->converted_type, createTypeFromBasic(Integer)), "case exp:exp只能是整数表达式");
+			}
 			checkTree(t->child[1], current_function, scope + 1);
 			deleteVarOfField(t->child[1], scope + 1);
 			incrCaseDepth(-1);
 			break;
 		case SwitchK:
 			checkNodeType(t->child[0], current_function, scope + 1);
-			ERROR_UNLESS(is_basic_type(t->child[0]->converted_type, Integer), "switch(exp):exp只能是整数表达式");
+			ERROR_UNLESS(can_convert(t->child[0]->converted_type, createTypeFromBasic(Integer)), "switch(exp):exp只能是整数表达式");
 			checkNodeType(t->child[1], current_function, scope + 1);// 只可能是一个blockK
 			TreeNode * exp = t->child[0];
 			TreeNode * block_node = t->child[1];

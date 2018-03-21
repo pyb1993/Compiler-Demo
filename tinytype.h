@@ -13,14 +13,14 @@ typedef enum
 	/* special symbols */
 	ASSIGN, EQ, LT, GT, LE, GE,NOTEQ,NOT,AND,OR, PLUS, PPLUS, PLUSASSIGN, MINUS,MOD, MMINUS, MINUSASSIGN, TIMES, 
 	OVER, BITAND,BITOR, LPAREN, RPAREN, SEMI, COMMA,POINT, ARROW, LBRACKET, RBRACKET, LSQUARE,CLON, 
-	RSQUARE, CHARACTER, STRING, STRUCT,CONST,SWITCH,CASE,CONVERSION,SIZEOF,TYPEDEF,
+	RSQUARE, CHARACTER, STRING, STRUCT,CONST,SWITCH,CASE,DEFAULT,CONVERSION,SIZEOF,TYPEDEF,
 	/*variable type*/
 	INT, FLOAT, VOID, CHAR, FUN
 } TokenType;
 
 typedef enum {BTYPE,FUNTYPE,STYPE} TypeKind;// the basic type,function type and struct type
 typedef enum { StmtK, ExpK } NodeKind;
-typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, SwitchK,CaseK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK, AsmK, ImportK } StmtKind;
+typedef enum { IfK, RepeatK, ReadK, WriteK, DeclareK, BlockK, SwitchK,CaseK,DefaultK, DefineK, StructDefineK, ParamK, BreakK, ContinueK, ReturnK, AsmK, ImportK } StmtKind;
 typedef enum { AssignK, OpK, SingleOpK, IndexK, PointK, ArrowK, ConstK, IdK, FuncallK} ExpKind;
 typedef enum { ErrorType, Void, Before, After, Boolean, Integer, Float, Char, String, Pointer, Array, Struct, Func } Type;// literal type, the expression has the rvalue, and the variable has the lvalue
 

@@ -1,11 +1,5 @@
-OUT instruction prints int: 200
-OUT instruction prints float: 3.000000
-OUT instruction prints float: 33.000000
-OUT instruction prints float: 13.200001
-OUT instruction prints int: 101
-OUT instruction prints int: 111
-OUT instruction prints int: 121
-OUT instruction prints int: 5
-OUT instruction prints int: 8
-OUT instruction prints int: -300
-OUT instruction prints int: -50
+OUT instruction prints char: a
+OUT instruction prints char: a
+OUT instruction prints char: c
+OUT instruction prints char: c
+OUT instruction prints char: b

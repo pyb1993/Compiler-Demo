@@ -100,6 +100,10 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 					cGenInValueMode(case_seq->child[0], scope + 1, start_label, end_label);// case exp;
 					int case_start_label = genLabel();
 					int case_end_label = genLabel();
+					if (case_seq->kind.stmt == DefaultK){
+						emitGoto(case_start_label);// case 满足: go to case内部代码
+						goto create_label;
+					}
 
 					emitRO("POP", ac, 0, mp, "pop case exp");
 					emitRO("POP", ac1, 0, mp, "pop switch exp");
@@ -108,7 +112,8 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
 					emitGoto(case_end_label);// case 不满足,go to case结束位置
 					emitRM("LDA", pc, 1, pc, "unconditional jmp");
 					emitGoto(case_start_label);// case 满足: go to case内部代码
-
+					
+					create_label:;
 					emitLabel(case_start_label);// generate start label
 					cGenInValueMode(case_seq->child[1], scope + 1, start_label, switch_end_label);// case stmt;
 					emitLabel(case_end_label);// generate start label

@@ -53,6 +53,7 @@ static TreeNode * parseStructDef();
 static TreeNode * parseIndexNode(TreeNode*);
 static TreeNode * parseSwitchStmt();
 static TreeNode * parseCaseNode();
+static TreeNode * parseDefaultNode();
 static TypeInfo parseBaseType(void);
 static TypeInfo parseDeclareType();
 static TypeInfo parsePointerType(TypeInfo);
@@ -116,14 +117,14 @@ TreeNode * stmt_sequence(void)
 {
 	TreeNode * t = statement();
 	TreeNode * p = t;
+	TreeNode* q;
 
 	while ((token != ENDFILE) && (token != END) &&
 		   (token != RBRACKET) && (token != ELSE) &&
-		   (token != CASE))
+		   (token != CASE) && (token != DEFAULT))
 	{
 		// typedef 比较特殊,单独处理
-
-		TreeNode * q = statement();
+		q = statement();
 		if (q != NULL) 
 		{
 			if (t == NULL) t = p = q;
@@ -981,6 +982,7 @@ TreeNode * parseSwitchStmt()
 
 	// parse casenode1->casenode2->casenode3...->casenodex->NULL
 	// 因为需要检查case,所以不能使用通用的block_stmt
+	skipLineEnd();
 	match(LBRACKET);
 	TreeNode *blockNode = newStmtNode(BlockK);
 	blockNode->child[0] = parseCaseNode();
@@ -990,9 +992,23 @@ TreeNode * parseSwitchStmt()
 		cur_case->sibling = parseCaseNode();
 		cur_case = cur_case->sibling;
 	}
+
+	if (token == DEFAULT){
+		cur_case->sibling = parseDefaultNode();
+		cur_case = cur_case->sibling;
+	}
+
 	t->child[1] = blockNode;
 	match(RBRACKET);
 	return t;
+}
+// default: 
+TreeNode * parseDefaultNode(){
+	matchWithoutSkipLineEnd(DEFAULT);
+	TreeNode * default_node = newStmtNode(DefaultK);
+	match(CLON);
+	default_node->child[1] = stmt_sequence();
+	return default_node;
 }
 
 // 用来解析case 语法

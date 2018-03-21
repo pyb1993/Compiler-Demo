@@ -187,8 +187,6 @@ void testFunctionCall()
 
 void testHash(){
 	AROUND_UNIT_TEST("test Hash", testHashPut());
-
-
 }
 
 void testHashPut(){
@@ -209,10 +207,17 @@ void testHashPut(){
 	testChar('u', getChar());
 }
 
-
+void testRegexrep2post(){
+	MainModule = "regexp_example.p";
+	initResultFile(MainModule);
+}
 
 void testList(){
 	AROUND_UNIT_TEST("test list", testListOperation());
+}
+
+void testRegex(){
+	AROUND_UNIT_TEST("test Function", testRegexrep2post());
 }
 
 void testListOperation()
@@ -272,12 +277,15 @@ void test()
 	 Error = FALSE;
 	 done = FALSE;
 
-	testList();
-	testHash();
-	testFuntion();
-	//testStatistic();
+	testRegex();
+	//testList();
+	//testHash();
+	//testFuntion();
+	testStatistic();
 	return;
 }
+
+
 
 void testStatistic()
 {
