@@ -217,7 +217,7 @@ void testList(){
 }
 
 void testRegex(){
-	AROUND_UNIT_TEST("test Function", testRegexrep2post());
+	AROUND_UNIT_TEST("test Regex", testRegexrep2post());
 }
 
 void testListOperation()

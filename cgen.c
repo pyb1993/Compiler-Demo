@@ -828,12 +828,15 @@ void cgen_assign(TreeNode * left, TreeNode * right, int scope)
 	if (isExp(left,IdK) || isStmt(left,DeclareK))
 	{
 		//调用IDK对应的处理函数,为了统一处理嵌套变量
+
+		ExpKind old_kind= left->kind.exp;
+		StmtKind old_stmt = left->nodekind;
 		left->kind.exp = IdK;
 		left->nodekind = ExpK;
 		genExp(left, scope, -1, -1, 1);
 		emitRM("POP", ac1, 0, mp, "move the adress of ID");
-		left->kind.exp = DeclareK;
-		left->nodekind = StmtK;
+		left->kind.exp = old_kind;
+		left->nodekind = old_stmt;
 
 		/*char * name = left->attr.name;
 		int loc = st_lookup(name);// get the memory location of identifier

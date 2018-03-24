@@ -60,6 +60,7 @@ TypeInfo createTypeFromBasic(Type basic)
 	{
 	case Pointer:
 		typeinfo.point_type.pointKind = (TypeInfo*)malloc(sizeof(TypeInfo));
+		
 		break;
 	}
 	return typeinfo;
@@ -176,7 +177,7 @@ bool can_convert(TypeInfo a_type, TypeInfo b_type)
 		break;
 	case Array:
 		if (b == Array) return true;// the dimension is not cared
-		else if (b == Pointer && can_convert(*b_type.point_type.pointKind, *a_type.array_type.ele_type)) return true;
+		else if (b == Pointer){return true;}
 		return false;
 	case Func:
 		if (b == Integer || b == Func) return true;
