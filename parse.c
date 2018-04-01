@@ -1018,7 +1018,13 @@ TreeNode * parseCaseNode()
 	TreeNode * case_node = newStmtNode(CaseK);
 	case_node->child[0] = parseExp();
 	match(CLON);
-	case_node->child[1] = stmt_sequence();
+	if (token == CASE){
+		//´¦Àí¿ÕµÄcase
+		case_node->child[1] = NULL;
+	}
+	else{
+		case_node->child[1] = stmt_sequence();
+	}
 	return case_node;
 }
 

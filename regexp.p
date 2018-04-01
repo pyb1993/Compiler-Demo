@@ -3,26 +3,21 @@ import pyb_example_2
 struct paren_t
 {
 	int nalt
-	int natoms
+	int natom
 } 
 
 struct regexp{	
 	//将前缀转换成后缀
-	
-	char* test(){
-		int natom
-		write --natom
-	}
-	
-	/*char* rep2post(char * re)
+	char buf[1000]
+
+	char* rep2post(char * re)
 	{
 		struct paren_t paren[100]
 		struct paren_t* p = paren
 		int nalt = 0
 		int natom = 0
 		char *dst
-		char buf[1000]
-		dst = buf
+		dst = self->buf
 
 		while(*re != 0)
 		{
@@ -41,7 +36,6 @@ struct regexp{
 				p++
 				nalt = 0
 				natom = 0
-				break
 			case ')':
 				if(p == paren)
 					return NULL
@@ -60,16 +54,44 @@ struct regexp{
 				nalt = p->nalt
 				natom = p->natom
 				natom++
-				break
+				
 			case '|':
-				break
+				if(natom == 0)
+					return NULL
+				while(--natom > 0)
+					*(dst++) = '.'
+				nalt++
+
+			case '*':
+			case '+':
+			case '?':
+				if(natom == 0)
+					return NULL
+				*(dst++) = *re
+				
 			default :
-				write 'c'
-				break
+				if(natom > 1)
+				{
+					--natom
+					*(dst++) = '.'
+				}
+				
+				*(dst++) = *re
+				natom++
+	
 		    }
 		 re++
 		}
-		return dst	
-	}*/
+		if(p != paren)
+			return NULL
+		while(--natom > 0)
+			*(dst++) = '.'
+		while(nalt > 0){
+			*(dst++) = '|'
+			nalt--
+		}
+		*dst = 0
+		return self->buf
+	}// end of re2post
 }
 

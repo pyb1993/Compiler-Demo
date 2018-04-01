@@ -92,35 +92,57 @@ static void genStmt( TreeNode * tree,int scope,int start_label,int end_label, bo
             break; /* if_k */
 		case SwitchK:
 			{
+				/*todo:
+					实现through,直接跳到下一个就好
+				*/
 				int switch_end_label = genLabel();// the label before repeat
 				TreeNode * case_seq = tree->child[1]->child[0];
+
 				while (case_seq != NULL)
 				{
-					cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);
-					cGenInValueMode(case_seq->child[0], scope + 1, start_label, end_label);// case exp;
 					int case_start_label = genLabel();
 					int case_end_label = genLabel();
+					if (case_seq->child[1] == NULL){
+						// 处理连续case的情况
+						while (case_seq != NULL && case_seq->child[1] == NULL)
+						{
+							cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);
+							cGenInValueMode(case_seq->child[0], scope + 1, start_label, end_label);// case exp;
+							emitRO("POP", ac, 0, mp, "pop case exp");
+							emitRO("POP", ac1, 0, mp, "pop switch exp");
+							emitRO("SUB", ac, ac, ac1, "op ==, convertd_type");
+							emitRM("JNE", ac, 1, pc, "skip if not statisfy");
+							emitGoto(case_start_label);// case 满足: go to case内部代码							
+							case_seq = case_seq->sibling;
+						}
+						assert(case_seq != NULL);// 最后一个不能是空
+					}
+
+
 					if (case_seq->kind.stmt == DefaultK){
 						emitGoto(case_start_label);// case 满足: go to case内部代码
 						goto create_label;
 					}
 
+					cGenInValueMode(tree->child[0], scope + 1, start_label, end_label);
+					cGenInValueMode(case_seq->child[0], scope + 1, start_label, end_label);// case exp;
 					emitRO("POP", ac, 0, mp, "pop case exp");
 					emitRO("POP", ac1, 0, mp, "pop switch exp");
 					emitRO("SUB", ac, ac, ac1, "op ==, convertd_type");
-					emitRM("JEQ", ac, 2, pc, "go to case if statisfy");
+					emitRM("JEQ", ac, 1, pc, "go to case if statisfy");
 					emitGoto(case_end_label);// case 不满足,go to case结束位置
-					emitRM("LDA", pc, 1, pc, "unconditional jmp");
+					//emitRM("LDA", pc, 1, pc, "unconditional jmp");
 					emitGoto(case_start_label);// case 满足: go to case内部代码
 					
 					create_label:;
 					emitLabel(case_start_label);// generate start label
 					cGenInValueMode(case_seq->child[1], scope + 1, start_label, switch_end_label);// case stmt;
+					emitGoto(switch_end_label);
 					emitLabel(case_end_label);// generate start label
 					deleteVarOfField(case_seq->child[1], scope + 1);// 清除所有的局部变量
 					case_seq = case_seq->sibling;
 				}
-				emitLabel(switch_end_label);// generate start label
+				emitLabel(switch_end_label);// generate switch end label
 				break;
 			}
         case RepeatK:/*gen code for while statement*/
@@ -735,6 +757,7 @@ int get_reg(Type type)
 	}
 	else
 	{
+		
 		assert(!"get reg is not implemented for other type");
 		return 0;
 	}
